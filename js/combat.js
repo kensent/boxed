@@ -92,13 +92,7 @@ function damage(target, dmg, srcKind) {
   if (target.ability === 'sword' && srcKind !== 'siege') {
     dmg = Math.max(1, dmg - 2);
   }
-  // Ronin: Resolve — 45% damage reduction during iai windup (committed stance).
-  // Siege rounds pierce it — armor-piercing ignores damage reduction.
   let resolved = false;
-  if (target.ability === 'iai' && target.iaiWindup > 0 && srcKind !== 'siege') {
-    dmg = dmg * 0.55;
-    resolved = true;
-  }
   // Wizard: Mana Shield — 50% reduction on first hit each cycle. Siege rounds
   // pierce it — armor-piercing ignores damage reduction. (The shield is NOT
   // consumed by a hit it couldn't have reduced.)
@@ -184,9 +178,6 @@ function damage(target, dmg, srcKind) {
   }
   if (shielded) {
     spawnParticles(target.x, target.y, 10, '#c77dff', 'rune');
-  }
-  if (resolved) {
-    spawnParticles(target.x, target.y, 8, '#e8c020', 'spark');
   }
   spawnParticles(target.x, target.y, 6, target.team === 'red' ? '#ff2e2e' : '#2e9eff', 'shard');
   if (target.hp <= 0) {

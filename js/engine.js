@@ -1019,6 +1019,7 @@ function step(dt) {
         if (!f.iaiHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + 25) {
           damage(enemy, 35);
           f.iaiHit = true;
+          f.cdTimer = f.cd * 0.5; // IAIJUTSU — clean strike halves the cooldown
         }
         if (f.iaiStrike <= 0) { f.iaiHit = false; f.iaiTrail = null; }
       }
