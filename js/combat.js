@@ -177,6 +177,8 @@ function damage(target, dmg, srcKind, src) {
   // Duelist: COUNTER — melee hits trigger an automatic counter-thrust back at the attacker.
   // srcKind='counter' on the reply prevents infinite loops (Duelist vs Duelist).
   if (!target.dead && target.ability === 'riposte' && !srcKind && src && !src.dead) {
+    target.counterAnim = 0.16;
+    target.counterDir = Math.atan2(src.y - target.y, src.x - target.x);
     spawnParticles(src.x, src.y, 5, '#c0c0e8', 'spark');
     damage(src, 8, 'counter');
   }

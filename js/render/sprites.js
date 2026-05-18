@@ -993,9 +993,27 @@ function drawFighter(f) {
     ctx.stroke();
   }
 
-  // Duelist En Garde ready — soft silver glow while the guard is up.
-  if (f.ability === 'riposte' && f.enGarde) {
-    readyGlow('192,192,232');
+  // Duelist COUNTER — quick snap-thrust toward the attacker on reactive hit.
+  if (f.ability === 'riposte' && f.counterAnim > 0) {
+    const progress = 1 - (f.counterAnim / 0.16);
+    const alpha = (1 - progress * 0.85).toFixed(2);
+    const thrustLen = f.size + 16;
+    ctx.save();
+    ctx.rotate(f.counterDir);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(192,192,232,${alpha})`;
+    ctx.lineWidth = 2 - progress * 1.2;
+    ctx.beginPath();
+    ctx.moveTo(f.size + 1, 0);
+    ctx.lineTo(thrustLen, 0);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${(+alpha * 0.8).toFixed(2)})`;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(thrustLen - 4, 0);
+    ctx.lineTo(thrustLen, 0);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // Berserker bloodrage indicator

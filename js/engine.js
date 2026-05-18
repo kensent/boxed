@@ -452,7 +452,7 @@ function makeFighter(t, team, x, y) {
     blinkFromX: 0, blinkFromY: 0,
     // Duelist
     lastX: x, lastY: y,
-    parryTimer: 0,
+    parryTimer: 0, counterAnim: 0, counterDir: 0,
     // Reaper
     sweepTimer: 0, sweepHit: false,
     // Ronin
@@ -845,6 +845,7 @@ function step(dt) {
     }
     if (f.ability === 'riposte') {
       if (f.parryTimer > 0) f.parryTimer -= dt;
+      if (f.counterAnim > 0) f.counterAnim -= dt;
     }
     // Archer leaves a fading motion trail
     if (f.ability === 'arrow') {
