@@ -1238,7 +1238,7 @@ function step(dt) {
       spawnParticles(p.x, p.y, 5, pColor, pStyle);
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
       if (p.kind === 'cannon') {
-        game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 2.5, maxTimer: 2.5, tickCd: 0, team: p.team, dps: 4 });
+        game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 1.5, maxTimer: 1.5, tickCd: 0, team: p.team, dps: 4 });
         // A tight cluster of hot embers at the center — the zone glow in arena.js
         // shows the area; these just mark where the round landed.
         spawnParticles(p.x, p.y, 6, '#ff6010', 'streak');
