@@ -1160,12 +1160,12 @@ function step(dt) {
       p.vy = p.vy / sp * 280;
       p.spin = (p.spin || 0) + dt * 12;
     }
-    // Lightning bolt — homing can stall it on a hard turn (same lerp-through-
-    // zero issue as coins). Re-normalise to its constant 200 px/s cruise speed.
-    if (p.kind === 'lightning') {
+    // Any homing projectile with a cruise speed recorded (lightning, parried
+    // projectiles) — re-normalise so homing can never stall them on a hard turn.
+    if (p.cruise && p.kind !== 'coin') {
       const sp = Math.hypot(p.vx, p.vy) || 0.001;
-      p.vx = p.vx / sp * 200;
-      p.vy = p.vy / sp * 200;
+      p.vx = p.vx / sp * p.cruise;
+      p.vy = p.vy / sp * p.cruise;
     }
     // Coins (Gambler) — hold a constant cruise speed. Homing steers the
     // velocity, and during a hard turn (e.g. a Nova coin reversing to
@@ -1209,7 +1209,7 @@ function step(dt) {
         p.vx = -p.vx;
         p.vy = -p.vy;
         p.life = Math.max(p.life, 1.5);
-        if (p.homing <= 0) p.homing = 25;
+        if (p.homing <= 0) { p.homing = 25; p.cruise = Math.hypot(p.vx, p.vy); }
         spawnParticles(target.x, target.y, 14, '#c0c0e8', 'spark');
         return true; // keep alive, flipped — angle re-syncs to velocity next frame
       }

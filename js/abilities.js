@@ -251,7 +251,7 @@ function resolveAim(f) {
   if (f.aimAbility === 'lightning') {
     // Aim is taken at the moment of release, not at the start of the windup
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
-    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:18, life:2.2, kind:'lightning', size:5, homing:70 });
+    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:18, life:2.2, kind:'lightning', size:5, homing:70, cruise:200 });
     spawnParticles(f.x, f.y, 8, '#ffe83d', 'cross');
     sfx('lightning', null, f.x);
   } else if (f.aimAbility === 'cannon') {
