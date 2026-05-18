@@ -358,7 +358,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], minions: [], mines: [], skeletons: [], particles: [], floatTexts: [], wakes: [],
+    projectiles: [], minions: [], mines: [], hazards: [], skeletons: [], particles: [], floatTexts: [], wakes: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
@@ -1232,10 +1232,15 @@ function step(dt) {
         }
         target.witchMarkTimer = 3.0;
       }
-      damage(target, dmgOut, p.kind === 'cannon' ? 'siege' : 'projectile');
+      damage(target, dmgOut, 'projectile');
       const pColor = p.kind === 'lightning' ? '#ffe83d' : (p.kind === 'hex' ? '#7dff3d' : '#3dff8a');
       const pStyle = p.kind === 'lightning' ? 'cross' : 'streak';
       spawnParticles(p.x, p.y, 5, pColor, pStyle);
+      // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
+      if (p.kind === 'cannon') {
+        game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 2.5, maxTimer: 2.5, tickCd: 0, team: p.team, dps: 5 });
+        spawnParticles(p.x, p.y, 10, '#ff8c1a', 'smoke');
+      }
       return false;
     }
     return true;
@@ -1253,6 +1258,21 @@ function step(dt) {
         spawnParticles(m.x, m.y, 12, '#3a2a1a', 'smoke');
         spawnParticles(m.x, m.y, 10, '#ff8c1a', 'shard');
         return false;
+      }
+    }
+    return true;
+  });
+
+  game.hazards = game.hazards.filter(h => {
+    h.timer -= dt;
+    if (h.timer <= 0) return false;
+    // Tick every 0.5s rather than every frame — keeps damage() call count low in the sim.
+    h.tickCd -= dt;
+    if (h.tickCd <= 0) {
+      h.tickCd = 0.5;
+      const target = h.team === 'red' ? blue : red;
+      if (!target.dead && dist(h, target) < h.radius) {
+        damage(target, h.dps * 0.5, 'hazard'); // 0.5s × 5 dps = 2.5 dmg per tick
       }
     }
     return true;

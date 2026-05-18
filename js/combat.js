@@ -70,27 +70,22 @@ function damage(target, dmg, srcKind, src) {
   // is now SIEGE ROUNDS, an offensive armor-piercing trait handled below.)
   // Duelist: parry window fully absorbs PROJECTILES (reflection handled in the
   // projectile loop). Melee hits fall through to COUNTER instead.
-  if (target.ability === 'riposte' && target.parryTimer > 0 && (srcKind === 'projectile' || srcKind === 'siege')) {
+  if (target.ability === 'riposte' && target.parryTimer > 0 && srcKind === 'projectile') {
     target.negateFlash = 0.25;
     spawnParticles(target.x, target.y, 10, '#c0c0e8', 'spark');
     sfx('parry', null, target.x);
     return;
   }
-  // Knight: Plate Armor — flat reduction. Bypassed by siege rounds (the
-  // Cannoneer's armor-piercing shot punches straight through plate).
-  if (target.ability === 'sword' && srcKind !== 'siege') {
+  // Knight: Plate Armor — flat −2 dmg per hit (min 1).
+  if (target.ability === 'sword') {
     dmg = Math.max(1, dmg - 2);
   }
-  // Wizard: Mana Shield — 50% reduction on first hit each cycle. Siege rounds
-  // pierce it — armor-piercing ignores damage reduction. (The shield is NOT
-  // consumed by a hit it couldn't have reduced.)
   // Wizard: Mana Shield — 50% reduction, powered by orbs. No cooldown: each
   // hit consumes one of the Wizard's live orb projectiles to halve the damage.
   // Out of orbs = no shield. Spending an orb also frees a cast slot, so the
   // Wizard is always trading offense (orbs in flight) against defense.
-  // Siege rounds still pierce it — armor-piercing ignores reduction.
   let shielded = false;
-  if (target.ability === 'cast' && srcKind !== 'siege') {
+  if (target.ability === 'cast') {
     const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team);
     if (orbIdx !== -1) {
       dmg = dmg * 0.5;
@@ -111,7 +106,7 @@ function damage(target, dmg, srcKind, src) {
   // While open the number updates quietly (no re-punch, doesn't rise yet);
   // once a gap passes with no new hit it RESOLVES — one punch, then floats off.
   // Drain is the exception: a long gap so its slow ticks stay one calm number.
-  const gap = (srcKind === 'drain') ? 1100 : BATCH_GAP;
+  const gap = (srcKind === 'drain' || srcKind === 'hazard') ? 1100 : BATCH_GAP;
   const burstMerge = target.dmgFloat && target.dmgFloat.open
     && (nowT - target.dmgFloat.lastHit) < gap;
   const feedbackDmg = burstMerge ? (target.dmgFloat.total + Math.ceil(dmg)) : dmg;
@@ -131,7 +126,7 @@ function damage(target, dmg, srcKind, src) {
   // Sound: drain ticks are silent — the sustained `drain` beam drone (played
   // once when the channel starts) covers the whole leech. Other hits play a
   // punchier sound, pitch-scaled to damage magnitude.
-  if (srcKind !== 'drain') sfx('hit', dmg, target.x);
+  if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('hit', dmg, target.x);
   // Damage float — debounced (see BATCH_GAP above). An "open" float sits frozen
   // in place accumulating hits; the float update loop resolves it once a gap
   // passes with no new hit, at which point it punches once and floats off.

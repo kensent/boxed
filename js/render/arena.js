@@ -25,6 +25,26 @@ function draw() {
     ctx.fill();
   });
 
+  (game.hazards || []).forEach(h => {
+    const fade = h.timer / h.maxTimer; // 1 → 0
+    const innerA = fade * 0.35;
+    const outerA = fade * 0.18;
+    const grad = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.radius);
+    grad.addColorStop(0,   `rgba(255,140,26,${innerA})`);
+    grad.addColorStop(0.5, `rgba(220,80,10,${outerA})`);
+    grad.addColorStop(1,   `rgba(180,40,0,0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+    ctx.fill();
+    // Crisp hot rim
+    ctx.strokeStyle = `rgba(255,160,40,${fade * 0.5})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
   game.mines.forEach(m => {
     const pulse = Math.sin(m.life * 8) * 0.5 + 0.5;
     const armed = m.armed <= 0;
