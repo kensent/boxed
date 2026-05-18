@@ -881,7 +881,8 @@ function step(dt) {
         if (!f.dashHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + f.strikeReach) {
           damage(enemy, f.dmg, undefined, f);
           // Reaper: Blood Harvest — heal 50% of the damage dealt.
-          if (f.ability === 'sweep') {
+          // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
+          if (f.ability === 'sweep' && !f.dead) {
             const healAmt = Math.round(f.dmg * 0.5);
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
