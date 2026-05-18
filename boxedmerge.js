@@ -8,12 +8,8 @@
 const fs = require('fs');
 
 function loadIds() {
-  const candidates = [__dirname + '/boxed.html'];
-  let html = null;
-  for (const p of candidates) { try { html = fs.readFileSync(p, 'utf8'); break; } catch (e) {} }
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-  // FIGHTERS ids appear as  id:'xxx'  — pull them in declaration order.
-  const m = [...script.matchAll(/\{\s*id:'([a-z]+)'/g)];
+  const src = fs.readFileSync(__dirname + '/js/fighters.js', 'utf8');
+  const m = [...src.matchAll(/\{\s*id:'([a-z]+)'/g)];
   return m.map(x => x[1]);
 }
 

@@ -6,28 +6,28 @@ last one alive wins. Target fight length is under 30 seconds. Mobile-targeted.
 
 ## Files
 
-- `boxed.html` — the entire game. Single self-contained file: HTML + CSS + a
-  large inline `<script>`, vanilla JS + Canvas, no build step, no dependencies.
-  Open it directly in a browser to play/test.
+- `boxed.html` — HTML + CSS only, plus `<script src>` tags in load order.
+  Open directly in a browser (no build step, no dependencies, works from `file://`).
+- `js/` — all gameplay JavaScript, one concern per file:
+  - `rng.js` · `fighters.js` · `matchups.js` · `audio.js`
+  - `combat.js` · `particles.js` · `abilities.js` · `engine.js`
+  - `render/sprites.js` · `render/arena.js`
+  - `ui.js` (selection screen) · `main.js` (end-game lifecycle)
 - `boxedshard.js` — runs a slice of the 120-matchup balance simulation.
   `node boxedshard.js <startIdx> <endIdx> <outfile>` runs matchups in
   `[startIdx, endIdx)` and writes results to `<outfile>`.
 - `boxedmerge.js` — assembles shard result files into the `MATCHUPS` block
-  (paste-ready for boxed.html) plus a per-fighter win-rate summary.
+  (paste-ready for `js/matchups.js`) plus a per-fighter win-rate summary.
   `node boxedmerge.js <file> [<file> ...]`.
 - `balance.sh` — runs all 8 shards in parallel and merges. This is the
   normal way to do a full balance run. Just `./balance.sh`.
 
 ## Workflow
 
-After ANY edit to `boxed.html`, syntax-check the script before anything else:
-
-```
-sed -n '/<script>/,/<\/script>/p' boxed.html | sed '1d;$d' > /tmp/bs.js && node --check /tmp/bs.js
-```
+After ANY edit to a `js/` file, syntax-check it with `node --check <file>`.
 
 For balance changes: run `./balance.sh`, read the per-fighter summary, then
-embed the new `MATCHUPS` block into boxed.html (replace the existing
+embed the new `MATCHUPS` block into `js/matchups.js` (replace the existing
 `const MATCHUPS = {...}` block — it is the only thing boxedmerge prints that
 goes into the file).
 

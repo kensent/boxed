@@ -12,11 +12,12 @@
 const fs = require('fs');
 
 function loadEngine() {
-  const candidates = [__dirname + '/boxed.html'];
-  let html = null;
-  for (const p of candidates) { try { html = fs.readFileSync(p, 'utf8'); break; } catch (e) {} }
-  if (!html) throw new Error('boxed.html not found');
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const SIM_FILES = [
+    'js/rng.js', 'js/fighters.js', 'js/matchups.js',
+    'js/audio.js', 'js/combat.js', 'js/particles.js', 'js/abilities.js', 'js/engine.js',
+    'js/main.js',  // endGame() is called by damage() in combat.js
+  ];
+  const script = SIM_FILES.map(f => fs.readFileSync(__dirname + '/' + f, 'utf8')).join('\n');
   const ctxStub = {
     setTransform:()=>0, clearRect:()=>0, save:()=>0, restore:()=>0,
     beginPath:()=>0, fill:()=>0, stroke:()=>0, arc:()=>0, ellipse:()=>0,
