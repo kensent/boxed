@@ -66,7 +66,7 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'mine': {
-      game.mines.push({ x:f.x, y:f.y, team:f.team, dmg:28, life:8, armed:0.5, size:10 });
+      game.mines.push({ x:f.x, y:f.y, team:f.team, dmg:f.dmg, life:6, armed:0.5, size:10 });
       spawnParticles(f.x, f.y, 4, '#3a2a1a', 'smoke');
       break;
     }

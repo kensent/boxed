@@ -830,7 +830,7 @@ function step(dt) {
       f.wakeTimer = (f.wakeTimer || 0) - dt;
       if (f.wakeTimer <= 0) {
         game.wakes = game.wakes || [];
-        game.wakes.push({ x: f.x, y: f.y, team: f.team, life: 2.5, size: 10 });
+        game.wakes.push({ x: f.x, y: f.y, team: f.team, life: 1.5, size: 10 });
         f.wakeTimer = 0.12;
       }
     }
