@@ -1233,13 +1233,16 @@ function step(dt) {
         target.witchMarkTimer = 3.0;
       }
       damage(target, dmgOut, 'projectile');
-      const pColor = p.kind === 'lightning' ? '#ffe83d' : (p.kind === 'hex' ? '#7dff3d' : '#3dff8a');
+      const pColor = p.kind === 'lightning' ? '#ffe83d' : p.kind === 'cannon' ? '#ff8c1a' : (p.kind === 'hex' ? '#7dff3d' : '#3dff8a');
       const pStyle = p.kind === 'lightning' ? 'cross' : 'streak';
       spawnParticles(p.x, p.y, 5, pColor, pStyle);
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
       if (p.kind === 'cannon') {
         game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 2.5, maxTimer: 2.5, tickCd: 0, team: p.team, dps: 4 });
-        spawnParticles(p.x, p.y, 10, '#ff8c1a', 'smoke');
+        // A tight cluster of hot embers at the center — the zone glow in arena.js
+        // shows the area; these just mark where the round landed.
+        spawnParticles(p.x, p.y, 6, '#ff6010', 'streak');
+        spawnParticles(p.x, p.y, 3, '#ffb040', 'streak');
       }
       return false;
     }
@@ -1272,7 +1275,13 @@ function step(dt) {
       h.tickCd = 0.5;
       const target = h.team === 'red' ? blue : red;
       if (!target.dead && dist(h, target) < h.radius) {
-        damage(target, h.dps * 0.5, 'hazard'); // 0.5s × 5 dps = 2.5 dmg per tick
+        damage(target, h.dps * 0.5, 'hazard'); // 0.5s × 4 dps = 2.0 dmg per tick
+      }
+      // Scatter embers across the zone — Math.random() so it doesn't touch the seeded RNG streams.
+      for (let i = 0; i < 4; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const r   = Math.random() * h.radius * 0.85;
+        spawnParticles(h.x + Math.cos(ang) * r, h.y + Math.sin(ang) * r, 1, i < 2 ? '#ff6010' : '#ffb040', 'streak');
       }
     }
     return true;
