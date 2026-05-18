@@ -170,7 +170,7 @@ function fireAbility(f, enemy) {
       f.sweepTimer = 0.3;
       f.sweepHit = false;
       f.dashHit = false;
-      spawnParticles(f.x, f.y, 10, '#aa0000', 'shard');
+      spawnParticles(f.x, f.y, 5, '#aa0000', 'shard');
       break;
     }
     case 'iai': {
@@ -192,7 +192,7 @@ function fireAbility(f, enemy) {
         bounces: 5,
         spin: 0,
       });
-      spawnParticles(f.x, f.y, 8, '#7dff3d', 'smoke');
+      spawnParticles(f.x, f.y, 3, '#7dff3d', 'rune');
       break;
     }
     case 'grapple': {

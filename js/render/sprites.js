@@ -1234,39 +1234,59 @@ function drawFighter(f) {
   if (f.swingTimer > 0) {
     const enemy = f.team === 'red' ? game.blue : game.red;
     const ang = enemy ? Math.atan2(enemy.y - f.y, enemy.x - f.x) : 0;
+    ctx.save();
     ctx.rotate(ang);
-    // Curved blade arc — swings through 90deg
     const progress = 1 - (f.swingTimer / 0.3); // 0 → 1
-    const baseAng = -Math.PI * 0.4 + progress * Math.PI * 0.8;
-    const innerR = f.size + 4;
-    const outerR = f.size + 22;
-    // Blade body
-    ctx.fillStyle = 'rgba(220,230,240,0.85)';
-    ctx.beginPath();
-    ctx.arc(0, 0, outerR, baseAng - 0.4, baseAng + 0.05);
-    ctx.arc(0, 0, innerR, baseAng + 0.05, baseAng - 0.4, true);
-    ctx.closePath();
-    ctx.fill();
-    // Bright leading edge
-    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 0, outerR, baseAng - 0.05, baseAng + 0.05);
-    ctx.stroke();
+    if (f.ability === 'riposte') {
+      // Duelist — rapier thrust: a thin spike that snaps out then retracts.
+      // ctx is already rotated to face the enemy; +x is the thrust direction.
+      const thrustLen = f.size + 6 + (1 - progress) * 22;
+      const alpha = (1 - progress * 0.55).toFixed(2);
+      ctx.lineCap = 'round';
+      // Blade shaft
+      ctx.strokeStyle = `rgba(192,192,232,${alpha})`;
+      ctx.lineWidth = 2.5 - progress * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(f.size + 2, 0);
+      ctx.lineTo(thrustLen, 0);
+      ctx.stroke();
+      // Bright tip glint
+      ctx.strokeStyle = `rgba(255,255,255,${(+alpha * 0.9).toFixed(2)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(thrustLen - 5, 0);
+      ctx.lineTo(thrustLen, 0);
+      ctx.stroke();
+    } else {
+      // Knight — broad sword swing: curved arc sweeping through 90°.
+      const baseAng = -Math.PI * 0.4 + progress * Math.PI * 0.8;
+      const innerR = f.size + 4;
+      const outerR = f.size + 22;
+      ctx.fillStyle = 'rgba(220,230,240,0.85)';
+      ctx.beginPath();
+      ctx.arc(0, 0, outerR, baseAng - 0.4, baseAng + 0.05);
+      ctx.arc(0, 0, innerR, baseAng + 0.05, baseAng - 0.4, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, outerR, baseAng - 0.05, baseAng + 0.05);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   if (f.dashTimer > 0) {
-    // Red afterimage for berserker, white for others
-    const isBerserker = f.ability === 'tackle';
-    ctx.fillStyle = isBerserker ? 'rgba(255,80,80,0.35)' : 'rgba(245,245,240,0.3)';
-    ctx.beginPath();
-    ctx.arc(-f.vx * 0.04, -f.vy * 0.04, f.size + 5, 0, Math.PI * 2);
-    ctx.fill();
-    if (isBerserker) {
-      ctx.fillStyle = 'rgba(255,80,80,0.2)';
-      ctx.beginPath();
-      ctx.arc(-f.vx * 0.08, -f.vy * 0.08, f.size + 3, 0, Math.PI * 2);
-      ctx.fill();
+    // Ghost copies of the fighter's actual shape trailing along the velocity.
+    // Two frames shown at ~2 and ~4 frames behind current position.
+    const alpha = Math.min(f.dashTimer * 2.5, 0.45);
+    for (let i = 1; i <= 2; i++) {
+      ctx.save();
+      ctx.translate(-f.vx * 0.033 * i, -f.vy * 0.033 * i);
+      ctx.globalAlpha = alpha / i;
+      drawShape(ctx, f);
+      ctx.restore();
     }
   }
 

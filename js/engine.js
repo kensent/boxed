@@ -890,7 +890,7 @@ function step(dt) {
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
             spawnFloat(f.x, f.y - f.size - 12, '+' + healAmt, healColor(f));
-            spawnParticles(f.x, f.y, 10, '#aa0000', 'shard');
+            spawnParticles(f.x, f.y, 5, '#aa0000', 'shard');
           }
           f.dashHit = true;
           f.dashTimer = 0;
@@ -913,10 +913,10 @@ function step(dt) {
     if (f.ability === 'sweep' && f.sweepTimer > 0) {
       f.sweepTimer -= dt;
       // Trail blood-mist particles while spinning
-      if (vrng() < 0.6) {
+      if (vrng() < 0.2) {
         const ra = vrng() * Math.PI * 2;
         const rr = f.size + 10 + vrng() * 6;
-        spawnParticles(f.x + Math.cos(ra) * rr, f.y + Math.sin(ra) * rr, 1, '#aa0000', 'smoke');
+        spawnParticles(f.x + Math.cos(ra) * rr, f.y + Math.sin(ra) * rr, 1, '#aa0000', 'streak');
       }
       if (f.sweepTimer <= 0) f.sweepHit = false;
     }
@@ -1182,7 +1182,7 @@ function step(dt) {
       if (p.y > h - p.size) { p.y = h - p.size; p.vy = -p.vy; bounced = true; }
       if (bounced) {
         p.bounces -= 1;
-        spawnParticles(p.x, p.y, 6, '#7dff3d', 'spark');
+        spawnParticles(p.x, p.y, 2, '#7dff3d', 'spark');
         if (p.bounces < 0) return false;
       }
     } else if (!p.noEdgeDespawn) {
@@ -1230,7 +1230,7 @@ function step(dt) {
       damage(target, dmgOut, p.kind === 'cannon' ? 'siege' : 'projectile');
       const pColor = p.kind === 'lightning' ? '#ffe83d' : (p.kind === 'hex' ? '#7dff3d' : '#3dff8a');
       const pStyle = p.kind === 'lightning' ? 'cross' : 'streak';
-      spawnParticles(p.x, p.y, 8, pColor, pStyle);
+      spawnParticles(p.x, p.y, 5, pColor, pStyle);
       return false;
     }
     return true;
