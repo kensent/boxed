@@ -1160,6 +1160,13 @@ function step(dt) {
       p.vy = p.vy / sp * 280;
       p.spin = (p.spin || 0) + dt * 12;
     }
+    // Lightning bolt — homing can stall it on a hard turn (same lerp-through-
+    // zero issue as coins). Re-normalise to its constant 200 px/s cruise speed.
+    if (p.kind === 'lightning') {
+      const sp = Math.hypot(p.vx, p.vy) || 0.001;
+      p.vx = p.vx / sp * 200;
+      p.vy = p.vy / sp * 200;
+    }
     // Coins (Gambler) — hold a constant cruise speed. Homing steers the
     // velocity, and during a hard turn (e.g. a Nova coin reversing to
     // converge) the blend would otherwise pass through near-zero and the coin
