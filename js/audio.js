@@ -153,6 +153,7 @@ const Audio = (() => {
     coinThrow() { tone(1300, 0.1, 'triangle', 0.09, { glideTo: 1900 }); tone(2000, 0.07, 'sine', 0.05); },
     // --- reactions ---
     parry()     { tone(2600, 0.16, 'triangle', 0.22, { glideTo: 1600 }); tone(3300, 0.12, 'sine', 0.12); },
+    counter()   { tone(1900, 0.09, 'triangle', 0.16, { glideTo: 1100 }); noise(0.07, 0.10, 'bandpass', 2800); },
     negate()    { noise(0.14, 0.16, 'highpass', 1800, { filterGlideTo: 5000 }); }, // soft whiff
     heal()      { tone(560, 0.22, 'sine', 0.12, { glideTo: 840 }); },
     // --- lifecycle ---

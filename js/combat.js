@@ -179,6 +179,7 @@ function damage(target, dmg, srcKind, src) {
   if (!target.dead && target.ability === 'riposte' && !srcKind && src && !src.dead) {
     target.counterAnim = 0.16;
     target.counterDir = Math.atan2(src.y - target.y, src.x - target.x);
+    sfx('counter', null, target.x);
     spawnParticles(src.x, src.y, 5, '#c0c0e8', 'spark');
     damage(src, 8, 'counter');
   }
