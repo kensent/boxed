@@ -683,10 +683,10 @@ const FIGHTERS = [
 // Win-rate snapshot from the headless balance harness (boxedsim.js). Keyed
 // 'a_b' = fighter A's win % vs B; the reverse is 100 minus the value. Used by
 // the select-screen picker modes and the odds readout.
-// IMPORTANT: boxedsim.js drives THIS file's own engine (via simulateFight) at
+// IMPORTANT: the balance harness drives THIS file's own engine (via simulateFight) at
 // N=300/matchup — it is the balance authority. The old sim.js was a separate,
 // simplified model that drifted from the real game; do not trust it.
-// REGENERATE after any balance change: run `node boxedsim.js` and paste the
+// REGENERATE after any balance change: run `./balance.sh` and paste the
 // printed MATCHUPS block here — otherwise it silently drifts from reality.
 // ============================================================================
 const MATCHUPS = {

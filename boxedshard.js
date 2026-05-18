@@ -12,7 +12,7 @@
 const fs = require('fs');
 
 function loadEngine() {
-  const candidates = ['/mnt/user-data/outputs/boxed.html', __dirname + '/boxed.html'];
+  const candidates = [__dirname + '/boxed.html'];
   let html = null;
   for (const p of candidates) { try { html = fs.readFileSync(p, 'utf8'); break; } catch (e) {} }
   if (!html) throw new Error('boxed.html not found');
