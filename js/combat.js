@@ -1,7 +1,7 @@
 // ============================================================================
 // === COMBAT =================================================================
-// damage() — applies defensive passives (Jester dodge, Cannoneer powder store,
-//   Knight plate armor, Wizard mana shield) and handles death.
+// damage() — applies defensive passives (Jester dodge, Knight plate armor,
+//   Wizard mana shield, Duelist counter) and handles death.
 // styleFor() — maps ability id → particle style for hit feedback.
 // ============================================================================
 
@@ -36,7 +36,7 @@ function hitStop(dur) {
   game.hitStop = Math.max(game.hitStop, dur);
 }
 
-function damage(target, dmg, srcKind) {
+function damage(target, dmg, srcKind, src) {
   if (target.dead) return;
   // Fog (closing-ring) damage is environmental — bypasses every dodge, shield,
   // parry, and reduction. It also doesn't spawn a damage float (the ring visual
@@ -69,30 +69,18 @@ function damage(target, dmg, srcKind) {
   // (Cannoneer's old Powder Store invuln-on-windup was removed — its passive
   // is now SIEGE ROUNDS, an offensive armor-piercing trait handled below.)
   // Duelist: parry window fully absorbs PROJECTILES (reflection handled in the
-  // projectile loop). Melee hits are NOT parried — they fall through to En Garde
-  // for the 50% reduction. (Parry = anti-ranged, En Garde = anti-melee.)
+  // projectile loop). Melee hits fall through to COUNTER instead.
   if (target.ability === 'riposte' && target.parryTimer > 0 && (srcKind === 'projectile' || srcKind === 'siege')) {
     target.negateFlash = 0.25;
     spawnParticles(target.x, target.y, 10, '#c0c0e8', 'spark');
     sfx('parry', null, target.x);
     return;
   }
-  // Duelist: En Garde — 50% reduction on next melee/contact hit. Projectiles must be parried instead.
-  if (target.ability === 'riposte' && target.enGarde && !srcKind) {
-    dmg = dmg * 0.5;
-    target.enGarde = false;
-    target.stillTimer = 0;
-    target.enGardeCd = 2.7; // recharge — deliberately NOT 2.5s: an exact 2.5
-    // matched the Jester's blink cooldown, so every Jester hit landed the frame
-    // En Garde refreshed and the Duelist had a permanent 50% reduction vs it.
-    spawnParticles(target.x, target.y, 8, '#c0c0e8', 'spark');
-  }
   // Knight: Plate Armor — flat reduction. Bypassed by siege rounds (the
   // Cannoneer's armor-piercing shot punches straight through plate).
   if (target.ability === 'sword' && srcKind !== 'siege') {
     dmg = Math.max(1, dmg - 2);
   }
-  let resolved = false;
   // Wizard: Mana Shield — 50% reduction on first hit each cycle. Siege rounds
   // pierce it — armor-piercing ignores damage reduction. (The shield is NOT
   // consumed by a hit it couldn't have reduced.)
@@ -185,5 +173,11 @@ function damage(target, dmg, srcKind) {
     sfx('death', null, target.x);
     spawnParticles(target.x, target.y, 24, '#ffe83d', 'shard');
     endGame();
+  }
+  // Duelist: COUNTER — melee hits trigger an automatic counter-thrust back at the attacker.
+  // srcKind='counter' on the reply prevents infinite loops (Duelist vs Duelist).
+  if (!target.dead && target.ability === 'riposte' && !srcKind && src && !src.dead) {
+    spawnParticles(src.x, src.y, 5, '#c0c0e8', 'spark');
+    damage(src, 8, 'counter');
   }
 }

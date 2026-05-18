@@ -451,7 +451,7 @@ function makeFighter(t, team, x, y) {
     dodgeReady: true, dodgeTimer: 0, dodgeInvuln: 0, blinkFx: 0,
     blinkFromX: 0, blinkFromY: 0,
     // Duelist
-    stillTimer: 0, lastX: x, lastY: y, enGarde: true, enGardeCd: 0,
+    lastX: x, lastY: y,
     parryTimer: 0,
     // Reaper
     sweepTimer: 0, sweepHit: false,
@@ -843,12 +843,7 @@ function step(dt) {
       if (f.dodgeInvuln > 0) f.dodgeInvuln -= dt;
       if (f.blinkFx > 0) f.blinkFx -= dt;
     }
-    // Duelist: En Garde — 50% reduction on next hit, auto-recharges 2.5s after consumption
     if (f.ability === 'riposte') {
-      if (f.enGardeCd > 0) {
-        f.enGardeCd -= dt;
-        if (f.enGardeCd <= 0) f.enGarde = true;
-      }
       if (f.parryTimer > 0) f.parryTimer -= dt;
     }
     // Archer leaves a fading motion trail
@@ -872,7 +867,7 @@ function step(dt) {
       if (f.ability === 'tackle') {
         // Berserker: the tackle is a pure collision charge — crashing in IS the hit.
         if (!enemy.dead && dist(f, enemy) < f.size + enemy.size) {
-          damage(enemy, f.dmg);
+          damage(enemy, f.dmg, undefined, f);
           f.dashTimer = 0;
           const a = Math.atan2(f.vy, f.vx);
           f.vx = Math.cos(a) * f.speed;
@@ -883,7 +878,7 @@ function step(dt) {
         // LIVE for the whole dash — the first frame the enemy is within this
         // fighter's strike range, the single hit lands (once per dash).
         if (!f.dashHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + f.strikeReach) {
-          damage(enemy, f.dmg);
+          damage(enemy, f.dmg, undefined, f);
           // Reaper: Blood Harvest — heal 50% of the damage dealt.
           if (f.ability === 'sweep') {
             const healAmt = Math.round(f.dmg * 0.5);
@@ -1017,7 +1012,7 @@ function step(dt) {
       } else if (f.iaiStrike > 0) {
         f.iaiStrike -= dt;
         if (!f.iaiHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + 25) {
-          damage(enemy, 35);
+          damage(enemy, 35, undefined, f);
           f.iaiHit = true;
           f.cdTimer = f.cd * 0.5; // IAIJUTSU — clean strike halves the cooldown
         }
