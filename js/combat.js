@@ -164,4 +164,5 @@ function damage(target, dmg, srcKind, src) {
     spawnParticles(src.x, src.y, 5, '#c0c0e8', 'spark');
     damage(src, 8, 'counter');
   }
+  return dmg;
 }

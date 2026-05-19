@@ -871,11 +871,11 @@ function step(dt) {
         // LIVE for the whole dash — the first frame the enemy is within this
         // fighter's strike range, the single hit lands (once per dash).
         if (!f.dashHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + f.strikeReach) {
-          damage(enemy, f.dmg, undefined, f);
+          const dealtDmg = damage(enemy, f.dmg, undefined, f);
           // Reaper: Blood Harvest — heal 50% of the damage dealt.
           // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
           if (f.ability === 'sweep' && !f.dead) {
-            const healAmt = Math.round(f.dmg * 0.5);
+            const healAmt = Math.round((dealtDmg || 0) * 0.5);
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
             spawnFloat(f.x, f.y - f.size - 12, '+' + healAmt, healColor(f));
