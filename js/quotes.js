@@ -223,15 +223,15 @@ const VICTORY_QUOTES = {
   'reaper_knight':      "The armor was thorough. The time was not.",
   'reaper_sapper':      "The mine healed me. Technically.",
   'reaper_archer':      "A quiver full of gifts.",
-  'reaper_jester':      "The trick only works so many times.",
+  'reaper_jester':      "You can only blink so far from inevitable.",
   'reaper_cannoneer':   "Thank you for the donation.",
-  'reaper_duelist':     "Every counter fed the harvest.",
+  'reaper_duelist':     "Every blow you returned still landed. I appreciated both.",
   'reaper_necromancer': "A generous army.",
   'reaper_ronin':       "The big swing. Half returned.",
   'reaper_witch':       "You cursed me stronger. I appreciated it.",
   'reaper_hunter':      "The wound was a gift.",
   'reaper_warlock':     "Two leeches. One winner.",
-  'reaper_gambler':     "Luck runs out. Blood harvest doesn't.",
+  'reaper_gambler':     "The house always wins. So does the harvest.",
 
   // RONIN wins
   'ronin_priest':      "The lightning was fast. The iai was faster.",
