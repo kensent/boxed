@@ -41,7 +41,7 @@ function loadEngine() {
     requestAnimationFrame:()=>0, navigator:{}, Math, Date, JSON, console,
   };
   const out = {};
-  const wrapped = script + '\n;__exports.simulateFight=simulateFight;__exports.FIGHTERS=FIGHTERS;';
+  const wrapped = script + '\n;__exports.simulateFight=simulateFight;__exports.simulateFightDetailed=simulateFightDetailed;__exports.FIGHTERS=FIGHTERS;';
   const fn = new Function(...Object.keys(sandbox), '__exports', wrapped);
   fn(...Object.values(sandbox), out);
   return out;
@@ -50,14 +50,22 @@ function loadEngine() {
 const engine = loadEngine();
 const ids = engine.FIGHTERS.map(f => f.id);
 const N = 500;
+const RING_START = 20; // seconds — matches engine.js step()
 
-function winRate(a, b, salt) {
-  let wins = 0;
+function matchupStats(a, b, salt) {
+  let wins = 0, totalElapsed = 0, fogCount = 0;
   for (let k = 0; k < N; k++) {
     const seed = (salt * 2654435761 + k * 40503) >>> 0;  // same formula as boxedsim.js
-    if (engine.simulateFight(a, b, seed) === a) wins++;
+    const r = engine.simulateFightDetailed(a, b, seed);
+    if (r.winId === a) wins++;
+    totalElapsed += r.elapsed || 0;
+    if ((r.elapsed || 0) > RING_START) fogCount++;
   }
-  return Math.round(wins / N * 100);
+  return {
+    wr: Math.round(wins / N * 100),
+    avgElapsed: Math.round(totalElapsed / N * 10) / 10,
+    fogPct: Math.round(fogCount / N * 100),
+  };
 }
 
 // Build the full ordered matchup list (same nested-loop order as boxedsim.js).
@@ -80,8 +88,8 @@ const t0 = Date.now();
 const out = [];
 for (let m = start; m < end && m < matchups.length; m++) {
   const { a, b, salt } = matchups[m];
-  const r = winRate(a, b, salt);
-  out.push(`'${a}_${b}':${r}`);
+  const s = matchupStats(a, b, salt);
+  out.push(`'${a}_${b}':${s.wr}:${s.avgElapsed}:${s.fogPct}`);
 }
 fs.appendFileSync(outfile, out.join('\n') + '\n');
 console.error(`shard [${start},${end}) done: ${out.length} matchups in ${((Date.now()-t0)/1000).toFixed(1)}s`);

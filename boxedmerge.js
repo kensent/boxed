@@ -27,10 +27,17 @@ if (lines.length !== expected) {
 }
 
 // De-dupe (in case a shard ran twice), keep last occurrence.
+// Format: 'a_b':winRate[:avgElapsed[:fogPct]  (old format: 2 fields; new: 4)
 const tbl = {};
-const seen = {};
-lines.forEach(l => { const [k, v] = l.split(':'); seen[k.replace(/'/g,'')] = +v; });
-Object.assign(tbl, seen);
+lines.forEach(l => {
+  const parts = l.split(':');
+  const key = parts[0].replace(/'/g, '');
+  tbl[key] = {
+    wr: +parts[1],
+    elapsed: parts.length > 2 ? +parts[2] : null,
+    fogPct: parts.length > 3 ? +parts[3] : null,
+  };
+});
 
 // Re-emit in canonical boxedsim.js order so the block is stable/diffable.
 const ordered = [];
@@ -38,7 +45,7 @@ for (let i = 0; i < ids.length; i++)
   for (let j = i + 1; j < ids.length; j++) {
     const key = ids[i] + '_' + ids[j];
     if (tbl[key] == null) { console.error('MISSING: ' + key); continue; }
-    ordered.push(`'${key}':${tbl[key]}`);
+    ordered.push(`'${key}':${tbl[key].wr}`);
   }
 
 let block = 'const MATCHUPS = {\n';
@@ -47,18 +54,41 @@ for (let i = 0; i < ordered.length; i += 5)
 block += '};';
 console.log(block);
 
-// Per-fighter average win rate.
+// Per-fighter stats: average win rate, average fight time, fog engagement %.
 function odds(a, b) {
-  if (tbl[a + '_' + b] != null) return tbl[a + '_' + b];
-  if (tbl[b + '_' + a] != null) return 100 - tbl[b + '_' + a];
+  if (tbl[a + '_' + b] != null) return tbl[a + '_' + b].wr;
+  if (tbl[b + '_' + a] != null) return 100 - tbl[b + '_' + a].wr;
   return 50;
 }
-const avg = {};
-ids.forEach(id => avg[id] = []);
-for (let i = 0; i < ids.length; i++)
-  for (let j = 0; j < ids.length; j++)
-    if (i !== j) avg[ids[i]].push(odds(ids[i], ids[j]));
-const summary = ids.map(id => ({ id, wr: Math.round(avg[id].reduce((s,x)=>s+x,0)/avg[id].length*10)/10 }))
-                   .sort((a,b) => b.wr - a.wr);
-console.error('\n--- per-fighter average win rate ---');
-summary.forEach(s => console.error(`  ${s.id.padEnd(12)} ${s.wr}%`));
+const avg = {}, elapsedBuf = {}, fogBuf = {};
+ids.forEach(id => { avg[id] = []; elapsedBuf[id] = []; fogBuf[id] = []; });
+for (let i = 0; i < ids.length; i++) {
+  for (let j = 0; j < ids.length; j++) {
+    if (i === j) continue;
+    avg[ids[i]].push(odds(ids[i], ids[j]));
+  }
+}
+for (let i = 0; i < ids.length; i++) {
+  for (let j = i + 1; j < ids.length; j++) {
+    const key = ids[i] + '_' + ids[j];
+    const row = tbl[key];
+    if (!row) continue;
+    if (row.elapsed != null) { elapsedBuf[ids[i]].push(row.elapsed); elapsedBuf[ids[j]].push(row.elapsed); }
+    if (row.fogPct  != null) { fogBuf[ids[i]].push(row.fogPct);  fogBuf[ids[j]].push(row.fogPct);  }
+  }
+}
+const mean = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : null;
+const summary = ids.map(id => ({
+  id,
+  wr:      Math.round(mean(avg[id]) * 10) / 10,
+  elapsed: elapsedBuf[id].length ? Math.round(mean(elapsedBuf[id]) * 10) / 10 : null,
+  fog:     fogBuf[id].length     ? Math.round(mean(fogBuf[id]))             : null,
+})).sort((a, b) => b.wr - a.wr);
+
+console.error('\n--- per-fighter stats ---');
+console.error('  ' + 'fighter'.padEnd(14) + 'win%'.padEnd(8) + 'avg time'.padEnd(12) + 'fog%');
+summary.forEach(s => {
+  const elapsed = s.elapsed != null ? s.elapsed.toFixed(1) + 's' : '?';
+  const fog = s.fog != null ? s.fog + '%' : '?';
+  console.error(`  ${s.id.padEnd(14)}${String(s.wr + '%').padEnd(8)}${elapsed.padEnd(12)}${fog}`);
+});
