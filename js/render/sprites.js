@@ -1125,36 +1125,32 @@ function drawFighter(f) {
   ctx.fillStyle = f.color;
   // All fighters rotate to face the enemy except during a dash, where they
   // follow velocity so the sprite reads the direction of the charge.
-  let rotatedForShape = false;
-  if (f.rotates) {
-    let facing;
-    const isDashing = f.dashTimer > 0 || f.iaiStrike > 0;
-    if (isDashing) {
-      const sp = Math.hypot(f.vx, f.vy);
-      facing = sp > 5 ? Math.atan2(f.vy, f.vx) : (f.lastFacing || 0);
-    } else {
-      const enemy = f.team === 'red' ? game.blue : game.red;
-      facing = (enemy && !enemy.dead)
-        ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
-        : (f.lastFacing || 0);
-    }
-    f.lastFacing = facing;
-    ctx.save();
-    // Never let a sprite go upside-down. A sprite's forward is its local +x.
-    // If `facing` points into the left half (cos < 0), rotating there would
-    // invert the sprite — so instead mirror it horizontally and rotate by the
-    // reflected angle. The sprite stays right-side-up, tilts at most ±90°, and
-    // still aims correctly (Archer's bow, Cannoneer's barrel still track).
-    if (Math.cos(facing) < 0) {
-      ctx.scale(-1, 1);
-      ctx.rotate(Math.PI - facing);
-    } else {
-      ctx.rotate(facing);
-    }
-    rotatedForShape = true;
+  let facing;
+  const isDashing = f.dashTimer > 0 || f.iaiStrike > 0;
+  if (isDashing) {
+    const sp = Math.hypot(f.vx, f.vy);
+    facing = sp > 5 ? Math.atan2(f.vy, f.vx) : (f.lastFacing || 0);
+  } else {
+    const enemy = f.team === 'red' ? game.blue : game.red;
+    facing = (enemy && !enemy.dead)
+      ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
+      : (f.lastFacing || 0);
+  }
+  f.lastFacing = facing;
+  ctx.save();
+  // Never let a sprite go upside-down. A sprite's forward is its local +x.
+  // If `facing` points into the left half (cos < 0), rotating there would
+  // invert the sprite — so instead mirror it horizontally and rotate by the
+  // reflected angle. The sprite stays right-side-up, tilts at most ±90°, and
+  // still aims correctly (Archer's bow, Cannoneer's barrel still track).
+  if (Math.cos(facing) < 0) {
+    ctx.scale(-1, 1);
+    ctx.rotate(Math.PI - facing);
+  } else {
+    ctx.rotate(facing);
   }
   drawShape(ctx, f);
-  if (rotatedForShape) ctx.restore();
+  ctx.restore();
 
   // Reaper sweep — full 360° blood-colored ring with rotating blade
   if (f.ability === 'sweep' && f.sweepTimer > 0) {
