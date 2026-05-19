@@ -37,12 +37,12 @@ function fireAbility(f, enemy) {
         const spread = 0.10;
         for (let i = 0; i < 4; i++) {
           const a2 = ang + (i - 1.5) * spread;
-          game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*280, vy:Math.sin(a2)*280, team:f.team, dmg:7, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
+          game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*280, vy:Math.sin(a2)*280, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
         }
         // visual cue: green particle burst at the archer
         spawnParticles(f.x, f.y, 8, '#3dff8a', 'streak');
       } else {
-        game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*280, vy:Math.sin(ang)*280, team:f.team, dmg:7, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
+        game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*280, vy:Math.sin(ang)*280, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
       }
       break;
     }
@@ -83,7 +83,7 @@ function fireAbility(f, enemy) {
         game.projectiles.push({
           x: f.x, y: f.y,
           vx: Math.cos(a) * 120, vy: Math.sin(a) * 120,
-          team: f.team, dmg: 11, life: 9,
+          team: f.team, dmg: f.dmg, life: 9,
           kind: 'orb', size: 6, homing: 480,
           noEdgeDespawn: true,
           spin: 0,
@@ -185,7 +185,7 @@ function fireAbility(f, enemy) {
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(ang) * 280, vy: Math.sin(ang) * 280,
-        team: f.team, dmg: 11, life: 4.5,
+        team: f.team, dmg: f.dmg, life: 4.5,
         kind: 'hex', size: 5, homing: 60,
         bounces: 5,
         spin: 0,
@@ -249,7 +249,7 @@ function resolveAim(f) {
   if (f.aimAbility === 'lightning') {
     // Aim is taken at the moment of release, not at the start of the windup
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
-    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:18, life:2.2, kind:'lightning', size:5, homing:70, cruise:200 });
+    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:f.dmg, life:2.2, kind:'lightning', size:5, homing:70, cruise:200 });
     spawnParticles(f.x, f.y, 8, '#ffe83d', 'cross');
     sfx('lightning', null, f.x);
   } else if (f.aimAbility === 'cannon') {
@@ -275,7 +275,7 @@ function resolveAim(f) {
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(a) * speed, vy: Math.sin(a) * speed,
-        team: f.team, dmg: COIN_DMG, life: 2.4,
+        team: f.team, dmg: f.dmg, life: 2.4,
         kind: 'coin', size: 5, homing: homing || 0, spin: 0,
         cruise: speed,   // re-normalised to each frame so homing can't stall it
       });
@@ -307,7 +307,7 @@ function resolveAim(f) {
         game.projectiles.push({
           x: f.x, y: f.y,
           vx: Math.cos(a) * 200, vy: Math.sin(a) * 200,
-          team: f.team, dmg: COIN_DMG, life: 2.6,
+          team: f.team, dmg: f.dmg, life: 2.6,
           kind: 'coin', size: 5, homing: 0, spin: 0,
           cruise: 200,   // re-normalised each frame so the converge can't stall
           // delayed homing — flies out free, then hunts after novaArm

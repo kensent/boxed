@@ -682,10 +682,6 @@ const FIXED_DT = 1 / 60;
 const SKEL_HP = 18;
 const MELEE_SKEL_IFRAME = 0.35;
 
-// Gambler WILDCARD: damage of one thrown coin. Every die face throws coins, so
-// this is the single lever for the Gambler's overall power. Tune toward ~50%.
-const COIN_DMG = 5;
-
 // Hunter CRIPPLING HOOK: when a hook connects, the wounded enemy is STUNNED
 // for this long — frozen, unable to use their ability. This is the Hunter's
 // answer to single-hit counters: a stunned Reaper can't spin, a stunned Jester
@@ -1095,7 +1091,7 @@ function step(dt) {
           game.projectiles.push({
             x: f.x, y: f.y,
             vx: Math.cos(a) * s.speed, vy: Math.sin(a) * s.speed,
-            team: f.team, dmg: COIN_DMG, life: 2.4,
+            team: f.team, dmg: f.dmg, life: 2.4,
             kind: 'coin', size: 5, homing: s.homing || 0, spin: 0,
             cruise: s.speed,   // re-normalised each frame so homing can't stall it
           });
