@@ -39,12 +39,16 @@
 // === VICTORY QUOTES ==========================================================
 // Cheesy one-liners keyed 'winner_loser'. showWinnerOverlay() picks the entry
 // matching the actual outcome; falls back to '_default_' if missing.
+//
+// Every quote must do two things at once: be cheesy/witty AND sound like the
+// character who says it. A quote that's only clever is wrong. A quote that's
+// only in-voice is wrong. Both, always.
 // ============================================================================
 const VICTORY_QUOTES = {
 
   // PRIEST wins
   'priest_berserker':   "Rage is a prayer too. Just not the answered kind.",
-  'priest_wizard':      "The spellbook had no chapter on this.",
+  'priest_wizard':      "Spells are borrowed power. Mine is given.",
   'priest_knight':      "All that armor. Still no shelter.",
   'priest_sapper':      "The Lord works in mysterious ways. Mostly explosions.",
   'priest_archer':      "God's aim is better.",
@@ -55,16 +59,16 @@ const VICTORY_QUOTES = {
   'priest_reaper':      "Even death has a god.",
   'priest_ronin':       "A code of honor is admirable. A code of honor from God is binding.",
   'priest_witch':       "A curse is just a prayer that went wrong.",
-  'priest_hunter':      "Patient, precise, lethal. So is divine judgment.",
+  'priest_hunter':      "You track. God watches.",
   'priest_warlock':     "You've been taking life for so long you forgot someone gives it.",
   'priest_gambler':     "God doesn't gamble. You should've known.",
 
   // BERSERKER wins
   'berserker_priest':      "Pray faster next time.",
-  'berserker_wizard':      "Big brain. Bigger axe.",
+  'berserker_wizard':      "Big brain. Bigger fists.",
   'berserker_knight':      "You brought a fortress to a footrace.",
   'berserker_sapper':      "Your traps needed time. I didn't.",
-  'berserker_archer':      "You ran out of arena before I ran out of rage.",
+  'berserker_archer':      "Arrows slow me down. Briefly.",
   'berserker_jester':      "Blink all you want. I'm everywhere.",
   'berserker_cannoneer':   "No windup. Just up.",
   'berserker_duelist':     "Counter this.",
@@ -73,7 +77,7 @@ const VICTORY_QUOTES = {
   'berserker_ronin':       "Preparation is for people who have time.",
   'berserker_witch':       "You hexed me. I didn't notice.",
   'berserker_hunter':      "The hook was still flying when I arrived.",
-  'berserker_warlock':     "Attrition only works if I slow down.",
+  'berserker_warlock':     "Slow poison. I wasn't.",
   'berserker_gambler':     "The dice never hit the floor.",
 
   // WIZARD wins
@@ -96,17 +100,17 @@ const VICTORY_QUOTES = {
   // KNIGHT wins
   'knight_priest':      "God's on your side? I'm on your doorstep.",
   'knight_berserker':   "Speed's impressive until it runs into a wall.",
-  'knight_wizard':      "Plate armor: orb repellent certified.",
+  'knight_wizard':      "Magic is impressive against people without plate armor.",
   'knight_sapper':      "The patience of a saint. The pace of a charge.",
-  'knight_archer':      "You ran out of arena.",
+  'knight_archer':      "The wall at the end was me.",
   'knight_jester':      "Blink behind me. I'll turn around.",
-  'knight_cannoneer':   "The biggest gun in the room needs time. I didn't give it.",
+  'knight_cannoneer':   "You had one shot. I had one stride.",
   'knight_duelist':     "You were a hair faster. I was a lunge ahead.",
   'knight_necromancer': "I've faced worse. Much worse. This wasn't worse.",
   'knight_reaper':      "The harvest found no crop.",
-  'knight_ronin':       "One stride. One lunge. One winner.",
+  'knight_ronin':       "You brought a sword. I brought more sword.",
   'knight_witch':       "I wore your curse like it was the armor.",
-  'knight_hunter':      "The hook needs a soft target.",
+  'knight_hunter':      "You reeled in a wall.",
   'knight_warlock':     "A siege without a gate.",
   'knight_gambler':     "Your dice said no.",
 
