@@ -43,6 +43,9 @@
 // Every quote must do two things at once: be cheesy/witty AND sound like the
 // character who says it. A quote that's only clever is wrong. A quote that's
 // only in-voice is wrong. Both, always.
+//
+// Don't pull punches. These are victory quotes — the winner just ended
+// someone. The lines should be unhinged enough to match that energy.
 // ============================================================================
 const VICTORY_QUOTES = {
 
