@@ -150,20 +150,20 @@ const VICTORY_QUOTES = {
 
   // JESTER wins
   'jester_priest':      "God was watching. Just not fast enough.",
-  'jester_berserker':   "Can't tackle what isn't there.",
+  'jester_berserker':   "You blinked. Wait, no. That was me.",
   'jester_wizard':      "Behind you. Behind you. Behind you.",
   'jester_knight':      "Lunge at empty air. I'll be back.",
-  'jester_sapper':      "The mine couldn't arm. I was already gone.",
+  'jester_sapper':      "Blink. Blink. Boom? No. Blink.",
   'jester_archer':      "Every arrow landed where I used to be.",
-  'jester_cannoneer':   "One shot. Missed. I had twelve blinks.",
-  'jester_duelist':     "Counter-thrust into nothing.",
-  'jester_necromancer': "Even skeletons can't follow a blink.",
+  'jester_cannoneer':   "One shot. Twelve places I wasn't.",
+  'jester_duelist':     "Great form. I wasn't there to see it.",
+  'jester_necromancer': "I blinked into the skeleton. Out the other side. Hi.",
   'jester_reaper':      "Turns out jokes can kill. Who knew.",
-  'jester_ronin':       "A ghost image is not a body.",
+  'jester_ronin':       "Good swing. Wrong jester.",
   'jester_witch':       "Marked me. Still couldn't hit me.",
   'jester_hunter':      "Hook landed. On air.",
   'jester_warlock':     "Line of sight. I don't believe in it.",
-  'jester_gambler':     "Your dice said no. My dodge said yes.",
+  'jester_gambler':     "Rolled a six. Still missed.",
 
   // CANNONEER wins
   'cannoneer_priest':      "Lightning stings. Cannonballs conclude.",
