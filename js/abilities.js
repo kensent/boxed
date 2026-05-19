@@ -133,7 +133,7 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'riposte': {
-      // Short forward lunge: 14 dmg on contact, plus 0.25s parry window at the start
+      // Short forward lunge: f.dmg on contact, plus 0.25s parry window at the start
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
       f.vx = Math.cos(ang) * f.speed * 2.2;
       f.vy = Math.sin(ang) * f.speed * 2.2;
@@ -153,7 +153,7 @@ function fireAbility(f, enemy) {
         vx: 0, vy: 0,
         // Real HP: damage now goes through damageSkeleton() with each
         // attacker's true dmg, so this is a meaningful pool. Tune via SKEL_HP.
-        team: f.team, hp: SKEL_HP, maxHp: SKEL_HP, dmg: 8, size: 8,
+        team: f.team, hp: SKEL_HP, maxHp: SKEL_HP, dmg: f.dmg, size: 8,
         attackCd: 0.5, spin: 0, hitCd: 0, flash: 0,
         chargeTimer: 0, chargeHit: false,
       });
