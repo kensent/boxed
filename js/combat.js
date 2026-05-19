@@ -45,7 +45,7 @@ function damage(target, dmg, srcKind, src) {
   }
   if (target.ability === 'blink' && target.dodgeReady) {
     target.dodgeReady = false;
-    target.dodgeTimer = 6.0;
+    target.dodgeTimer = 5.5;
     target.dodgeInvuln = 0.3;
     target.negateFlash = 0.25;
     spawnParticles(target.x, target.y, 8, '#e8d8b8', 'spark');
