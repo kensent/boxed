@@ -37,12 +37,12 @@ function fireAbility(f, enemy) {
         const spread = 0.10;
         for (let i = 0; i < 4; i++) {
           const a2 = ang + (i - 1.5) * spread;
-          game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*280, vy:Math.sin(a2)*280, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
+          game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*290, vy:Math.sin(a2)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
         }
         // visual cue: green particle burst at the archer
         spawnParticles(f.x, f.y, 8, '#3dff8a', 'streak');
       } else {
-        game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*280, vy:Math.sin(ang)*280, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
+        game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*290, vy:Math.sin(ang)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
       }
       break;
     }
