@@ -153,11 +153,9 @@ function fireAbility(f, enemy) {
         vx: 0, vy: 0,
         // Real HP: damage now goes through damageSkeleton() with each
         // attacker's true dmg, so this is a meaningful pool. Tune via SKEL_HP.
-        team: f.team, hp: SKEL_HP, maxHp: SKEL_HP, dmg: 6, size: 8,
+        team: f.team, hp: SKEL_HP, maxHp: SKEL_HP, dmg: 4, size: 8,
         attackCd: 0, spin: 0, hitCd: 0, flash: 0,
       });
-      spawnParticles(f.x, f.y, 14, '#e8e0d0', 'shard');
-      spawnParticles(f.x, f.y, 8, '#3a2a4a', 'smoke');
       break;
     }
     case 'sweep': {

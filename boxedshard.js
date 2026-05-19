@@ -49,7 +49,7 @@ function loadEngine() {
 
 const engine = loadEngine();
 const ids = engine.FIGHTERS.map(f => f.id);
-const N = 300;
+const N = 500;
 
 function winRate(a, b, salt) {
   let wins = 0;

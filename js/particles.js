@@ -6,6 +6,26 @@
 // ============================================================================
 
 function spawnFloat(x, y, text, color) { game.floatTexts.push({ x, y, vy:-40, life:0.8, text, color }); }
+// spawnBoneBurst — evenly-spaced ring of fast bone shards + smoke core.
+// Reads as an explosion, not a random scatter. Called when a Necromancer
+// skeleton's on-death burst hits a nearby enemy.
+function spawnBoneBurst(x, y) {
+  const N = 5;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const speed = 180 + vrng() * 80;
+    game.particles.push({
+      x, y,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      life: 0.4 + vrng() * 0.15,
+      color: '#e8e0d0',
+      style: 'shard',
+      size: 3 + vrng() * 2,
+      rot: a, vrot: 0,
+    });
+  }
+}
 // Heal floats ("+N") are tinted to the healed fighter's team so you can tell
 // WHO healed — but lightened, so they read distinct from that team's
 // (saturated) damage numbers. Used by every heal float for consistency.

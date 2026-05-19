@@ -1011,6 +1011,40 @@ function step(dt) {
           f.iaiTrail = { x1: startX, y1: startY, x2: f.x, y2: f.y };
           spawnParticles(f.x, f.y, 20, '#e8c020', 'streak');
           spawnParticles(startX, startY, 12, '#e8c020', 'streak');
+          // Cleave everything along the dash line — skeletons and the enemy
+          // fighter if they fall within the slash width of the path segment.
+          const sdx = f.x - startX, sdy = f.y - startY;
+          const sLen2 = sdx*sdx + sdy*sdy;
+          const segDist = (px, py) => {
+            if (sLen2 === 0) return Math.hypot(px - startX, py - startY);
+            const t = Math.max(0, Math.min(1, ((px-startX)*sdx + (py-startY)*sdy) / sLen2));
+            return Math.hypot(px - (startX + t*sdx), py - (startY + t*sdy));
+          };
+          const slashReach = f.size + 10;
+          game.skeletons = game.skeletons.filter(sk => {
+            if (sk.team === f.team) return true;
+            if (segDist(sk.x, sk.y) < slashReach + sk.size) {
+              // forceBurst=true: Ronin passed through the skeleton so burst always fires
+              if (damageSkeleton(sk, f.dmg, true)) return false;
+            }
+            return true;
+          });
+          // Mines along the dash path detonate on the Ronin
+          game.mines = game.mines.filter(m => {
+            if (m.team === f.team || m.armed > 0) return true;
+            if (segDist(m.x, m.y) < f.size + m.size + 6) {
+              damage(f, m.dmg);
+              spawnParticles(m.x, m.y, 12, '#3a2a1a', 'smoke');
+              spawnParticles(m.x, m.y, 10, '#ff8c1a', 'shard');
+              return false;
+            }
+            return true;
+          });
+          if (!enemy.dead && segDist(enemy.x, enemy.y) < slashReach + enemy.size) {
+            damage(enemy, 35, undefined, f);
+            f.iaiHit = true;
+            f.cdTimer = f.cd * 0.5;
+          }
         }
       } else if (f.iaiStrike > 0) {
         f.iaiStrike -= dt;
@@ -1293,7 +1327,7 @@ function step(dt) {
   // Skeletons (Necromancer minions) — slow persistent melee.
   // damageSkeleton(): the ONE path all damage to a skeleton goes through. Real
   // damage numbers, a damage float, death + Bone Ward. Returns true if killed.
-  function damageSkeleton(sk, dmg) {
+  function damageSkeleton(sk, dmg, forceBurst) {
     sk.hp -= dmg;
     sk.flash = 0.12;
     // Damage float over the skeleton, same style as fighter hits.
@@ -1301,15 +1335,15 @@ function step(dt) {
                sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
     spawnParticles(sk.x, sk.y, 4, sk.team === 'red' ? '#ff6b6b' : '#6bb6ff', 'spark');
     if (sk.hp <= 0) {
-      // Bone Ward: the owning Necromancer heals 4 hp when its skeleton dies.
-      const owner = sk.team === 'red' ? red : blue;
-      if (owner.ability === 'raise' && !owner.dead) {
-        owner.hp = Math.min(owner.maxHp, owner.hp + 4);
-        sfx('heal', null, owner.x);
-        spawnFloat(owner.x, owner.y - owner.size, '+4', healColor(owner));
+      // Bone Burst: shards erupt on death — any enemy within 55px takes 10 dmg.
+      // Punishes melee fighters rushing in to kill skeletons; ranged killers are safe.
+      const enemy = sk.team === 'red' ? blue : red;
+      if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
+        damage(enemy, 11, 'bone');
+        spawnBoneBurst(sk.x, sk.y);
+        sfx('boneBurst', null, sk.x);
       }
-      spawnParticles(sk.x, sk.y, 10, '#e8e0d0', 'shard');
-      spawnParticles(sk.x, sk.y, 6, '#3a2a4a', 'smoke');
+      spawnParticles(sk.x, sk.y, 4, '#e8e0d0', 'shard');
       return true;
     }
     return false;
@@ -1368,13 +1402,15 @@ function step(dt) {
     });
   });
 
-  // Projectiles — each carries its own real dmg. A short i-frame stops a slow
-  // orb lingering on a skeleton from draining it every frame.
+  // Projectiles — each carries its own real dmg. Orbs hover in place so they
+  // need the full MELEE_SKEL_IFRAME to avoid draining every frame; fast
+  // pass-through projectiles (coins, arrows, etc.) use a minimal 1-frame
+  // guard so rapid volleys (e.g. Fortune's Barrage) can each land.
   game.projectiles.forEach(p => {
     game.skeletons = game.skeletons.filter(sk => {
       if (sk.team === p.team || sk.hitCd > 0) return true;
       if (dist(p, sk) < sk.size + p.size) {
-        sk.hitCd = MELEE_SKEL_IFRAME;
+        sk.hitCd = p.kind === 'orb' ? MELEE_SKEL_IFRAME : 0.05;
         if (damageSkeleton(sk, p.dmg)) return false;
       }
       return true;
