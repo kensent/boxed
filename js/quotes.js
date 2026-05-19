@@ -6,19 +6,19 @@ const VICTORY_QUOTES = {
 
   // PRIEST wins
   'priest_berserker':   "Rage is a prayer too. Just not the answered kind.",
-  'priest_wizard':      "Even a genius kneels before the divine.",
-  'priest_knight':      "Even the armored kneel in the end.",
+  'priest_wizard':      "The spellbook had no chapter on this.",
+  'priest_knight':      "All that armor. Still no shelter.",
   'priest_sapper':      "The Lord works in mysterious ways. Mostly explosions.",
   'priest_archer':      "God's aim is better.",
-  'priest_jester':      "The joke was on you. Literally.",
+  'priest_jester':      "God has seen every trick. This included.",
   'priest_cannoneer':   "The heavens have better artillery.",
-  'priest_duelist':     "Counter-thrust? Try divine intervention.",
-  'priest_necromancer': "The undead fear the divine. As they should.",
+  'priest_duelist':     "You've spent a lifetime perfecting your form. There's only one perfect being. God.",
+  'priest_necromancer': "Rest. I insist.",
   'priest_reaper':      "Even death has a god.",
-  'priest_ronin':       "Honor is noble. Faith is faster.",
+  'priest_ronin':       "A code of honor is admirable. A code of honor from God is binding.",
   'priest_witch':       "A curse is just a prayer that went wrong.",
-  'priest_hunter':      "You can't hook what heaven holds.",
-  'priest_warlock':     "You can't drain what's already full of grace.",
+  'priest_hunter':      "Patient, precise, lethal. So is divine judgment.",
+  'priest_warlock':     "You've been taking life for so long you forgot someone gives it.",
   'priest_gambler':     "God doesn't gamble. You should've known.",
 
   // BERSERKER wins
