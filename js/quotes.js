@@ -1,3 +1,41 @@
+// === FIGHTER VOICE BRIEFS =====================================================
+// One-line character identity for each fighter. Use these as the filter when
+// writing or reviewing victory quotes — every quote should sound like its speaker.
+//
+// PRIEST      Divine authority. God is on my side and I speak for God. Calm,
+//             slightly condescending, theological reframing of everything.
+// BERSERKER   Pure instinct. Zero words wasted. Doesn't explain or justify.
+//             Quotes are grunts with punctuation.
+// WIZARD      Intellectual arrogance. Opponents are solved problems. Academic
+//             framing, maximum smugness, never raises his voice.
+// KNIGHT      Stoic and direct. No flourish, no ceremony. Just armor, reach,
+//             and result.
+// SAPPER      Deadpan and patient. Everything was a trap from the start.
+//             Dark humor, zero urgency.
+// ARCHER      Light and quick. Distance is home. Confident without being
+//             cruel — more amused than arrogant.
+// JESTER      Chaotic and playful. Never serious. Trickster who thinks death
+//             is a punchline.
+// CANNONEER   One-shot mentality. Slow, heavy, inevitable. Quietly confident
+//             in the big play.
+// DUELIST     Elegant and formal. Combat as art. Slightly theatrical, never
+//             crude.
+// NECROMANCER Cold and strategic. Death is a resource. Army-minded, clinical,
+//             nothing personal.
+// REAPER      Patient and inevitable. Everything feeds the harvest eventually.
+//             Unhurried.
+// RONIN       Minimal and decisive. One opening, one strike. Fewer words than
+//             anyone.
+// WITCH       Cunning and patient. The curse was already working before you
+//             noticed. Quietly sinister.
+// HUNTER      Practical and methodical. The prey always gets reeled in.
+//             Matter-of-fact, no gloating.
+// WARLOCK     Long-game confidence. Slow corruption, total patience. You were
+//             already losing before it started.
+// GAMBLER     Self-aware chaos. Knows the odds were bad and did it anyway.
+//             Breezy, never takes themselves seriously.
+// =============================================================================
+
 // === VICTORY QUOTES ==========================================================
 // Cheesy one-liners keyed 'winner_loser'. showWinnerOverlay() picks the entry
 // matching the actual outcome; falls back to '_default_' if missing.
