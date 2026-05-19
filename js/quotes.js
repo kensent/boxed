@@ -234,7 +234,7 @@ const VICTORY_QUOTES = {
   'reaper_gambler':     "The house always wins. So does the harvest.",
 
   // RONIN wins
-  'ronin_priest':      "The lightning was fast. The iai was faster.",
+  'ronin_priest':      "The lightning was fast. I was faster.",
   'ronin_berserker':   "You charged into the swing.",
   'ronin_wizard':      "The shield held. Once.",
   'ronin_knight':      "Reach matters.",
@@ -242,9 +242,9 @@ const VICTORY_QUOTES = {
   'ronin_archer':      "Arrows lost to a single stroke.",
   'ronin_jester':      "You chose the worst moment.",
   'ronin_cannoneer':   "Half a second. All the difference.",
-  'ronin_duelist':     "More reach. More weight. Better outcome.",
+  'ronin_duelist':     "Longer blade. Shorter fight.",
   'ronin_necromancer': "One cut. Cleared the room.",
-  'ronin_reaper':      "No harvest if the fight ends in one blow.",
+  'ronin_reaper':      "Ended before the harvest began.",
   'ronin_witch':       "The curse was noted. Briefly.",
   'ronin_hunter':      "You pulled me closer. Bad idea.",
   'ronin_warlock':     "Patient. Then decisive.",
