@@ -302,7 +302,7 @@ const VICTORY_QUOTES = {
   'warlock_gambler':     "The drain doesn't care what you rolled.",
 
   // GAMBLER wins
-  'gambler_priest':      "God may not gamble. But today luck worked out.",
+  'gambler_priest':      "Apparently luck works on Sundays too.",
   'gambler_berserker':   "Rolled max pips. Didn't see that coming.",
   'gambler_wizard':      "Every bet pays if you make enough of them.",
   'gambler_knight':      "The odds were long. Isn't that the point?",
@@ -313,9 +313,9 @@ const VICTORY_QUOTES = {
   'gambler_duelist':     "One deflection. Six more coming.",
   'gambler_necromancer': "Even the skeleton was a roll.",
   'gambler_reaper':      "Even the reaper can't harvest a coin.",
-  'gambler_ronin':       "A long wind-up is three rolls worth of coins.",
+  'gambler_ronin':       "By the time you swung, I'd rolled four times.",
   'gambler_witch':       "The curse improved my odds.",
-  'gambler_hunter':      "The hook needed time. The coins didn't ask.",
+  'gambler_hunter':      "Best fisherman I've ever beaten.",
   'gambler_warlock':     "Instant luck beats slow corruption.",
 
   '_default_': "Another day, another fight.",
