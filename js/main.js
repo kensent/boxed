@@ -39,6 +39,12 @@ function showWinnerOverlay() {
   const teamHex = w.team === 'red' ? '#ff2e2e' : '#2e9eff';
   const name = document.getElementById('winner-name');
   if (name) { name.textContent = w.name; name.style.color = teamColor; }
+  const loser = game.winner === game.red ? game.blue : game.red;
+  const quoteEl = document.getElementById('winner-quote');
+  if (quoteEl) {
+    const key = w.id + '_' + loser.id;
+    quoteEl.textContent = VICTORY_QUOTES[key] || VICTORY_QUOTES['_default_'] || '';
+  }
   const eyebrow = document.getElementById('winner-eyebrow');
   if (eyebrow) eyebrow.style.color = teamColor;
   // Draw the victor's actual sprite into the overlay canvas

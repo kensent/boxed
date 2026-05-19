@@ -297,6 +297,13 @@
     65%  { transform: scale(0.9); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
   }
+  .winner-quote {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    opacity: 0.55; font-style: italic;
+    margin-top: 10px; padding: 0 20px; max-width: 240px;
+    text-align: center; line-height: 1.5;
+    animation: winFade 0.4s 0.55s both;
+  }
   header { position: relative; }
   .mute-btn {
     display: block;
@@ -417,6 +424,7 @@
       <div class="winner-eyebrow" id="winner-eyebrow">WINNER</div>
       <canvas class="winner-sprite" id="winner-sprite" width="160" height="160"></canvas>
       <div class="winner-name" id="winner-name">—</div>
+      <div class="winner-quote" id="winner-quote"></div>
     </div>
   </div>
   <div class="controls">
@@ -442,7 +450,7 @@
 <script src="js/audio.js"></script>
 <script src="js/fighters.js"></script>
 <script src="js/matchups.js"></script>
-
+<script src="js/quotes.js"></script>
 
 <script src="js/ui.js"></script>
 
