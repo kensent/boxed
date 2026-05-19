@@ -951,8 +951,8 @@ function step(dt) {
     // Witch mark timer decay
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
 
-    // Warlock: drain beam channel. Ticks 4 dmg every 0.2s while the enemy stays in
-    // range, healing the Warlock (Leech passive ramps the heal fraction 0.5x -> 0.9x).
+    // Warlock: drain beam channel. Ticks f.dmg every 0.2s while the enemy stays in
+    // range, slowing them (ENERVATE passive) and healing f.dmg * 0.35 per tick.
     if (f.drainTimer > 0) {
       f.drainTimer -= dt;
       f.drainElapsed += dt;
@@ -963,12 +963,12 @@ function step(dt) {
           f.drainTimer = 0;
           f.drainTarget = null;
         } else {
+          t.slowTimer = Math.max(t.slowTimer, 0.3); // tethered targets are slowed
           f.drainTickTimer -= dt;
           if (f.drainTickTimer <= 0) {
             f.drainTickTimer = 0.2;
-            damage(t, 3, 'drain');
-            const leechMult = 0.35 + Math.min(0.25, f.drainElapsed / 1.2 * 0.25);
-            f.hp = Math.min(f.maxHp, f.hp + 3 * leechMult);
+            damage(t, f.dmg, 'drain');
+            f.hp = Math.min(f.maxHp, f.hp + f.dmg * 0.35);
             spawnParticles(t.x, t.y, 4, '#c050ff', 'spark');
           }
         }

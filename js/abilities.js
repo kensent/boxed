@@ -212,7 +212,7 @@ function fireAbility(f, enemy) {
     }
     case 'drain': {
       // Warlock: lock a drain beam onto the enemy if within close range. Channels
-      // for 1.2s, ticking 4 dmg every 0.2s and healing the Warlock (Leech passive).
+      // for 1.2s, ticking f.dmg every 0.2s and healing the Warlock (Leech passive).
       // If the enemy is out of range the cast whiffs — we flag it so the cooldown
       // block can retry quickly instead of burning the full 2.2s on a no-op.
       const enemy = f === game.red ? game.blue : game.red;
