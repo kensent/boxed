@@ -129,7 +129,7 @@ function damage(target, dmg, srcKind, src) {
       // Burst ended (or first hit) — start a fresh float. If a previous float
       // is still on screen, spawn ABOVE it so successive bursts stack into a
       // readable column instead of overlapping.
-      let spawnY = target.y - target.size;
+      let spawnY = target.y - FIGHTER_SIZE;
       if (target.dmgFloat && target.dmgFloat.life > 0) {
         spawnY = Math.min(spawnY, target.dmgFloat.y - 16);
       }

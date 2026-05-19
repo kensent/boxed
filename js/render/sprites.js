@@ -29,7 +29,7 @@ function drawStar(c, cx, cy, spikes, outer, inner) {
 
 // Draws a fighter's icon/sprite. Extracted so both the in-arena renderer and
 // the VS intro can use it. `c` is any 2D context; the caller has already
-// translated/rotated into the sprite's local space. Only reads f.size,
+// translated/rotated into the sprite's local space. Only reads FIGHTER_SIZE,
 // f.color, f.accent, f.shape.
 function drawShape(c, f) {
   switch (f.shape) {
@@ -41,35 +41,35 @@ function drawShape(c, f) {
       c.lineCap = 'round';
       // Main shaft (forward-pointing)
       c.beginPath();
-      c.moveTo(-f.size * 0.9, 0);
-      c.lineTo(f.size * 0.55, 0);
+      c.moveTo(-FIGHTER_SIZE * 0.9, 0);
+      c.lineTo(FIGHTER_SIZE * 0.55, 0);
       c.stroke();
       // Crossguard (perpendicular, near orb)
       c.lineWidth = 3;
       c.beginPath();
-      c.moveTo(f.size * 0.3, -f.size * 0.55);
-      c.lineTo(f.size * 0.3, f.size * 0.55);
+      c.moveTo(FIGHTER_SIZE * 0.3, -FIGHTER_SIZE * 0.55);
+      c.lineTo(FIGHTER_SIZE * 0.3, FIGHTER_SIZE * 0.55);
       c.stroke();
       // Glow halo behind orb
       c.fillStyle = `rgba(255,232,61,0.35)`;
       c.beginPath();
-      c.arc(f.size * 0.75, 0, f.size * 0.45, 0, Math.PI * 2);
+      c.arc(FIGHTER_SIZE * 0.75, 0, FIGHTER_SIZE * 0.45, 0, Math.PI * 2);
       c.fill();
       // Orb (bright accent)
       c.fillStyle = f.accent;
       c.beginPath();
-      c.arc(f.size * 0.75, 0, f.size * 0.3, 0, Math.PI * 2);
+      c.arc(FIGHTER_SIZE * 0.75, 0, FIGHTER_SIZE * 0.3, 0, Math.PI * 2);
       c.fill();
       // Inner highlight on orb
       c.fillStyle = '#fff';
       c.beginPath();
-      c.arc(f.size * 0.65, -f.size * 0.1, f.size * 0.1, 0, Math.PI * 2);
+      c.arc(FIGHTER_SIZE * 0.65, -FIGHTER_SIZE * 0.1, FIGHTER_SIZE * 0.1, 0, Math.PI * 2);
       c.fill();
       break;
     }
     case 'axe': {
       // Berserker — clenched fist punching forward (+x). Shape key stays 'axe'.
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       // Thumb — flat rectangle on top of the fist, tucked near the front.
       c.fillStyle = f.color;
       c.beginPath();
@@ -129,7 +129,7 @@ function drawShape(c, f) {
       // arcane sigil glowing on the cover makes it a SPELLBOOK, not just a
       // book. Faceted straight-line geometry, crisp at 64px. Shown front-on,
       // tilted slightly, with a visible page-stack edge and a clasp.
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       // Page stack — a cream slab peeking out behind/below the cover, so the
       // book reads as a thick volume of pages, not a flat card.
       c.fillStyle = '#e8dcc0';
@@ -196,12 +196,12 @@ function drawShape(c, f) {
       // Shield body (kite shape pointing forward)
       c.fillStyle = f.color;
       c.beginPath();
-      c.moveTo(-f.size * 0.65, -f.size * 0.85);
-      c.lineTo(f.size * 0.5, -f.size * 0.7);
-      c.lineTo(f.size * 0.95, 0);
-      c.lineTo(f.size * 0.5, f.size * 0.7);
-      c.lineTo(-f.size * 0.65, f.size * 0.85);
-      c.lineTo(-f.size * 0.55, 0);
+      c.moveTo(-FIGHTER_SIZE * 0.65, -FIGHTER_SIZE * 0.85);
+      c.lineTo(FIGHTER_SIZE * 0.5, -FIGHTER_SIZE * 0.7);
+      c.lineTo(FIGHTER_SIZE * 0.95, 0);
+      c.lineTo(FIGHTER_SIZE * 0.5, FIGHTER_SIZE * 0.7);
+      c.lineTo(-FIGHTER_SIZE * 0.65, FIGHTER_SIZE * 0.85);
+      c.lineTo(-FIGHTER_SIZE * 0.55, 0);
       c.closePath();
       c.fill();
       // Shield rim (lighter highlight)
@@ -210,12 +210,12 @@ function drawShape(c, f) {
       c.stroke();
       // Cross emblem (vertical + horizontal arms)
       c.fillStyle = f.accent;
-      c.fillRect(-f.size * 0.05, -f.size * 0.55, f.size * 0.18, f.size * 1.1);
-      c.fillRect(-f.size * 0.4, -f.size * 0.1, f.size * 0.85, f.size * 0.18);
+      c.fillRect(-FIGHTER_SIZE * 0.05, -FIGHTER_SIZE * 0.55, FIGHTER_SIZE * 0.18, FIGHTER_SIZE * 1.1);
+      c.fillRect(-FIGHTER_SIZE * 0.4, -FIGHTER_SIZE * 0.1, FIGHTER_SIZE * 0.85, FIGHTER_SIZE * 0.18);
       // Central rivet/boss
       c.fillStyle = '#fff';
       c.beginPath();
-      c.arc(f.size * 0.05, 0, f.size * 0.1, 0, Math.PI * 2);
+      c.arc(FIGHTER_SIZE * 0.05, 0, FIGHTER_SIZE * 0.1, 0, Math.PI * 2);
       c.fill();
       break;
     }
@@ -224,7 +224,7 @@ function drawShape(c, f) {
       // things: a dark round body + a lit fuse. The old version had two
       // crossed strap ellipses that read as an ATOM symbol — dropped. Now a
       // plain sphere with a soft highlight (3D read) and the fuse.
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       // Bomb body — dark sphere.
       c.fillStyle = f.color;
       c.beginPath();
@@ -276,50 +276,50 @@ function drawShape(c, f) {
       c.lineWidth = 3.5;
       c.lineCap = 'round';
       c.beginPath();
-      c.arc(0, 0, f.size * 0.85, -Math.PI * 0.45, Math.PI * 0.45);
+      c.arc(0, 0, FIGHTER_SIZE * 0.85, -Math.PI * 0.45, Math.PI * 0.45);
       c.stroke();
       // Bowstring (taut, pulled back to anchor at left)
       c.strokeStyle = '#e0d0a0';
       c.lineWidth = 1.3;
       c.beginPath();
-      const topY = Math.sin(-Math.PI * 0.45) * f.size * 0.85;
-      const botY = Math.sin(Math.PI * 0.45) * f.size * 0.85;
-      const topX = Math.cos(-Math.PI * 0.45) * f.size * 0.85;
-      const botX = Math.cos(Math.PI * 0.45) * f.size * 0.85;
+      const topY = Math.sin(-Math.PI * 0.45) * FIGHTER_SIZE * 0.85;
+      const botY = Math.sin(Math.PI * 0.45) * FIGHTER_SIZE * 0.85;
+      const topX = Math.cos(-Math.PI * 0.45) * FIGHTER_SIZE * 0.85;
+      const botX = Math.cos(Math.PI * 0.45) * FIGHTER_SIZE * 0.85;
       c.moveTo(topX, topY);
-      c.lineTo(-f.size * 0.6, 0);
+      c.lineTo(-FIGHTER_SIZE * 0.6, 0);
       c.lineTo(botX, botY);
       c.stroke();
       // Bow grip wrap (center of bow, lighter color)
       c.strokeStyle = f.accent;
       c.lineWidth = 4;
       c.beginPath();
-      c.moveTo(f.size * 0.85, -f.size * 0.12);
-      c.lineTo(f.size * 0.85, f.size * 0.12);
+      c.moveTo(FIGHTER_SIZE * 0.85, -FIGHTER_SIZE * 0.12);
+      c.lineTo(FIGHTER_SIZE * 0.85, FIGHTER_SIZE * 0.12);
       c.stroke();
       // Arrow shaft
       c.strokeStyle = '#5a4a2a';
       c.lineWidth = 2.2;
       c.lineCap = 'round';
       c.beginPath();
-      c.moveTo(-f.size * 0.6, 0);
-      c.lineTo(f.size * 1.2, 0);
+      c.moveTo(-FIGHTER_SIZE * 0.6, 0);
+      c.lineTo(FIGHTER_SIZE * 1.2, 0);
       c.stroke();
       // Arrowhead
       c.fillStyle = f.accent;
       c.beginPath();
-      c.moveTo(f.size * 1.35, 0);
-      c.lineTo(f.size * 1.05, -4);
-      c.lineTo(f.size * 1.05, 4);
+      c.moveTo(FIGHTER_SIZE * 1.35, 0);
+      c.lineTo(FIGHTER_SIZE * 1.05, -4);
+      c.lineTo(FIGHTER_SIZE * 1.05, 4);
       c.closePath();
       c.fill();
       // Fletching at back (small triangle)
       c.fillStyle = '#c44';
       c.beginPath();
-      c.moveTo(-f.size * 0.6, 0);
-      c.lineTo(-f.size * 0.85, -f.size * 0.18);
-      c.lineTo(-f.size * 0.75, 0);
-      c.lineTo(-f.size * 0.85, f.size * 0.18);
+      c.moveTo(-FIGHTER_SIZE * 0.6, 0);
+      c.lineTo(-FIGHTER_SIZE * 0.85, -FIGHTER_SIZE * 0.18);
+      c.lineTo(-FIGHTER_SIZE * 0.75, 0);
+      c.lineTo(-FIGHTER_SIZE * 0.85, FIGHTER_SIZE * 0.18);
       c.closePath();
       c.fill();
       break;
@@ -327,7 +327,7 @@ function drawShape(c, f) {
     case 'mask': {
       // Jester — a symmetric harlequin diamond mask: red/blue split, jester-cap
       // points along the top. The mask IS the whole sprite (no weapon).
-      const m = f.size * 0.9;   // half-height / half-width of the diamond
+      const m = FIGHTER_SIZE * 0.9;   // half-height / half-width of the diamond
       // Left half — red triangle.
       c.fillStyle = '#ff2e2e';
       c.beginPath();
@@ -361,28 +361,28 @@ function drawShape(c, f) {
       c.stroke();
       // Eye slits — one per half, mirrored.
       c.fillStyle = f.color;
-      c.fillRect(-f.size * 0.5, -f.size * 0.15, f.size * 0.22, 2.5);
-      c.fillRect(f.size * 0.28, -f.size * 0.15, f.size * 0.22, 2.5);
+      c.fillRect(-FIGHTER_SIZE * 0.5, -FIGHTER_SIZE * 0.15, FIGHTER_SIZE * 0.22, 2.5);
+      c.fillRect(FIGHTER_SIZE * 0.28, -FIGHTER_SIZE * 0.15, FIGHTER_SIZE * 0.22, 2.5);
       // Three jester-cap points along the top — left red, center, right blue.
       c.fillStyle = '#ff2e2e';
       c.beginPath();
-      c.moveTo(-f.size * 0.32, -f.size * 0.62);
-      c.lineTo(-f.size * 0.46, -f.size * 1.08);
-      c.lineTo(-f.size * 0.12, -f.size * 0.74);
+      c.moveTo(-FIGHTER_SIZE * 0.32, -FIGHTER_SIZE * 0.62);
+      c.lineTo(-FIGHTER_SIZE * 0.46, -FIGHTER_SIZE * 1.08);
+      c.lineTo(-FIGHTER_SIZE * 0.12, -FIGHTER_SIZE * 0.74);
       c.closePath();
       c.fill();
       c.fillStyle = f.color;
       c.beginPath();
-      c.moveTo(-f.size * 0.13, -f.size * 0.74);
-      c.lineTo(0, -f.size * 1.16);
-      c.lineTo(f.size * 0.13, -f.size * 0.74);
+      c.moveTo(-FIGHTER_SIZE * 0.13, -FIGHTER_SIZE * 0.74);
+      c.lineTo(0, -FIGHTER_SIZE * 1.16);
+      c.lineTo(FIGHTER_SIZE * 0.13, -FIGHTER_SIZE * 0.74);
       c.closePath();
       c.fill();
       c.fillStyle = '#2e9eff';
       c.beginPath();
-      c.moveTo(f.size * 0.12, -f.size * 0.74);
-      c.lineTo(f.size * 0.46, -f.size * 1.08);
-      c.lineTo(f.size * 0.32, -f.size * 0.62);
+      c.moveTo(FIGHTER_SIZE * 0.12, -FIGHTER_SIZE * 0.74);
+      c.lineTo(FIGHTER_SIZE * 0.46, -FIGHTER_SIZE * 1.08);
+      c.lineTo(FIGHTER_SIZE * 0.32, -FIGHTER_SIZE * 0.62);
       c.closePath();
       c.fill();
       break;
@@ -392,7 +392,7 @@ function drawShape(c, f) {
       // wheel. Forward = barrel direction (+x). Composed so the visual mass is
       // centred on the origin and fills the frame. s is scaled up a touch so
       // it fills the frame like the other sprites (raw geometry was ~1.75).
-      const s = f.size * 1.15;
+      const s = FIGHTER_SIZE * 1.15;
       // Wheel — drawn first, behind the barrel, tucked low.
       c.fillStyle = '#3a2a1a';
       c.beginPath();
@@ -445,7 +445,7 @@ function drawShape(c, f) {
       // Duelist — an ornate rapier, the hero of the sprite (RIPOSTE is the
       // thrust). Laid out left-to-right: pommel, grip, swept cup guard, then
       // a long thin blade. Forward = blade tip (+x).
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       // Pommel — ball at the rear.
       c.fillStyle = f.accent;
       c.beginPath();
@@ -493,7 +493,7 @@ function drawShape(c, f) {
       // Necromancer — a purple-glowing skull, centred. No weapon: the skull
       // IS the sprite, and it rhymes with the ability — RAISE SKELETON spawns
       // small skull minions, so the Necromancer reads as the "boss" skull.
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       // Cranium
       c.fillStyle = '#e8e0d0';
       c.beginPath();
@@ -540,7 +540,7 @@ function drawShape(c, f) {
       // s sets the rotor's drawn size. Kept close to the other sprites' extent
       // so the Reaper doesn't read as larger than its actual size-16 hitbox
       // (1.6 made the rotor ~40% bigger on screen than its neighbours).
-      const s = f.size * 1.2;
+      const s = FIGHTER_SIZE * 1.2;
       const drawBlade = () => {
         // One rotor blade, hub -> out -> hooked tip -> back to hub. Built as a
         // filled shape: thick near the hub, tapering, with a hooked point.
@@ -596,7 +596,7 @@ function drawShape(c, f) {
       // STRAIGHT (a real katana's curve is slight; straight reads fine and
       // avoids the scimitar look). Laid out left-to-right, blade ~2/3 of the
       // total length. Cutting edge down. Forward = blade tip (+x).
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       // --- Pommel (kashira) — small end cap ---
       c.fillStyle = "#2a2a2a";
       c.fillRect(-s * 0.95, -s * 0.14, s * 0.07, s * 0.28);
@@ -646,7 +646,7 @@ function drawShape(c, f) {
       // a cloak. The cone has a clean horizontal base so the band stripe sits
       // flush on it — the lean comes only from the drooping tip, not a skewed
       // body. Faceted straight-line geometry so it stays crisp at 64px.
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       const baseY = s * 0.40;                  // cone base / band bottom (shared)
       const bandTopY = s * 0.10;               // band top (shared with cone)
       const half = s * 0.52;                   // cone half-width at the base
@@ -702,7 +702,7 @@ function drawShape(c, f) {
       // time). It's a thick curved talon with a deep open hollow (the hook's
       // catching gap) tapering to one big sharp point. The matter is the claw;
       // the empty hollow inside the curve is what makes it read as a hook.
-      const s = f.size;
+      const s = FIGHTER_SIZE;
       c.save();
       // Recenter in screen space — tuned by eye against the live sprite
       // (bounding-box math kept missing because the thin point skews it).
@@ -770,25 +770,25 @@ function drawShape(c, f) {
       // Hood — a pointed cowl shape, peak leaning forward
       c.fillStyle = f.color;
       c.beginPath();
-      c.moveTo(f.size * 0.95, -f.size * 0.1);          // forward tip / brow point
-      c.quadraticCurveTo(f.size * 0.2, -f.size * 1.05, -f.size * 0.55, -f.size * 0.55); // up over the crown
-      c.quadraticCurveTo(-f.size * 0.95, 0, -f.size * 0.5, f.size * 0.8);  // down the back
-      c.quadraticCurveTo(f.size * 0.1, f.size * 1.0, f.size * 0.85, f.size * 0.45); // along the chin
+      c.moveTo(FIGHTER_SIZE * 0.95, -FIGHTER_SIZE * 0.1);          // forward tip / brow point
+      c.quadraticCurveTo(FIGHTER_SIZE * 0.2, -FIGHTER_SIZE * 1.05, -FIGHTER_SIZE * 0.55, -FIGHTER_SIZE * 0.55); // up over the crown
+      c.quadraticCurveTo(-FIGHTER_SIZE * 0.95, 0, -FIGHTER_SIZE * 0.5, FIGHTER_SIZE * 0.8);  // down the back
+      c.quadraticCurveTo(FIGHTER_SIZE * 0.1, FIGHTER_SIZE * 1.0, FIGHTER_SIZE * 0.85, FIGHTER_SIZE * 0.45); // along the chin
       c.closePath();
       c.fill();
       // Inner shadow of the hood opening (the dark face void)
       c.fillStyle = '#0a0010';
       c.beginPath();
-      c.ellipse(f.size * 0.3, f.size * 0.05, f.size * 0.5, f.size * 0.6, -0.2, 0, Math.PI * 2);
+      c.ellipse(FIGHTER_SIZE * 0.3, FIGHTER_SIZE * 0.05, FIGHTER_SIZE * 0.5, FIGHTER_SIZE * 0.6, -0.2, 0, Math.PI * 2);
       c.fill();
       // Glowing void eye — accent-colored, set inside the hood shadow
-      const eyeGrad = c.createRadialGradient(f.size * 0.42, 0, 0.5, f.size * 0.42, 0, f.size * 0.32);
+      const eyeGrad = c.createRadialGradient(FIGHTER_SIZE * 0.42, 0, 0.5, FIGHTER_SIZE * 0.42, 0, FIGHTER_SIZE * 0.32);
       eyeGrad.addColorStop(0, '#fff');
       eyeGrad.addColorStop(0.4, f.accent);
       eyeGrad.addColorStop(1, 'rgba(192,80,255,0)');
       c.fillStyle = eyeGrad;
       c.beginPath();
-      c.arc(f.size * 0.42, 0, f.size * 0.32, 0, Math.PI * 2);
+      c.arc(FIGHTER_SIZE * 0.42, 0, FIGHTER_SIZE * 0.32, 0, Math.PI * 2);
       c.fill();
       // Leech-tendrils — short curved wisps curling off the back of the hood
       const tw = performance.now() / 420;
@@ -797,9 +797,9 @@ function drawShape(c, f) {
       c.lineCap = 'round';
       for (let i = 0; i < 3; i++) {
         const a = Math.PI * 0.9 + i * 0.42 + Math.sin(tw + i) * 0.12;
-        const bx = Math.cos(a) * f.size * 0.7, by = Math.sin(a) * f.size * 0.7;
+        const bx = Math.cos(a) * FIGHTER_SIZE * 0.7, by = Math.sin(a) * FIGHTER_SIZE * 0.7;
         c.beginPath();
-        c.arc(bx, by, f.size * 0.3, a - 0.4, a + 1.0);
+        c.arc(bx, by, FIGHTER_SIZE * 0.3, a - 0.4, a + 1.0);
         c.stroke();
       }
       break;
@@ -808,7 +808,7 @@ function drawShape(c, f) {
       // Gambler — a single die tilted forward. The face shown reflects the
       // WILDCARD roll: while the die tumbles (aimTimer) the pip count flickers;
       // once it settles it shows the rolled face; at rest it shows a 5.
-      const s = f.size * 0.82;
+      const s = FIGHTER_SIZE * 0.82;
       const TL = { x: -s,        y: -s * 0.7 };
       const TR = { x:  s * 0.6,  y: -s       };
       const BR = { x:  s,        y:  s * 0.7 };
@@ -918,7 +918,7 @@ function drawFighter(f) {
         ctx.translate(ax, ay);
         ctx.fillStyle = `rgba(232,192,32,${aFade})`;
         ctx.beginPath();
-        ctx.arc(0, 0, f.size * 0.9, 0, Math.PI * 2);
+        ctx.arc(0, 0, FIGHTER_SIZE * 0.9, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -930,7 +930,7 @@ function drawFighter(f) {
   ctx.strokeStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(0, 0, f.size + 3, 0, Math.PI * 2);
+  ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
   ctx.stroke();
 
   // readyGlow — marks an armed defensive passive. A soft halo gives it
@@ -938,9 +938,9 @@ function drawFighter(f) {
   // edge the eye actually catches (a glow alone read as too subtle on a phone).
   function readyGlow(rgb) {
     const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
-    const rim = f.size + 10;
+    const rim = FIGHTER_SIZE + 10;
     // Soft glow body
-    const g = ctx.createRadialGradient(0, 0, f.size * 0.55, 0, 0, rim + 3);
+    const g = ctx.createRadialGradient(0, 0, FIGHTER_SIZE * 0.55, 0, 0, rim + 3);
     g.addColorStop(0, `rgba(${rgb},0)`);
     g.addColorStop(0.6, `rgba(${rgb},${(pulse * 0.4).toFixed(3)})`);
     g.addColorStop(1, `rgba(${rgb},0)`);
@@ -974,24 +974,24 @@ function drawFighter(f) {
     ctx.strokeStyle = `rgba(255,255,255,${a * 0.9})`;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(0, 0, f.size + 4, 0, Math.PI * 2);
+    ctx.arc(0, 0, FIGHTER_SIZE + 4, 0, Math.PI * 2);
     ctx.stroke();
   }
 
   // Duelist parry window: bright silver ring — drawn INSIDE the team-colour
-  // border (which sits at f.size + 3) so it reads as on the fighter.
+  // border (which sits at FIGHTER_SIZE + 3) so it reads as on the fighter.
   if (f.ability === 'riposte' && f.parryTimer > 0) {
     const a = f.parryTimer / 0.25;
     ctx.strokeStyle = `rgba(192,192,232,${a * 0.95})`;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(0, 0, f.size + 1, 0, Math.PI * 2);
+    ctx.arc(0, 0, FIGHTER_SIZE + 1, 0, Math.PI * 2);
     ctx.stroke();
     // Inner glow
     ctx.strokeStyle = `rgba(255,255,255,${a * 0.5})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(0, 0, f.size - 2, 0, Math.PI * 2);
+    ctx.arc(0, 0, FIGHTER_SIZE - 2, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -999,14 +999,14 @@ function drawFighter(f) {
   if (f.ability === 'riposte' && f.counterAnim > 0) {
     const progress = 1 - (f.counterAnim / 0.16);
     const alpha = (1 - progress * 0.85).toFixed(2);
-    const thrustLen = f.size + 16;
+    const thrustLen = FIGHTER_SIZE + 16;
     ctx.save();
     ctx.rotate(f.counterDir);
     ctx.lineCap = 'round';
     ctx.strokeStyle = `rgba(192,192,232,${alpha})`;
     ctx.lineWidth = 2 - progress * 1.2;
     ctx.beginPath();
-    ctx.moveTo(f.size + 1, 0);
+    ctx.moveTo(FIGHTER_SIZE + 1, 0);
     ctx.lineTo(thrustLen, 0);
     ctx.stroke();
     ctx.strokeStyle = `rgba(255,255,255,${(+alpha * 0.8).toFixed(2)})`;
@@ -1023,14 +1023,14 @@ function drawFighter(f) {
     const pulse = 0.4 + Math.sin(performance.now() / 100) * 0.3;
     ctx.fillStyle = `rgba(255,50,50,${pulse * 0.4})`;
     ctx.beginPath();
-    ctx.arc(0, 0, f.size + 8, 0, Math.PI * 2);
+    ctx.arc(0, 0, FIGHTER_SIZE + 8, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (f.flash > 0) {
     ctx.fillStyle = 'rgba(255,255,255,' + (f.flash * 4).toFixed(2) + ')';
     ctx.beginPath();
-    ctx.arc(0, 0, f.size + 6, 0, Math.PI * 2);
+    ctx.arc(0, 0, FIGHTER_SIZE + 6, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -1040,7 +1040,7 @@ function drawFighter(f) {
     ctx.strokeStyle = 'rgba(255,255,255,' + ((1 - p) * 0.9).toFixed(2) + ')';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, 0, f.size + 4 + p * 14, 0, Math.PI * 2);
+    ctx.arc(0, 0, FIGHTER_SIZE + 4 + p * 14, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -1059,14 +1059,14 @@ function drawFighter(f) {
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 4]);
       ctx.beginPath();
-      ctx.moveTo(Math.cos(ang) * (f.size + 4), Math.sin(ang) * (f.size + 4));
+      ctx.moveTo(Math.cos(ang) * (FIGHTER_SIZE + 4), Math.sin(ang) * (FIGHTER_SIZE + 4));
       ctx.lineTo(Math.cos(ang) * 200, Math.sin(ang) * 200);
       ctx.stroke();
       ctx.setLineDash([]);
 
       // Growing ember at the barrel tip
-      const tipX = Math.cos(ang) * (f.size + 6);
-      const tipY = Math.sin(ang) * (f.size + 6);
+      const tipX = Math.cos(ang) * (FIGHTER_SIZE + 6);
+      const tipY = Math.sin(ang) * (FIGHTER_SIZE + 6);
       const r = 3 + progress * 6 + pulse * 1.5;
       ctx.fillStyle = `rgba(255,140,26,${0.3 + progress * 0.4})`;
       ctx.beginPath();
@@ -1090,7 +1090,7 @@ function drawFighter(f) {
     const pulse = 0.5 + Math.sin(f.aimTimer * 25) * 0.5;
 
     // Charging halo behind the priest
-    const haloR = f.size + 8 + progress * 6;
+    const haloR = FIGHTER_SIZE + 8 + progress * 6;
     const haloAlpha = 0.15 + progress * 0.35;
     ctx.fillStyle = `rgba(255,232,61,${haloAlpha})`;
     ctx.beginPath();
@@ -1105,7 +1105,7 @@ function drawFighter(f) {
     // Orbiting sparkle orbs
     const orbCount = 3;
     const orbitSpeed = progress * 8 + 2;
-    const orbitR = f.size + 4 + progress * 4;
+    const orbitR = FIGHTER_SIZE + 4 + progress * 4;
     for (let i = 0; i < orbCount; i++) {
       const a = (i / orbCount) * Math.PI * 2 + f.aimTimer * orbitSpeed;
       const ox = Math.cos(a) * orbitR;
@@ -1155,7 +1155,7 @@ function drawFighter(f) {
   // Reaper sweep — full 360° blood-colored ring with rotating blade
   if (f.ability === 'sweep' && f.sweepTimer > 0) {
     const progress = 1 - (f.sweepTimer / 0.3);
-    const ringR = f.size + 14;
+    const ringR = FIGHTER_SIZE + 14;
     // Outer faint ring
     ctx.strokeStyle = 'rgba(170,0,0,0.4)';
     ctx.lineWidth = 2;
@@ -1181,7 +1181,7 @@ function drawFighter(f) {
   // Ronin iai windup — pulsing yellow glow that intensifies as windup completes
   if (f.ability === 'iai' && f.iaiWindup > 0) {
     const progress = 1 - (f.iaiWindup / 0.7); // 0 → 1 as windup completes
-    const glowR = f.size + 8 + progress * 6;
+    const glowR = FIGHTER_SIZE + 8 + progress * 6;
     // Outer glow (pulsing)
     const pulse = 0.5 + 0.5 * Math.sin(progress * Math.PI * 8);
     ctx.strokeStyle = `rgba(232,192,32,${0.3 + pulse * 0.4})`;
@@ -1192,7 +1192,7 @@ function drawFighter(f) {
     // Charging streak particles around the figure
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2 + progress * 4;
-      const rr = f.size + 6 + Math.sin(progress * Math.PI * 6 + i) * 2;
+      const rr = FIGHTER_SIZE + 6 + Math.sin(progress * Math.PI * 6 + i) * 2;
       ctx.fillStyle = `rgba(255,220,60,${0.5 + pulse * 0.5})`;
       ctx.beginPath();
       ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, 1.5, 0, Math.PI * 2);
@@ -1212,20 +1212,20 @@ function drawFighter(f) {
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(f.size * 0.6, 0);
-    ctx.lineTo(f.size + 35, 0);
+    ctx.moveTo(FIGHTER_SIZE * 0.6, 0);
+    ctx.lineTo(FIGHTER_SIZE + 35, 0);
     ctx.stroke();
     // Bright core line
     ctx.strokeStyle = `rgba(255,255,255,${fade})`;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(f.size * 0.6, 0);
-    ctx.lineTo(f.size + 35, 0);
+    ctx.moveTo(FIGHTER_SIZE * 0.6, 0);
+    ctx.lineTo(FIGHTER_SIZE + 35, 0);
     ctx.stroke();
     // Glow at slash tip
     ctx.fillStyle = `rgba(255,232,60,${fade * 0.7})`;
     ctx.beginPath();
-    ctx.arc(f.size + 35, 0, 4, 0, Math.PI * 2);
+    ctx.arc(FIGHTER_SIZE + 35, 0, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -1239,14 +1239,14 @@ function drawFighter(f) {
     if (f.ability === 'riposte') {
       // Duelist — rapier thrust: a thin spike that snaps out then retracts.
       // ctx is already rotated to face the enemy; +x is the thrust direction.
-      const thrustLen = f.size + 6 + (1 - progress) * 22;
+      const thrustLen = FIGHTER_SIZE + 6 + (1 - progress) * 22;
       const alpha = (1 - progress * 0.55).toFixed(2);
       ctx.lineCap = 'round';
       // Blade shaft
       ctx.strokeStyle = `rgba(192,192,232,${alpha})`;
       ctx.lineWidth = 2.5 - progress * 1.5;
       ctx.beginPath();
-      ctx.moveTo(f.size + 2, 0);
+      ctx.moveTo(FIGHTER_SIZE + 2, 0);
       ctx.lineTo(thrustLen, 0);
       ctx.stroke();
       // Bright tip glint
@@ -1259,8 +1259,8 @@ function drawFighter(f) {
     } else {
       // Knight — broad sword swing: curved arc sweeping through 90°.
       const baseAng = -Math.PI * 0.4 + progress * Math.PI * 0.8;
-      const innerR = f.size + 4;
-      const outerR = f.size + 22;
+      const innerR = FIGHTER_SIZE + 4;
+      const outerR = FIGHTER_SIZE + 22;
       ctx.fillStyle = 'rgba(220,230,240,0.85)';
       ctx.beginPath();
       ctx.arc(0, 0, outerR, baseAng - 0.4, baseAng + 0.05);
@@ -1294,6 +1294,6 @@ function drawFighter(f) {
   ctx.fillStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
   ctx.font = 'bold 8px JetBrains Mono';
   ctx.textAlign = 'center';
-  ctx.fillText(f.name, f.x, f.y - f.size - 8);
+  ctx.fillText(f.name, f.x, f.y - FIGHTER_SIZE - 8);
 }
 

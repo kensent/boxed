@@ -748,10 +748,10 @@ function loop() {
 
 function bounce(f, w, h) {
   let hit = false;
-  if (f.x - f.size < 0) { f.x = f.size; f.vx = Math.abs(f.vx); hit = true; }
-  if (f.x + f.size > w) { f.x = w - f.size; f.vx = -Math.abs(f.vx); hit = true; }
-  if (f.y - f.size < 0) { f.y = f.size; f.vy = Math.abs(f.vy); hit = true; }
-  if (f.y + f.size > h) { f.y = h - f.size; f.vy = -Math.abs(f.vy); hit = true; }
+  if (f.x - FIGHTER_SIZE < 0) { f.x = FIGHTER_SIZE; f.vx = Math.abs(f.vx); hit = true; }
+  if (f.x + FIGHTER_SIZE > w) { f.x = w - FIGHTER_SIZE; f.vx = -Math.abs(f.vx); hit = true; }
+  if (f.y - FIGHTER_SIZE < 0) { f.y = FIGHTER_SIZE; f.vy = Math.abs(f.vy); hit = true; }
+  if (f.y + FIGHTER_SIZE > h) { f.y = h - FIGHTER_SIZE; f.vy = -Math.abs(f.vy); hit = true; }
   if (hit) sfx('wall', null, f.x);
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
@@ -861,7 +861,7 @@ function step(dt) {
       const enemy = f === red ? blue : red;
       if (f.ability === 'tackle') {
         // Berserker: the tackle is a pure collision charge — crashing in IS the hit.
-        if (!enemy.dead && dist(f, enemy) < f.size + enemy.size) {
+        if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
           damage(enemy, f.dmg, undefined, f);
           f.dashTimer = 0;
           const a = Math.atan2(f.vy, f.vx);
@@ -872,7 +872,7 @@ function step(dt) {
         // Knight / Duelist / Reaper: the dash only closes distance. The strike is
         // LIVE for the whole dash — the first frame the enemy is within this
         // fighter's strike range, the single hit lands (once per dash).
-        if (!f.dashHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + f.strikeReach) {
+        if (!f.dashHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach) {
           const dealtDmg = damage(enemy, f.dmg, undefined, f);
           // Reaper: Blood Harvest — heal 50% of the damage dealt.
           // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
@@ -880,7 +880,7 @@ function step(dt) {
             const healAmt = Math.round((dealtDmg || 0) * 0.5);
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
-            spawnFloat(f.x, f.y - f.size - 12, '+' + healAmt, healColor(f));
+            spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
             spawnParticles(f.x, f.y, 5, '#aa0000', 'shard');
           }
           f.dashHit = true;
@@ -906,7 +906,7 @@ function step(dt) {
       // Trail blood-mist particles while spinning
       if (vrng() < 0.2) {
         const ra = vrng() * Math.PI * 2;
-        const rr = f.size + 10 + vrng() * 6;
+        const rr = FIGHTER_SIZE + 10 + vrng() * 6;
         spawnParticles(f.x + Math.cos(ra) * rr, f.y + Math.sin(ra) * rr, 1, '#aa0000', 'streak');
       }
       if (f.sweepTimer <= 0) f.sweepHit = false;
@@ -925,7 +925,7 @@ function step(dt) {
         const dxh = f.tetherStartX - t.x;
         const dyh = f.tetherStartY - t.y;
         const dh = Math.hypot(dxh, dyh) || 1;
-        const standoff = f.size + t.size + 6;
+        const standoff = FIGHTER_SIZE + FIGHTER_SIZE + 6;
         const endX = t.x + dxh / dh * standoff;
         const endY = t.y + dyh / dh * standoff;
         f.x = f.tetherStartX + (endX - f.tetherStartX) * progress;
@@ -990,7 +990,7 @@ function step(dt) {
           const dx = enemy.x - f.x;
           const dy = enemy.y - f.y;
           const d = Math.hypot(dx, dy);
-          const strikeReach = f.size + enemy.size + 22;
+          const strikeReach = FIGHTER_SIZE + FIGHTER_SIZE + 22;
           const maxStep = 120;
           if (d > strikeReach) {
             const stepDist = Math.min(d - strikeReach, maxStep);
@@ -1013,7 +1013,7 @@ function step(dt) {
             const t = Math.max(0, Math.min(1, ((px-startX)*sdx + (py-startY)*sdy) / sLen2));
             return Math.hypot(px - (startX + t*sdx), py - (startY + t*sdy));
           };
-          const slashReach = f.size + 10;
+          const slashReach = FIGHTER_SIZE + 10;
           game.skeletons = game.skeletons.filter(sk => {
             if (sk.team === f.team) return true;
             if (segDist(sk.x, sk.y) < slashReach + sk.size) {
@@ -1025,7 +1025,7 @@ function step(dt) {
           // Mines along the dash path detonate on the Ronin
           game.mines = game.mines.filter(m => {
             if (m.team === f.team || m.armed > 0) return true;
-            if (segDist(m.x, m.y) < f.size + m.size + 6) {
+            if (segDist(m.x, m.y) < FIGHTER_SIZE + m.size + 6) {
               damage(f, m.dmg);
               spawnParticles(m.x, m.y, 12, '#3a2a1a', 'smoke');
               spawnParticles(m.x, m.y, 10, '#ff8c1a', 'shard');
@@ -1033,7 +1033,7 @@ function step(dt) {
             }
             return true;
           });
-          if (!enemy.dead && segDist(enemy.x, enemy.y) < slashReach + enemy.size) {
+          if (!enemy.dead && segDist(enemy.x, enemy.y) < slashReach + FIGHTER_SIZE) {
             damage(enemy, f.dmg, undefined, f);
             f.iaiHit = true;
             f.cdTimer = f.cd * 0.5;
@@ -1041,7 +1041,7 @@ function step(dt) {
         }
       } else if (f.iaiStrike > 0) {
         f.iaiStrike -= dt;
-        if (!f.iaiHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + 25) {
+        if (!f.iaiHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + 25) {
           damage(enemy, f.dmg, undefined, f);
           f.iaiHit = true;
           f.cdTimer = f.cd * 0.5; // IAIJUTSU — clean strike halves the cooldown
@@ -1052,7 +1052,7 @@ function step(dt) {
 
     if (f === red) {
       const enemy = blue;
-      if (!enemy.dead && dist(f, enemy) < f.size + enemy.size) {
+      if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
         const ang = Math.atan2(f.y - enemy.y, f.x - enemy.x);
         f.vx = Math.cos(ang) * f.speed;
         f.vy = Math.sin(ang) * f.speed;
@@ -1215,7 +1215,7 @@ function step(dt) {
       if (p.y > h - p.size) p.y = h - p.size;
     }
     const target = p.team === 'red' ? blue : red;
-    if (!target.dead && dist(p, target) < target.size + p.size) {
+    if (!target.dead && dist(p, target) < FIGHTER_SIZE + p.size) {
       // Duelist parry: flip the projectile back at the attacker
       if (target.ability === 'riposte' && target.parryTimer > 0) {
         p.team = target.team;
@@ -1271,7 +1271,7 @@ function step(dt) {
     if (m.armed <= 0) {
       const target = m.team === 'red' ? blue : red;
       // Trigger radius extends 6px beyond contact — mines threaten passage, not just collision
-      if (!target.dead && dist(m, target) < target.size + m.size + 6) {
+      if (!target.dead && dist(m, target) < FIGHTER_SIZE + m.size + 6) {
         damage(target, m.dmg);
         // Blast RADIUS passive: knock the target away from the mine
         const bx = target.x - m.x, by = target.y - m.y;
@@ -1345,7 +1345,7 @@ function step(dt) {
     if (sk.chargeTimer > 0) {
       // Charging — locked velocity, check for contact
       sk.chargeTimer -= dt;
-      if (!sk.chargeHit && !target.dead && dist(sk, target) < target.size + sk.size) {
+      if (!sk.chargeHit && !target.dead && dist(sk, target) < FIGHTER_SIZE + sk.size) {
         damage(target, sk.dmg);
         sk.chargeHit = true;
         sk.attackCd = SKEL_CHARGE_CD;
@@ -1408,7 +1408,7 @@ function step(dt) {
     if (!m || (f[m.timer] || 0) <= 0) return;
     game.skeletons = game.skeletons.filter(sk => {
       if (sk.team === f.team || sk.hitCd > 0) return true;
-      if (dist(f, sk) < f.size + sk.size + m.reach) {
+      if (dist(f, sk) < FIGHTER_SIZE + sk.size + m.reach) {
         sk.hitCd = MELEE_SKEL_IFRAME;
         if (damageSkeleton(sk, f.dmg)) return false;
       }
@@ -1478,7 +1478,7 @@ function step(dt) {
       // fixed number would visibly detach as the target bounces around.
       if (ft.follow) {
         ft.x = ft.follow.x;
-        ft.y = ft.follow.y - ft.follow.size;
+        ft.y = ft.follow.y - FIGHTER_SIZE;
       }
       if (performance.now() - ft.lastHit > (ft.gap || BATCH_GAP)) {
         ft.open = false;
