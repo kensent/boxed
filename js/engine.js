@@ -1319,11 +1319,11 @@ function step(dt) {
                sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
     spawnParticles(sk.x, sk.y, 4, sk.team === 'red' ? '#ff6b6b' : '#6bb6ff', 'spark');
     if (sk.hp <= 0) {
-      // Bone Burst: shards erupt on death — any enemy within 55px takes 11 dmg.
+      // Bone Burst: shards erupt on death — any enemy within 55px takes dmg.
       // Punishes melee fighters rushing in to kill skeletons; ranged killers are safe.
       const enemy = sk.team === 'red' ? blue : red;
       if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
-        damage(enemy, 11, 'bone');
+        damage(enemy, 17, 'bone');
         spawnBoneBurst(sk.x, sk.y);
         sfx('boneBurst', null, sk.x);
       }
@@ -1336,7 +1336,7 @@ function step(dt) {
   game.skeletons = game.skeletons.filter(sk => {
     if (sk.hp <= 0) { return false; } // already handled by damageSkeleton
     const SKEL_IDLE_SPEED   = 55;
-    const SKEL_CHARGE_SPEED = 230;
+    const SKEL_CHARGE_SPEED = 210;
     const SKEL_CHARGE_CD    = 1.7;
     const target = sk.team === 'red' ? blue : red;
 
