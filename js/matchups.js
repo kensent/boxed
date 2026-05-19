@@ -12,10 +12,10 @@
 const MATCHUPS = {
   'priest_berserker':92, 'priest_wizard':5, 'priest_knight':79, 'priest_sapper':82, 'priest_archer':41,
   'priest_jester':23, 'priest_cannoneer':63, 'priest_duelist':42, 'priest_necromancer':66, 'priest_reaper':59,
-  'priest_ronin':72, 'priest_witch':29, 'priest_hunter':17, 'priest_warlock':52, 'priest_gambler':40,
+  'priest_ronin':72, 'priest_witch':29, 'priest_hunter':17, 'priest_warlock':52, 'priest_gambler':28,
   'berserker_wizard':78, 'berserker_knight':93, 'berserker_sapper':30, 'berserker_archer':45, 'berserker_jester':57,
   'berserker_cannoneer':19, 'berserker_duelist':51, 'berserker_necromancer':83, 'berserker_reaper':78, 'berserker_ronin':32,
-  'berserker_witch':36, 'berserker_hunter':11, 'berserker_warlock':77, 'berserker_gambler':57, 'wizard_knight':4,
+  'berserker_witch':36, 'berserker_hunter':11, 'berserker_warlock':77, 'berserker_gambler':39, 'wizard_knight':4,
   'wizard_sapper':93, 'wizard_archer':96, 'wizard_jester':9, 'wizard_cannoneer':72, 'wizard_duelist':14,
   'wizard_necromancer':4, 'wizard_reaper':0, 'wizard_ronin':60, 'wizard_witch':88, 'wizard_hunter':72,
   'wizard_warlock':35, 'wizard_gambler':88, 'knight_sapper':14, 'knight_archer':15, 'knight_jester':74,
@@ -24,7 +24,7 @@ const MATCHUPS = {
   'sapper_jester':100, 'sapper_cannoneer':9, 'sapper_duelist':89, 'sapper_necromancer':39, 'sapper_reaper':94,
   'sapper_ronin':57, 'sapper_witch':24, 'sapper_hunter':40, 'sapper_warlock':19, 'sapper_gambler':27,
   'archer_jester':17, 'archer_cannoneer':86, 'archer_duelist':78, 'archer_necromancer':27, 'archer_reaper':98,
-  'archer_ronin':54, 'archer_witch':30, 'archer_hunter':68, 'archer_warlock':14, 'archer_gambler':28,
+  'archer_ronin':54, 'archer_witch':30, 'archer_hunter':68, 'archer_warlock':14, 'archer_gambler':27,
   'jester_cannoneer':80, 'jester_duelist':3, 'jester_necromancer':51, 'jester_reaper':9, 'jester_ronin':68,
   'jester_witch':76, 'jester_hunter':83, 'jester_warlock':1, 'jester_gambler':80, 'cannoneer_duelist':54,
   'cannoneer_necromancer':53, 'cannoneer_reaper':52, 'cannoneer_ronin':82, 'cannoneer_witch':29, 'cannoneer_hunter':29,
@@ -33,7 +33,7 @@ const MATCHUPS = {
   'necromancer_ronin':48, 'necromancer_witch':70, 'necromancer_hunter':29, 'necromancer_warlock':96, 'necromancer_gambler':68,
   'reaper_ronin':10, 'reaper_witch':75, 'reaper_hunter':92, 'reaper_warlock':77, 'reaper_gambler':50,
   'ronin_witch':32, 'ronin_hunter':40, 'ronin_warlock':40, 'ronin_gambler':49, 'witch_hunter':48,
-  'witch_warlock':55, 'witch_gambler':47, 'hunter_warlock':53, 'hunter_gambler':47, 'warlock_gambler':51,
+  'witch_warlock':55, 'witch_gambler':47, 'hunter_warlock':53, 'hunter_gambler':32, 'warlock_gambler':49,
 };
 
 // matchupOdds(a, b) — fighter A's win % vs B, in either stored direction.
