@@ -48,7 +48,7 @@ const VICTORY_QUOTES = {
 
   // PRIEST wins
   'priest_berserker':   "Rage is a prayer too. Just not the answered kind.",
-  'priest_wizard':      "Spells are borrowed power. Mine is given.",
+  'priest_wizard':      "You studied the work. I know the author.",
   'priest_knight':      "All that armor. Still no shelter.",
   'priest_sapper':      "The Lord works in mysterious ways. Mostly explosions.",
   'priest_archer':      "God's aim is better.",
@@ -59,7 +59,7 @@ const VICTORY_QUOTES = {
   'priest_reaper':      "Even death has a god.",
   'priest_ronin':       "A code of honor is admirable. A code of honor from God is binding.",
   'priest_witch':       "A curse is just a prayer that went wrong.",
-  'priest_hunter':      "You track. God watches.",
+  'priest_hunter':      "You found your prey. God found you.",
   'priest_warlock':     "You've been taking life for so long you forgot someone gives it.",
   'priest_gambler':     "God doesn't gamble. You should've known.",
 
@@ -121,7 +121,7 @@ const VICTORY_QUOTES = {
   'sapper_knight':      "Classic. Charging into a minefield.",
   'sapper_archer':      "The trail was always the trap.",
   'sapper_jester':      "You blinked. Right onto it.",
-  'sapper_cannoneer':   "Neither of us rush. I just rush better.",
+  'sapper_cannoneer':   "We both took our time. Mine was underground.",
   'sapper_duelist':     "Thrust into a mine. Elegant to the end.",
   'sapper_necromancer': "Your siege ran into mine.",
   'sapper_reaper':      "Your harvest stepped on my field.",
@@ -139,13 +139,13 @@ const VICTORY_QUOTES = {
   'archer_sapper':      "I ran circles around your minefield.",
   'archer_jester':      "You blinked to my back. I was already shooting.",
   'archer_cannoneer':   "One-second windup. I fired twelve.",
-  'archer_duelist':     "Every deflection was the wrong one.",
+  'archer_duelist':     "You deflected three. I fired fifteen.",
   'archer_necromancer': "Skeletons are slow. Arrows aren't.",
   'archer_reaper':      "Can't harvest what you can never reach.",
   'archer_ronin':       "The windup was my warmup.",
-  'archer_witch':       "No bouncing. Just shooting.",
+  'archer_witch':       "All that bounce and it still missed.",
   'archer_hunter':      "Two can play the range game. I play it better.",
-  'archer_warlock':     "Your beam needs line of sight. I denied it.",
+  'archer_warlock':     "You need me to stand still. I find that funny.",
   'archer_gambler':     "No coin beats a full quiver.",
 
   // JESTER wins
