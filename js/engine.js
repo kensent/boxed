@@ -1032,7 +1032,7 @@ function step(dt) {
             return true;
           });
           if (!enemy.dead && segDist(enemy.x, enemy.y) < slashReach + enemy.size) {
-            damage(enemy, 35, undefined, f);
+            damage(enemy, f.dmg, undefined, f);
             f.iaiHit = true;
             f.cdTimer = f.cd * 0.5;
           }
@@ -1040,7 +1040,7 @@ function step(dt) {
       } else if (f.iaiStrike > 0) {
         f.iaiStrike -= dt;
         if (!f.iaiHit && !enemy.dead && dist(f, enemy) < f.size + enemy.size + 25) {
-          damage(enemy, 35, undefined, f);
+          damage(enemy, f.dmg, undefined, f);
           f.iaiHit = true;
           f.cdTimer = f.cd * 0.5; // IAIJUTSU — clean strike halves the cooldown
         }
