@@ -228,6 +228,7 @@ document.getElementById('sprite-close').addEventListener('click', () => {
   });
 });
 
+
 // --- Seed control ---------------------------------------------------------
 // Typing a number pins that seed for the next fight; empty = fresh random
 // each fight. After a fight starts, the input shows the seed actually used

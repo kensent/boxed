@@ -68,57 +68,59 @@ function drawShape(c, f) {
       break;
     }
     case 'axe': {
-      // Berserker — a heavy faceted MAUL head built from STRAIGHT FACETS only
-      // (every curved attempt turned into a blob; hard flat edges read as a
-      // solid metal weapon head). One asymmetric polygon. Note: the shape key
-      // stays 'axe' for compatibility — the sprite itself is a maul, which
-      // suits a reckless TACKLE-DASH bruiser fine.
+      // Berserker — clenched fist punching forward (+x). Shape key stays 'axe'.
       const s = f.size;
-      // Haft — straight shaft.
-      c.strokeStyle = "#3a2a1a";
-      c.lineWidth = 5;
-      c.lineCap = "round";
+      // Thumb — flat rectangle on top of the fist, tucked near the front.
+      c.fillStyle = f.color;
       c.beginPath();
-      c.moveTo(-s * 0.95, 0);
-      c.lineTo(s * 0.55, 0);
-      c.stroke();
-      // Pommel cap.
-      c.fillStyle = f.accent;
-      c.beginPath();
-      c.arc(-s * 0.97, 0, s * 0.15, 0, Math.PI * 2);
-      c.fill();
-      // Maul head — a faceted polygon, all straight edges.
-      c.fillStyle = f.accent;
-      c.beginPath();
-      c.moveTo(s * 0.15, -s * 0.2);    // top-back, at the haft
-      c.lineTo(s * 0.55, -s * 0.72);   // top shoulder
-      c.lineTo(s * 1.06, -s * 0.5);    // toe — top of the cutting edge
-      c.lineTo(s * 0.96, s * 0.66);    // heel — bottom of the cutting edge
-      c.lineTo(s * 0.5, s * 0.96);     // beard point, dropped low
-      c.lineTo(s * 0.15, s * 0.2);     // bottom-back, at the haft
+      c.moveTo(-s * 0.05, -s * 0.48);
+      c.lineTo( s * 0.45, -s * 0.48);
+      c.lineTo( s * 0.45, -s * 0.68);
+      c.lineTo(-s * 0.05, -s * 0.68);
       c.closePath();
       c.fill();
-      // Bevel facet — a darker inner panel parallel to the cutting edge,
-      // giving the blade a forged, two-tone faceted look (no curves).
-      c.fillStyle = "#9a9a9a";
+      // Main finger block — tall flat rectangle filling the sprite space.
+      c.fillStyle = f.color;
       c.beginPath();
-      c.moveTo(s * 0.34, -s * 0.32);
-      c.lineTo(s * 0.62, -s * 0.5);
-      c.lineTo(s * 0.56, s * 0.5);
-      c.lineTo(s * 0.32, s * 0.28);
+      c.moveTo(-s * 0.65, -s * 0.48);
+      c.lineTo( s * 0.52, -s * 0.48);
+      c.lineTo( s * 0.52,  s * 0.56);
+      c.lineTo(-s * 0.65,  s * 0.56);
       c.closePath();
       c.fill();
-      // Bright edge facet along the cutting edge (a thin straight highlight).
-      c.strokeStyle = "#fff";
-      c.lineWidth = 2;
-      c.lineCap = "butt";
+      // Three knuckle bumps — individual accent polygons, each clearly separated.
+      c.fillStyle = f.accent;
+      const bx = s * 0.52;
+      // top knuckle (index)
       c.beginPath();
-      c.moveTo(s * 1.02, -s * 0.46);
-      c.lineTo(s * 0.92, s * 0.62);
-      c.stroke();
-      // Dark eye/socket where the head wraps the haft.
-      c.fillStyle = "#1a0a0a";
-      c.fillRect(s * 0.12, -s * 0.16, s * 0.14, s * 0.32);
+      c.moveTo(bx,          -s * 0.40);
+      c.lineTo(bx + s*0.30, -s * 0.36);
+      c.lineTo(bx + s*0.30, -s * 0.14);
+      c.lineTo(bx,          -s * 0.18);
+      c.closePath(); c.fill();
+      // middle knuckle
+      c.beginPath();
+      c.moveTo(bx,          -s * 0.08);
+      c.lineTo(bx + s*0.30, -s * 0.04);
+      c.lineTo(bx + s*0.30,  s * 0.18);
+      c.lineTo(bx,           s * 0.14);
+      c.closePath(); c.fill();
+      // bottom knuckle (ring)
+      c.beginPath();
+      c.moveTo(bx,           s * 0.24);
+      c.lineTo(bx + s*0.30,  s * 0.28);
+      c.lineTo(bx + s*0.30,  s * 0.50);
+      c.lineTo(bx,           s * 0.46);
+      c.closePath(); c.fill();
+      // Wrist wrap at the trailing edge — accent colour so it reads against the dark background.
+      c.fillStyle = f.accent;
+      c.beginPath();
+      c.moveTo(-s * 0.65, -s * 0.48);
+      c.lineTo(-s * 0.42, -s * 0.48);
+      c.lineTo(-s * 0.42,  s * 0.56);
+      c.lineTo(-s * 0.65,  s * 0.56);
+      c.closePath();
+      c.fill();
       break;
     }
     case 'spellbook': {
