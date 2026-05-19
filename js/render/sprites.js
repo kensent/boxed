@@ -1123,37 +1123,20 @@ function drawFighter(f) {
   }
 
   ctx.fillStyle = f.color;
-  // Selective rotation: sprites with directional geometry rotate to face movement.
-  // Cannoneer faces the enemy during windup (he's stationary), velocity otherwise.
+  // All fighters rotate to face the enemy except during a dash, where they
+  // follow velocity so the sprite reads the direction of the charge.
   let rotatedForShape = false;
   if (f.rotates) {
     let facing;
-    // Aim-at-enemy: ranged or casting fighters whose forward weapon points at the target
-    const aimsAtEnemy = (f.ability === 'cannon' && f.aimAbility === 'cannon')
-                     || f.ability === 'arrow'
-                     || f.ability === 'lightning'
-                     || f.ability === 'cast'
-                     || f.ability === 'blink'
-                     || f.ability === 'iai'
-                     || f.ability === 'hex'
-                     || f.ability === 'grapple'
-                     || f.ability === 'drain'
-                     || f.ability === 'wildcard';
-    if (aimsAtEnemy) {
-      const enemy = f.team === 'red' ? game.blue : game.red;
-      if (enemy && !enemy.dead) {
-        facing = Math.atan2(enemy.y - f.y, enemy.x - f.x);
-      } else {
-        facing = f.lastFacing || 0;
-      }
-    } else {
-      // Velocity-followers: melee + Sapper trail the way they're moving
+    const isDashing = f.dashTimer > 0 || f.iaiStrike > 0;
+    if (isDashing) {
       const sp = Math.hypot(f.vx, f.vy);
-      if (sp > 5) {
-        facing = Math.atan2(f.vy, f.vx);
-      } else {
-        facing = f.lastFacing || 0;
-      }
+      facing = sp > 5 ? Math.atan2(f.vy, f.vx) : (f.lastFacing || 0);
+    } else {
+      const enemy = f.team === 'red' ? game.blue : game.red;
+      facing = (enemy && !enemy.dead)
+        ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
+        : (f.lastFacing || 0);
     }
     f.lastFacing = facing;
     ctx.save();

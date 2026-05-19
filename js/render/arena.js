@@ -100,29 +100,43 @@ function draw() {
     ctx.beginPath();
     ctx.arc(sk.x, sk.y, sk.size + 2, 0, Math.PI * 2);
     ctx.stroke();
-    // Bone body — small skull + cross-bones. Flashes white briefly when hit.
+    // Bone body — skull + cross-bones, rotated to face enemy (velocity during charge).
+    const target = sk.team === 'red' ? game.blue : game.red;
+    let skFacing;
+    if (sk.chargeTimer > 0) {
+      const sp = Math.hypot(sk.vx, sk.vy);
+      skFacing = sp > 5 ? Math.atan2(sk.vy, sk.vx) : 0;
+    } else {
+      skFacing = (target && !target.dead)
+        ? Math.atan2(target.y - sk.y, target.x - sk.x)
+        : 0;
+    }
     const boneCol = (sk.flash > 0) ? '#ffffff' : '#e8e0d0';
+    ctx.save();
+    ctx.translate(sk.x, sk.y);
+    ctx.rotate(skFacing);
     ctx.fillStyle = boneCol;
-    // Skull (head)
+    // Skull (head) — forward (+x) direction
     ctx.beginPath();
-    ctx.arc(sk.x, sk.y - sk.size * 0.3, sk.size * 0.45, 0, Math.PI * 2);
+    ctx.arc(sk.size * 0.3, 0, sk.size * 0.45, 0, Math.PI * 2);
     ctx.fill();
     // Eye sockets
     ctx.fillStyle = '#1a0a1a';
     ctx.beginPath();
-    ctx.arc(sk.x - sk.size * 0.15, sk.y - sk.size * 0.3, sk.size * 0.1, 0, Math.PI * 2);
-    ctx.arc(sk.x + sk.size * 0.15, sk.y - sk.size * 0.3, sk.size * 0.1, 0, Math.PI * 2);
+    ctx.arc(sk.size * 0.3, -sk.size * 0.15, sk.size * 0.1, 0, Math.PI * 2);
+    ctx.arc(sk.size * 0.3,  sk.size * 0.15, sk.size * 0.1, 0, Math.PI * 2);
     ctx.fill();
-    // Cross-bones body
+    // Cross-bones body — trailing behind skull
     ctx.strokeStyle = boneCol;
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(sk.x - sk.size * 0.5, sk.y + sk.size * 0.1);
-    ctx.lineTo(sk.x + sk.size * 0.5, sk.y + sk.size * 0.5);
-    ctx.moveTo(sk.x + sk.size * 0.5, sk.y + sk.size * 0.1);
-    ctx.lineTo(sk.x - sk.size * 0.5, sk.y + sk.size * 0.5);
+    ctx.moveTo(-sk.size * 0.1, -sk.size * 0.5);
+    ctx.lineTo(-sk.size * 0.5,  sk.size * 0.5);
+    ctx.moveTo(-sk.size * 0.1,  sk.size * 0.5);
+    ctx.lineTo(-sk.size * 0.5, -sk.size * 0.5);
     ctx.stroke();
+    ctx.restore();
   });
 
   game.projectiles.forEach(p => {
