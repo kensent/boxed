@@ -113,9 +113,9 @@ function fireAbility(f, enemy) {
       f.y = Math.max(f.size, Math.min(game.h - f.size, ty));
       // Sparkle at the arrive point
       spawnParticles(f.x, f.y, 14, '#fff', 'spark');
-      // Stab — 11 dmg if in range after blink
+      // Stab — f.dmg if in range after blink
       if (dist(f, enemy) < f.size + enemy.size + 4) {
-        damage(enemy, 11, undefined, f);
+        damage(enemy, f.dmg, undefined, f);
       }
       // After blink, face away from enemy so jester drifts off
       const ang = Math.atan2(f.y - enemy.y, f.x - enemy.x);
