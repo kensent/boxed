@@ -359,7 +359,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], minions: [], mines: [], hazards: [], skeletons: [], particles: [], floatTexts: [], wakes: [],
+    projectiles: [], mines: [], hazards: [], skeletons: [], particles: [], floatTexts: [], wakes: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
@@ -759,7 +759,7 @@ function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 // === STEP (per-frame simulation) ============================================
 // Runs every frame at variable dt. Handles fighter movement, passive ticks
 // (regen, bloodrage, wakes, shield/dodge recharge), dash & swing windows,
-// body collisions, ability cooldowns, projectiles, mines, minions, particles.
+// body collisions, ability cooldowns, projectiles, mines, particles.
 // This is the heart of the game loop.
 // ============================================================================
 
@@ -1288,37 +1288,7 @@ function step(dt) {
     return true;
   });
 
-  game.minions = game.minions.filter(mn => {
-    mn.life -= dt;
-    if (mn.life <= 0 || mn.hp <= 0) return false;
-    const ORB_SPEED = 120;
-    const target = mn.team === 'red' ? blue : red;
-    if (!target.dead) {
-      // Steer toward enemy
-      const ang = Math.atan2(target.y - mn.y, target.x - mn.x);
-      const tvx = Math.cos(ang) * ORB_SPEED;
-      const tvy = Math.sin(ang) * ORB_SPEED;
-      mn.vx += (tvx - mn.vx) * 0.08;
-      mn.vy += (tvy - mn.vy) * 0.08;
-    }
-    // Always renormalize to constant speed so orbs never stall
-    const sp = Math.hypot(mn.vx, mn.vy) || 0.001;
-    mn.vx = mn.vx / sp * ORB_SPEED;
-    mn.vy = mn.vy / sp * ORB_SPEED;
-    mn.x += mn.vx * dt;
-    mn.y += mn.vy * dt;
-    // Clamp to arena (don't bounce, just stop at edge — homing will pull them back)
-    if (mn.x < mn.size) mn.x = mn.size;
-    if (mn.x > w - mn.size) mn.x = w - mn.size;
-    if (mn.y < mn.size) mn.y = mn.size;
-    if (mn.y > h - mn.size) mn.y = h - mn.size;
-    if (!target.dead && dist(mn, target) < target.size + mn.size) {
-      damage(target, mn.dmg);
-      spawnParticles(mn.x, mn.y, 8, '#c77dff', 'rune');
-      return false;
-    }
-    return true;
-  });
+
 
   // Skeletons (Necromancer minions) — slow persistent melee.
   // damageSkeleton(): the ONE path all damage to a skeleton goes through. Real

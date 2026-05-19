@@ -91,8 +91,6 @@ function draw() {
     }
   });
 
-  // (game.minions is legacy — Wizard orbs are now projectiles. Skeletons render next.)
-
   // Skeletons (Necromancer minions) — small bone-white humanoid silhouettes with team-colored ring
   game.skeletons.forEach(sk => {
     const teamCol = sk.team === 'red' ? '#ff2e2e' : '#2e9eff';

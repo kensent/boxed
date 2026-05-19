@@ -2,21 +2,7 @@
 // === COMBAT =================================================================
 // damage() — applies defensive passives (Jester dodge, Knight plate armor,
 //   Wizard mana shield, Duelist counter) and handles death.
-// styleFor() — maps ability id → particle style for hit feedback.
 // ============================================================================
-
-function styleFor(f) {
-  // Map character id to particle style
-  switch (f.ability) {
-    case 'lightning': return 'cross';
-    case 'tackle':    return 'shard';
-    case 'cast':    return 'rune';
-    case 'sword':     return 'spark';
-    case 'mine':      return 'smoke';
-    case 'arrow':     return 'streak';
-    default:          return 'square';
-  }
-}
 
 // --- Impact juice -----------------------------------------------------------
 // shake(mag): kick the screen-shake. mag is roughly "pixels of displacement".

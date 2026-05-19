@@ -12,7 +12,6 @@ function endGame() {
   game.projectiles = [];
   game.mines = [];
   game.skeletons = [];
-  game.minions = [];
   // Resolve any still-"open" debounced damage float (e.g. the killing blow's)
   // so it punches and floats off normally instead of freezing mid-burst.
   game.floatTexts.forEach(ft => { if (ft.open) { ft.open = false; ft.age = 0; } });
