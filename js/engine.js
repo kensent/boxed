@@ -679,7 +679,7 @@ const FIXED_DT = 1 / 60;
 // meaningful pool. SKEL_HP is the balance lever. MELEE_SKEL_IFRAME: after a
 // melee strike hits a skeleton it can't be hit again for this long (longer than
 // any 0.3s strike window), so one strike lands once, not once per frame.
-const SKEL_HP = 14;
+const SKEL_HP = 18;
 const MELEE_SKEL_IFRAME = 0.35;
 
 // Gambler WILDCARD: damage of one thrown coin. Every die face throws coins, so
@@ -1351,27 +1351,55 @@ function step(dt) {
 
   game.skeletons = game.skeletons.filter(sk => {
     if (sk.hp <= 0) { return false; } // already handled by damageSkeleton
-    const SKEL_SPEED = 90;
+    const SKEL_IDLE_SPEED   = 55;
+    const SKEL_CHARGE_SPEED = 230;
+    const SKEL_CHARGE_CD    = 1.7;
     const target = sk.team === 'red' ? blue : red;
-    if (!target.dead) {
-      const ang = Math.atan2(target.y - sk.y, target.x - sk.x);
-      sk.vx = Math.cos(ang) * SKEL_SPEED;
-      sk.vy = Math.sin(ang) * SKEL_SPEED;
+
+    if (sk.chargeTimer > 0) {
+      // Charging — locked velocity, check for contact
+      sk.chargeTimer -= dt;
+      if (!sk.chargeHit && !target.dead && dist(sk, target) < target.size + sk.size) {
+        damage(target, sk.dmg);
+        sk.chargeHit = true;
+        sk.attackCd = SKEL_CHARGE_CD;
+        sk.chargeTimer = 0;
+        // Bounce back off the target
+        const ba = Math.atan2(sk.y - target.y, sk.x - target.x);
+        sk.vx = Math.cos(ba) * SKEL_IDLE_SPEED;
+        sk.vy = Math.sin(ba) * SKEL_IDLE_SPEED;
+      } else if (sk.chargeTimer <= 0) {
+        sk.attackCd = SKEL_CHARGE_CD;
+      }
+    } else if (sk.attackCd > 0) {
+      // Idle — slow drift toward enemy
+      sk.attackCd -= dt;
+      if (!target.dead) {
+        const ang = Math.atan2(target.y - sk.y, target.x - sk.x);
+        sk.vx = Math.cos(ang) * SKEL_IDLE_SPEED;
+        sk.vy = Math.sin(ang) * SKEL_IDLE_SPEED;
+      }
+    } else {
+      // Launch charge — lock aim at current target position
+      if (!target.dead) {
+        const ang = Math.atan2(target.y - sk.y, target.x - sk.x);
+        sk.vx = Math.cos(ang) * SKEL_CHARGE_SPEED;
+        sk.vy = Math.sin(ang) * SKEL_CHARGE_SPEED;
+        sk.chargeTimer = 0.65;
+        sk.chargeHit = false;
+        spawnParticles(sk.x, sk.y, 3, '#e8e0d0', 'streak');
+      }
     }
+
     sk.x += sk.vx * dt;
     sk.y += sk.vy * dt;
-    sk.spin = (sk.spin || 0) + dt * 4;
-    if (sk.x < sk.size) sk.x = sk.size;
-    if (sk.x > w - sk.size) sk.x = w - sk.size;
-    if (sk.y < sk.size) sk.y = sk.size;
-    if (sk.y > h - sk.size) sk.y = h - sk.size;
-    if (sk.attackCd > 0) sk.attackCd -= dt;
+    sk.spin = (sk.spin || 0) + dt * (sk.chargeTimer > 0 ? 14 : 3);
+    if (sk.x < sk.size) { sk.x = sk.size; sk.vx = Math.abs(sk.vx); }
+    if (sk.x > w - sk.size) { sk.x = w - sk.size; sk.vx = -Math.abs(sk.vx); }
+    if (sk.y < sk.size) { sk.y = sk.size; sk.vy = Math.abs(sk.vy); }
+    if (sk.y > h - sk.size) { sk.y = h - sk.size; sk.vy = -Math.abs(sk.vy); }
     if (sk.hitCd > 0) sk.hitCd -= dt;
     if (sk.flash > 0) sk.flash -= dt;
-    if (!target.dead && sk.attackCd <= 0 && dist(sk, target) < target.size + sk.size + 2) {
-      damage(target, sk.dmg);
-      sk.attackCd = 0.7;
-    }
     return true;
   });
 
