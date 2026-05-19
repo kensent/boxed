@@ -255,7 +255,7 @@ function resolveAim(f) {
   } else if (f.aimAbility === 'cannon') {
     // Straight line, fast, big, no homing. Muzzle flash + smoke.
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
-    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*340, vy:Math.sin(ang)*340, team:f.team, dmg:31, life:1.8, kind:'cannon', size:7, homing:0, angle:ang });
+    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*340, vy:Math.sin(ang)*340, team:f.team, dmg:f.dmg, life:1.8, kind:'cannon', size:7, homing:0, angle:ang });
     spawnParticles(f.x + Math.cos(ang) * FIGHTER_SIZE, f.y + Math.sin(ang) * FIGHTER_SIZE, 16, '#ff8c1a', 'shard');
     spawnParticles(f.x + Math.cos(ang) * FIGHTER_SIZE, f.y + Math.sin(ang) * FIGHTER_SIZE, 14, '#666', 'smoke');
     sfx('cannon', null, f.x);
