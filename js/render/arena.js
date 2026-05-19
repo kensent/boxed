@@ -11,20 +11,6 @@ function draw() {
     shaken = true;
   }
 
-  // Sapper wake patches (drawn first, beneath everything)
-  (game.wakes || []).forEach(wk => {
-    const a = Math.max(0, wk.life / 2.5);
-    ctx.fillStyle = `rgba(60,40,20,${a * 0.55})`;
-    ctx.beginPath();
-    ctx.arc(wk.x, wk.y, wk.size, 0, Math.PI * 2);
-    ctx.fill();
-    // Dark center
-    ctx.fillStyle = `rgba(30,20,10,${a * 0.6})`;
-    ctx.beginPath();
-    ctx.arc(wk.x, wk.y, wk.size * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
   (game.hazards || []).forEach(h => {
     const fade = h.timer / h.maxTimer; // 1 → 0
     const innerA = fade * 0.35;

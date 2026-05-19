@@ -359,7 +359,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], mines: [], hazards: [], skeletons: [], particles: [], floatTexts: [], wakes: [],
+    projectiles: [], mines: [], hazards: [], skeletons: [], particles: [], floatTexts: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
@@ -444,7 +444,7 @@ function makeFighter(t, team, x, y) {
     vx: Math.cos(a) * t.speed,
     vy: Math.sin(a) * t.speed,
     cdTimer: t.cd * 0.5 + rng() * 0.5,
-    swingTimer: 0, dashTimer: 0, dashHit: false, flash: 0, negateFlash: 0, dead: false,
+    swingTimer: 0, dashTimer: 0, dashHit: false, blastTimer: 0, flash: 0, negateFlash: 0, dead: false,
     aimTimer: 0, aimAngle: 0, aimAbility: null,
     shotCount: 0, trail: [],
     slowTimer: 0, stunTimer: 0,
@@ -623,7 +623,7 @@ function fighterStatuses(f) {
   if (f.witchMarkTimer > 0) {
     out.push({ label: 'MARKED', color: '#7dff3d' });
   }
-  // Slowed — Hunter's CRIPPLING HOOK wound, or a Sapper wake. 40% slower.
+  // Slowed — Hunter's CRIPPLING HOOK wound. 40% slower.
   if (f.slowTimer > 0 && !f.dead) {
     out.push({ label: 'SLOWED', color: '#c89060' });
   }
@@ -825,15 +825,6 @@ function step(dt) {
       f.vx = f.vx / sp * targetSpeed;
       f.vy = f.vy / sp * targetSpeed;
       f.speed = targetSpeed;
-    }
-    // Sapper: Wake — leaves slowing soot patches behind
-    if (f.ability === 'mine') {
-      f.wakeTimer = (f.wakeTimer || 0) - dt;
-      if (f.wakeTimer <= 0) {
-        game.wakes = game.wakes || [];
-        game.wakes.push({ x: f.x, y: f.y, team: f.team, life: 1.5, size: 10 });
-        f.wakeTimer = 0.12;
-      }
     }
     // Jester: Uncanny Dodge recharge + invuln tick
     if (f.ability === 'blink') {
@@ -1113,24 +1104,11 @@ function step(dt) {
     }
     if (f.flash > 0) f.flash -= dt;
     if (f.negateFlash > 0) f.negateFlash -= dt;
+    if (f.blastTimer > 0) f.blastTimer -= dt;
     // Tick slow timer
     if (f.slowTimer > 0) f.slowTimer -= dt;
     // Tick stun timer (Hunter's CRIPPLING HOOK)
     if (f.stunTimer > 0) f.stunTimer -= dt;
-  });
-
-  // Wakes (Sapper passive)
-  game.wakes = (game.wakes || []).filter(wk => {
-    wk.life -= dt;
-    if (wk.life <= 0) return false;
-    // Slow any enemy fighter passing through
-    [red, blue].forEach(f => {
-      if (f.dead || f.team === wk.team) return;
-      if (dist(f, wk) < f.size + wk.size) {
-        f.slowTimer = Math.max(f.slowTimer, 0.4);
-      }
-    });
-    return true;
   });
 
   // Apply (and release) the slow effect. A slowed fighter's velocity is
@@ -1141,7 +1119,7 @@ function step(dt) {
   // not baseSpeed, so a slowed Berserker still gets its rage bonus.
   [red, blue].forEach(f => {
     if (f.dead) return;
-    if (f.dashTimer > 0 || f.aimTimer > 0) return; // dashes/aims set their own speed
+    if (f.dashTimer > 0 || f.aimTimer > 0 || f.blastTimer > 0) return; // dashes/aims/blasts set their own speed
     const targetSpeed = f.slowTimer > 0 ? f.speed * 0.6 : f.speed;
     const sp = Math.hypot(f.vx, f.vy);
     if (sp > 0.01) {
@@ -1293,6 +1271,12 @@ function step(dt) {
       // Trigger radius extends 6px beyond contact — mines threaten passage, not just collision
       if (!target.dead && dist(m, target) < target.size + m.size + 6) {
         damage(target, m.dmg);
+        // Blast RADIUS passive: knock the target away from the mine
+        const bx = target.x - m.x, by = target.y - m.y;
+        const bd = Math.hypot(bx, by) || 1;
+        target.vx = bx / bd * 400;
+        target.vy = by / bd * 400;
+        target.blastTimer = 0.22;
         spawnParticles(m.x, m.y, 12, '#3a2a1a', 'smoke');
         spawnParticles(m.x, m.y, 10, '#ff8c1a', 'shard');
         return false;
