@@ -200,7 +200,7 @@ const VICTORY_QUOTES = {
   'duelist_gambler':     "Whatever you rolled, this was the outcome.",
 
   // NECROMANCER wins
-  'necromancer_priest':      "Every blessing has a counter-blessing.",
+  'necromancer_priest':      "One prayer. Three skeletons. The math was clear.",
   'necromancer_berserker':   "One skeleton is a distraction. Three is a siege.",
   'necromancer_wizard':      "You solved the wrong problem.",
   'necromancer_knight':      "The dead don't care about armor.",
@@ -208,12 +208,12 @@ const VICTORY_QUOTES = {
   'necromancer_archer':      "Kill enough of them, and the rest come back.",
   'necromancer_jester':      "You blinked into the skeleton. Then it burst.",
   'necromancer_cannoneer':   "Two for the price of one.",
-  'necromancer_duelist':     "The counter found the wrong target.",
+  'necromancer_duelist':     "Your blade found every opening. The army had more.",
   'necromancer_reaper':      "Even the reaper can be outnumbered.",
   'necromancer_ronin':       "The slash felt decisive. The army disagreed.",
-  'necromancer_witch':       "The mark made the burst hit harder. Ironic.",
-  'necromancer_hunter':      "The hook pulled a skeleton in. Then it burst.",
-  'necromancer_warlock':     "You picked the wrong target.",
+  'necromancer_witch':       "You cursed the dead. The dead returned the favor.",
+  'necromancer_hunter':      "You're built for one prey. I sent an army.",
+  'necromancer_warlock':     "You focused on the general. The army wasn't watching.",
   'necromancer_gambler':     "Odds were against you. Also skeletons.",
 
   // REAPER wins
