@@ -747,10 +747,12 @@ function loop() {
 }
 
 function bounce(f, w, h) {
-  if (f.x - f.size < 0) { f.x = f.size; f.vx = Math.abs(f.vx); }
-  if (f.x + f.size > w) { f.x = w - f.size; f.vx = -Math.abs(f.vx); }
-  if (f.y - f.size < 0) { f.y = f.size; f.vy = Math.abs(f.vy); }
-  if (f.y + f.size > h) { f.y = h - f.size; f.vy = -Math.abs(f.vy); }
+  let hit = false;
+  if (f.x - f.size < 0) { f.x = f.size; f.vx = Math.abs(f.vx); hit = true; }
+  if (f.x + f.size > w) { f.x = w - f.size; f.vx = -Math.abs(f.vx); hit = true; }
+  if (f.y - f.size < 0) { f.y = f.size; f.vy = Math.abs(f.vy); hit = true; }
+  if (f.y + f.size > h) { f.y = h - f.size; f.vy = -Math.abs(f.vy); hit = true; }
+  if (hit) sfx('wall', null, f.x);
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 

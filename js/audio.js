@@ -156,6 +156,7 @@ const Audio = (() => {
     counter()   { tone(1900, 0.09, 'triangle', 0.16, { glideTo: 1100 }); noise(0.07, 0.10, 'bandpass', 2800); },
     negate()    { noise(0.14, 0.16, 'highpass', 1800, { filterGlideTo: 5000 }); }, // soft whiff
     heal()      { tone(560, 0.22, 'sine', 0.12, { glideTo: 840 }); },
+    wall()      { noise(0.14, 0.28, 'lowpass', 520, { filterGlideTo: 90 }); tone(88, 0.12, 'square', 0.18, { glideTo: 42 }); },
     // --- lifecycle ---
     boneBurst() { noise(0.18, 0.38, 'bandpass', 2000, { filterGlideTo: 280 }); tone(130, 0.22, 'sawtooth', 0.14, { glideTo: 48 }); },
     death()     { noise(0.5, 0.4, 'lowpass', 1200, { filterGlideTo: 80 }); tone(300, 0.5, 'sawtooth', 0.2, { glideTo: 50 }); },
