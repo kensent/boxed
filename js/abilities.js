@@ -52,7 +52,7 @@ function fireAbility(f, enemy) {
       f.vy = Math.sin(ang) * f.speed * 3;
       f.dashTimer = 0.42;
       f.dashStartX = f.x; f.dashStartY = f.y; // visual: anchor for the wind-up hold
-      spawnParticles(f.x, f.y, 8, '#ff5555', 'shard');
+      spawnParticles(f.x, f.y, 8, '#ff5555', 'streak'); // explosive push-off (debris is saved for the impact beat)
       break;
     }
     case 'sword': {
