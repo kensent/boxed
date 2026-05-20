@@ -55,3 +55,69 @@ out of scope — their shapes are identity, not animation.
     per the GPU budget, and let style and color carry the fighter's voice: the
     same impact reads as crimson shards for one fighter and silver sparks for
     another. A burst that doesn't mark a beat shouldn't exist.
+
+---
+
+## Grammars — the built vocabulary
+
+The principles above are the WHY. These are the concrete grammars the system is
+built from — each a *shared structure* with a *per-fighter voice* (principle 9).
+Built from a deliberate blank-canvas teardown (the old animation + particle system
+was deleted first); everything below is line/shape-drawn, no particle pool.
+
+### Attack categories — "the fighter IS the weapon"
+Every fighter delivers its attack in one of four ways. The body itself reacts; we
+never float a separate weapon-effect around a static sprite.
+
+- **Melee (6)** — berserker, knight, duelist, reaper, jester, ronin. Three beats:
+  *anticipation → strike → recovery*, expressed by deforming the BODY
+  (squash/stretch/lunge/spin), plus a bespoke impact **force-shape**. Dashers use a
+  shared hold-and-whip anticipation (`meleeWindupHold`): the body holds at its
+  launch point, then whips forward (the sim launches instantly; this *reads* the
+  wind-up). Jester is the exception (teleports, so the mask-snap is the strike).
+- **Ranged (9)** — a release **kick** along the firing axis + a bespoke launch
+  flash. **Recoil** (back) for a projectile discharged from an implement —
+  cannoneer, priest (staff-bolt), archer (bow). **Thrust** (forward) for a cast or
+  throw — wizard, necromancer, witch, gambler, hunter. (`fireKick`/`fireDir`.)
+- **Set-down (1)** — sapper places a mine and steps back (no launch).
+- **Channel (1)** — warlock: a **lock-on reach** when the drain latches + a
+  sustained **channel pulse** synced to the drain ticks. Generic grammar, reusable
+  by any future channeler.
+
+### Force-shapes — the shape of the force at the point of contact
+One primitive per source (mirror of melee for projectiles/traps/minions, via the
+`game.impacts` list + `drawImpact`):
+circle (Berserker punch · cannonball) · flat bar (Knight bash) · line/lance
+(Duelist thrust + COUNTER) · arc/crescent (Reaper sweep — bleeds) · converging pair
+(Jester pinch) · long slash (Ronin iai) · arrow puncture · lightning zap · orb
+rune-pop · hex splat · coin ding · hook clink · bone shards · mine explosion.
+Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a heavy hit
+knocks the body back, a chip hit barely nudges (principle 5).
+
+### Charge telegraph — windup fighters (cannoneer, priest, ronin)
+A **charge ring** that fills like a clock, tightens inward, brightens, and flashes
+full at release. Per-fighter accent: cannoneer's aim-line, priest's orbiting
+gleams, ronin's coil + tremor. The kick + launch flash are the *release* of the ring.
+
+### State indicators — on the fighter, never a HUD badge
+Every status reads on the fighter itself; the **form** tells buff from debuff:
+- **Buff / ready / active = rings** (at most one per fighter, by ability): armed
+  glow (dodge) + the Wizard's 4-segment mana-shield gauge, active windows (parry,
+  invuln), bloodrage pulse, FOCUS gold aura, the negate-flash.
+- **Debuff / affliction = distinct non-ring forms** (so they never collide with the
+  rings): stun **stars** (overhead), Witch's-mark **sigil** (on the body), slow
+  **drag-trail** (ghosts lagging behind), fog **licks** (encroaching from outside).
+  LOADED is a momentary **"lucky" pop** (a trigger marker, not a state).
+
+### Death ceremony (hit feedback)
+The loser **shatters** (the biggest force-shape — death is the ceiling, principle 5)
++ a **K.O.** punch-in + a white **camera-snap** frame. Slow-mo (sim) carries the beat.
+
+### Two rules under all of it
+1. **Visual-only & balance-safe.** These read fields set in the sim path, but the
+   sim/balance never reads them back; spawners (`spawnImpact`, etc.) are
+   headless-guarded. After any change, confirm `./balance.sh` output is bit-identical
+   to the `MATCHUPS` block.
+2. **Render discipline.** Line/shape-drawn, bounded, no large alpha fills (principle
+   6). Never call `rng()`/`vrng()` in `draw()` (principle 7, GOTCHAS) — derive all
+   motion from time, positions, or pre-rolled values.
