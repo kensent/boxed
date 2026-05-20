@@ -20,3 +20,18 @@
 - Sim numbers have a noise floor (~1-2 points run to run) at N=300/matchup.
   Meaningful tuning resolution is ~±2-3, not ±1. Land in the right
   neighborhood and confirm with a full run.
+- **`drawFighter` early-returns for dead fighters** (`if (f.dead) return`), so a
+  dead fighter's sprite vanishes instantly. Death / post-death visuals must render
+  in the death-ceremony block of `draw()` (gated on `game.koTimer`), using the
+  loser's frozen position (`loser = game.winner === game.red ? game.blue : game.red`).
+  Note `koTimer`/`flashFrame` decrement by REAL time, not the slow-mo `timeScale` —
+  so anything keyed off them plays at real speed during the slow-mo finish.
+- **"Visual-only" is not automatically balance-safe.** A field set in the sim path
+  is safe only if gameplay never reads it back AND you don't change rng/vrng usage
+  or control flow. Two traps we hit: removing particle spawns was safe (they only
+  touch `vrng`, a separate stream from the `rng` that decides outcomes), but
+  `hitStop()` looks like pure "feel" yet is replicated in the headless runner for
+  deterministic replay — disabling it SHIFTED matchups. Screen-shake is safe
+  (headless-skipped); new effect spawners (e.g. `spawnImpact`) are headless-guarded
+  for the same reason. After touching anything in the sim path, confirm
+  `./balance.sh` output is bit-identical to the `MATCHUPS` block.

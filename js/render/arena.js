@@ -153,6 +153,73 @@ function drawImpact(im) {
   ctx.restore();
 }
 
+// drawDeath(f, prog) — the per-fighter death "undoing": the loser's form comes apart
+// in its own voice over the K.O. window (prog 0→1). Three layers: (1) the sprite
+// transforms one last time (drawFighter skips dead fighters, so we draw it here),
+// (2) a bespoke voice effect, (3) a settling residue. Line-drawn, deterministic.
+// Fighters without a bespoke death fall through to the generic shatter.
+function drawDeath(f, prog) {
+  const a = 1 - prog;
+  const lc = f.team === 'red' ? '255,46,46' : '46,158,255';
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  switch (f.ability) {
+    case 'tackle': {  // Berserker — BURST: blown apart in a concussive blast
+      // 1) the sprite scales up and fades (blown outward)
+      if (prog < 0.45) {
+        ctx.save();
+        ctx.globalAlpha = 1 - prog / 0.45;
+        const s = 1 + prog * 1.6;
+        ctx.scale(s, s);
+        const fc = f.lastFacing || 0;
+        if (Math.cos(fc) < 0) { ctx.scale(-1, 1); ctx.rotate(Math.PI - fc); } else { ctx.rotate(fc); }
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2) concussive blast — crimson radial spikes + ring + white-hot core
+      const bp = Math.min(1, prog / 0.6), ba = 1 - bp, r = 8 + bp * 52;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(255,60,30,${(ba * 0.9).toFixed(3)})`;
+      ctx.lineWidth = 4 * ba + 1;
+      for (let i = 0; i < 12; i++) { const g = (i / 12) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 6, Math.sin(g) * 6); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
+      ctx.strokeStyle = `rgba(255,120,60,${(ba * 0.8).toFixed(3)})`;
+      ctx.lineWidth = 3 * ba + 1;
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,240,200,${ba.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 5 * ba + 1, 0, Math.PI * 2); ctx.fill();
+      // 3) residue — scattered crimson shards settling, fading over the window
+      ctx.fillStyle = `rgba(170,0,0,${(a * 0.6).toFixed(3)})`;
+      for (let i = 0; i < 7; i++) {
+        const g = (i / 7) * Math.PI * 2 + i * 0.7;
+        const rr = 16 + Math.min(1, prog / 0.5) * 22 + (i % 3) * 6;
+        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g);
+        ctx.fillRect(-2.5, -1, 5, 2); ctx.restore();
+      }
+      break;
+    }
+    default: {  // generic shatter — fighters not yet given a bespoke death
+      if (prog < 0.55) {
+        const bp = prog / 0.55, da = 1 - bp;
+        ctx.strokeStyle = `rgba(255,255,255,${(da * 0.9).toFixed(3)})`;
+        ctx.lineWidth = 3 * da + 1;
+        ctx.beginPath(); ctx.arc(0, 0, 6 + bp * 46, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(${lc},${da.toFixed(3)})`;
+        ctx.lineWidth = 2 * da + 0.5;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 12; i++) {
+          const ang = (i / 12) * Math.PI * 2 + i * 0.6;
+          const r0 = 4 + bp * 18, r1 = r0 + 10 + bp * 24;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
+          ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, game.w, game.h);
 
@@ -697,31 +764,9 @@ function draw() {
     const loser = game.winner === game.red ? game.blue : game.red;
     const prog = 1 - game.koTimer / 1.2;             // 0 → 1 over the K.O. lifetime
 
-    // Loser shatter — the biggest force-shape in the game: a white shockwave ring
-    // + radial shards in the loser's colour, bursting out in the first beat.
-    if (prog < 0.55) {
-      const bp = prog / 0.55;                          // 0 → 1 over the burst
-      const a = 1 - bp;
-      const lc = loser.team === 'red' ? '255,46,46' : '46,158,255';
-      ctx.save();
-      ctx.translate(loser.x, loser.y);
-      ctx.strokeStyle = `rgba(255,255,255,${(a * 0.9).toFixed(3)})`;
-      ctx.lineWidth = 3 * a + 1;
-      ctx.beginPath(); ctx.arc(0, 0, 6 + bp * 46, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = `rgba(${lc},${a.toFixed(3)})`;
-      ctx.lineWidth = 2 * a + 0.5;
-      ctx.lineCap = 'round';
-      const N = 12;
-      for (let i = 0; i < N; i++) {
-        const ang = (i / N) * Math.PI * 2 + i * 0.6;   // deterministic spread
-        const r0 = 4 + bp * 18, r1 = r0 + 10 + bp * 24;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
-        ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    // The loser's death "undoing" — per-fighter (drawDeath); generic shatter for any
+    // fighter without a bespoke death yet.
+    drawDeath(loser, prog);
 
     // "K.O." — punches in oversized, settles, then fades. Winner-coloured glow.
     const age = 1.2 - game.koTimer;
