@@ -445,6 +445,9 @@ function makeFighter(t, team, x, y) {
     vy: Math.sin(a) * t.speed,
     cdTimer: t.cd * 0.5 + rng() * 0.5,
     swingTimer: 0, dashTimer: 0, dashHit: false, blastTimer: 0, flash: 0, negateFlash: 0, dead: false,
+    // Melee body-language (visual only; never read by the sim):
+    //   punchImpact — attacker's squash-on-contact; recoilTimer/Dir — victim's knockback.
+    punchImpact: 0, recoilTimer: 0, recoilDir: 0, dashStartX: 0, dashStartY: 0,
     aimTimer: 0, aimAngle: 0, aimAbility: null,
     shotCount: 0, trail: [],
     slowTimer: 0, stunTimer: 0,
@@ -861,6 +864,10 @@ function step(dt) {
         // Berserker: the tackle is a pure collision charge — crashing in IS the hit.
         if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
           damage(enemy, f.dmg, undefined, f);
+          f.punchImpact = 0.14; // visual: the fist flattens on contact
+          // Heavy crimson debris at the contact point — the Berserker's voice on
+          // the strike beat (ANIMATION.md #11), distinct from generic hit sparks.
+          spawnParticles((f.x + enemy.x) / 2, (f.y + enemy.y) / 2, 12, '#ff3020', 'shard');
           f.dashTimer = 0;
           const a = Math.atan2(f.vy, f.vx);
           f.vx = Math.cos(a) * f.speed;
@@ -1105,6 +1112,8 @@ function step(dt) {
     }
     if (f.flash > 0) f.flash -= dt;
     if (f.negateFlash > 0) f.negateFlash -= dt;
+    if (f.punchImpact > 0) f.punchImpact -= dt;
+    if (f.recoilTimer > 0) f.recoilTimer -= dt;
     if (f.blastTimer > 0) f.blastTimer -= dt;
     // Tick slow timer
     if (f.slowTimer > 0) f.slowTimer -= dt;

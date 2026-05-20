@@ -109,6 +109,13 @@ function damage(target, dmg, srcKind, src) {
   } else {
     target.flash = 0.12;
   }
+  // Victim recoil — a melee body-contact hit (src present, no srcKind) knocks the
+  // target's body back along the hit direction. Visual only: the sim reads neither
+  // recoilTimer nor recoilDir, and the fighter's true x/y is untouched.
+  if (src && !srcKind) {
+    target.recoilDir = Math.atan2(target.y - src.y, target.x - src.x);
+    target.recoilTimer = 0.16;
+  }
   // Sound: drain ticks are silent — the sustained `drain` beam drone (played
   // once when the channel starts) covers the whole leech. Other hits play a
   // punchier sound, pitch-scaled to damage magnitude.

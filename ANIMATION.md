@@ -46,3 +46,12 @@ out of scope — their shapes are identity, not animation.
     clear contract for corresponding audio moments. When we revamp audio later,
     the animation timing and intensity are already the spec — no retrofitting
     needed.
+
+11. **Particles punctuate a beat — they are never ambient.** Every burst is tied
+    to a specific moment: charge motes on the windup, debris on the strike, a
+    settling puff on recovery. No constant sprinkle, no idle emitters (that would
+    break "transient over looping"). Spawn particles in the sim/ability path
+    (where RNG is allowed) — never in `draw()`. Keep counts bounded and shape-based
+    per the GPU budget, and let style and color carry the fighter's voice: the
+    same impact reads as crimson shards for one fighter and silver sparks for
+    another. A burst that doesn't mark a beat shouldn't exist.

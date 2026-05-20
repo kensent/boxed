@@ -51,6 +51,7 @@ function fireAbility(f, enemy) {
       f.vx = Math.cos(ang) * f.speed * 3;
       f.vy = Math.sin(ang) * f.speed * 3;
       f.dashTimer = 0.42;
+      f.dashStartX = f.x; f.dashStartY = f.y; // visual: anchor for the wind-up hold
       spawnParticles(f.x, f.y, 8, '#ff5555', 'shard');
       break;
     }

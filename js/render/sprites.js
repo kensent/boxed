@@ -927,6 +927,29 @@ function drawFighter(f) {
 
   ctx.save();
   ctx.translate(f.x, f.y);
+  // Tackle anticipation (visual only — collisions always use the true x/y). The
+  // sim launches the dash instantly, so to get a readable wind-up we HOLD the whole
+  // fighter near its launch point for ~0.16s — offsetting back toward dashStart by
+  // (1−ease) cancels the sim's forward advance early on — then release as `ease`
+  // climbs, whipping it forward to catch up. The hold is what the eye reads.
+  // CAP: as the fighter nears the enemy, force ease→1 so the body is always caught
+  // up by the moment of contact — otherwise a close tackle would pop forward.
+  let windupActive = false, windupEase = 1;
+  if (f.ability === 'tackle' && f.punchImpact <= 0 && f.dashTimer > 0.26) {
+    const wt = (0.42 - f.dashTimer) / 0.16;        // 0 → 1 across the wind-up
+    let ease = wt * wt * wt;                         // dwell early, whip late
+    const enemy = f.team === 'red' ? game.blue : game.red;
+    if (enemy && !enemy.dead) {
+      const contactD = FIGHTER_SIZE * 2;             // dist at which the tackle connects
+      const d = Math.hypot(enemy.x - f.x, enemy.y - f.y);
+      // Ramp release across the last 70px before contact (0 far → 1 at contact).
+      const near = 1 - Math.max(0, Math.min(1, (d - contactD) / 70));
+      ease = Math.max(ease, near);
+    }
+    windupActive = true;
+    windupEase = ease;
+    ctx.translate((f.dashStartX - f.x) * (1 - ease), (f.dashStartY - f.y) * (1 - ease));
+  }
   ctx.strokeStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -1137,7 +1160,42 @@ function drawFighter(f) {
       : (f.lastFacing || 0);
   }
   f.lastFacing = facing;
+  // Melee body-language (visual only — the sim never reads these fields).
+  // Recoil shifts the whole body along the hit direction; it's world-aligned, so
+  // it's applied BEFORE the facing rotation. Attacker deformation stretches or
+  // squashes along FORWARD (local +x in the facing frame): the Berserker's fist
+  // elongates as it charges, then flattens on contact then springs back.
+  let recoilX = 0, recoilY = 0, recoilSquash = 0;
+  if (f.recoilTimer > 0) {
+    const k = f.recoilTimer / 0.16;           // 1 → 0
+    const mag = 13 * k;                        // peak ~13px, decays to 0
+    recoilX = Math.cos(f.recoilDir) * mag;
+    recoilY = Math.sin(f.recoilDir) * mag;
+    recoilSquash = 0.22 * k;                   // body crumples along the hit axis
+  }
+  let bodyX = 1, bodyY = 1;
+  if (f.ability === 'tackle') {
+    if (f.punchImpact > 0) {
+      const k = f.punchImpact / 0.14;          // 1 → 0
+      bodyX = 1 - 0.40 * k;                     // strike→recovery: flatten forward, spring back
+      bodyY = 1 + 0.40 * k;                     // bulge sideways
+    } else if (windupActive) {
+      const coil = 1 - windupEase;              // releases in lockstep with the hold (incl. the cap)
+      bodyX = 1 - 0.24 * coil;                  // anticipation: squat/coil while held
+      bodyY = 1 + 0.24 * coil;
+    } else if (f.dashTimer > 0) {
+      bodyX = 1.35;                             // strike: stretch along the charge
+      bodyY = 0.74;
+    }
+  }
   ctx.save();
+  ctx.translate(recoilX, recoilY);
+  if (recoilSquash > 0) {
+    // Crumple along the world-space hit axis: rotate to it, compress, rotate back.
+    ctx.rotate(f.recoilDir);
+    ctx.scale(1 - recoilSquash, 1 + recoilSquash * 0.4);
+    ctx.rotate(-f.recoilDir);
+  }
   // Never let a sprite go upside-down. A sprite's forward is its local +x.
   // If `facing` points into the left half (cos < 0), rotating there would
   // invert the sprite — so instead mirror it horizontally and rotate by the
@@ -1149,6 +1207,7 @@ function drawFighter(f) {
   } else {
     ctx.rotate(facing);
   }
+  ctx.scale(bodyX, bodyY);
   drawShape(ctx, f);
   ctx.restore();
 
