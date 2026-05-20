@@ -906,8 +906,10 @@ function drawFighter(f) {
   // Anticipation hold — per-fighter dash/wind-up timings (heavier fighters dwell
   // longer relative to their dash). Applies the hold translate to the whole body.
   let windup = { active: false, ease: 1 };
-  if (f.ability === 'tackle')      windup = meleeWindupHold(f, enemy, 0.42, 0.16);
-  else if (f.ability === 'sword')  windup = meleeWindupHold(f, enemy, 0.26, 0.12);
+  if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, 0.42, 0.16);
+  else if (f.ability === 'sword')    windup = meleeWindupHold(f, enemy, 0.26, 0.12);
+  else if (f.ability === 'riposte')  windup = meleeWindupHold(f, enemy, 0.3, 0.10);
+  else if (f.ability === 'sweep')    windup = meleeWindupHold(f, enemy, 0.25, 0.10);
 
   // Team-colour border ring — reads position and team allegiance.
   ctx.strokeStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
@@ -936,7 +938,8 @@ function drawFighter(f) {
   }
 
   // ----- Per-fighter body deform (stretch/squash along FORWARD = local +x) -----
-  let bodyX = 1, bodyY = 1;
+  // bodyRot adds an extra spin on top of facing (used by rotor-type fighters).
+  let bodyX = 1, bodyY = 1, bodyRot = 0;
   const impactK = f.meleeImpact > 0 ? f.meleeImpact / f.meleeImpactMax : 0;  // 1 → 0
   if (f.ability === 'tackle') {
     // Berserker — fast, whippy PUNCH.
@@ -965,6 +968,33 @@ function drawFighter(f) {
       bodyX = 1.16;                                 // ram: firm forward set, not a whip
       bodyY = 0.90;
     }
+  } else if (f.ability === 'riposte') {
+    // Duelist — a precise DART: the whole rapier loads back, then shoots forward
+    // and elongates into a needle; it stays long through contact, then retracts.
+    if (f.meleeImpact > 0) {
+      bodyX = 1 + 0.30 * impactK;                   // connects fully extended, snaps back
+      bodyY = 1 - 0.10 * impactK;
+    } else if (windup.active) {
+      const coil = 1 - windup.ease;                 // retract: load the needle back
+      bodyX = 1 - 0.22 * coil;
+      bodyY = 1 + 0.08 * coil;
+    } else if (f.dashTimer > 0) {
+      bodyX = 1.5;                                   // the dart: elongate into a needle
+      bodyY = 0.85;
+    }
+  } else if (f.ability === 'sweep') {
+    // Reaper — the rotor SPINS UP: wound back, then a fast accelerating multi-
+    // rotation that bulges outward (centrifugal) and settles. The sprite itself
+    // is the buzzsaw — uniform scale + extra spin, not a directional lunge.
+    if (f.sweepTimer > 0) {
+      const sp = 1 - f.sweepTimer / 0.3;             // 0 → 1 over the spin
+      const smooth = sp * sp * (3 - 2 * sp);         // smoothstep: accelerate then settle
+      const SPIN = Math.PI * 2 * 2.5;                // 2.5 turns
+      const windBack = 0.5;                          // wound back before release
+      bodyRot = -windBack + smooth * (SPIN + windBack);
+      const s = 1 + 0.18 * Math.sin(sp * Math.PI);   // centrifugal bulge, returns to 1
+      bodyX = s; bodyY = s;
+    }
   }
 
   ctx.save();
@@ -980,6 +1010,7 @@ function drawFighter(f) {
   } else {
     ctx.rotate(facing);
   }
+  ctx.rotate(bodyRot);          // extra spin (rotor fighters); 0 for everyone else
   ctx.scale(bodyX, bodyY);
   drawShape(ctx, f);
   ctx.restore();
@@ -1031,6 +1062,94 @@ function drawFighter(f) {
     ctx.lineTo(0, half * 0.7);
     ctx.stroke();
     ctx.restore();
+  }
+
+  // ===== DUELIST — puncture lance (bespoke impact) ==========================
+  // A thin bright lance along the thrust AXIS punches forward from the tip and a
+  // small 4-point glint marks the hit — precise and linear, neither ring nor bar.
+  if (f.ability === 'riposte' && f.meleeImpact > 0) {
+    const prog = 1 - impactK;                        // 0 → 1
+    const a = 1 - prog;
+    ctx.save();
+    ctx.rotate(facing);
+    ctx.lineCap = 'round';
+    const x0 = FIGHTER_SIZE * 0.6;
+    const x1 = FIGHTER_SIZE + 6 + prog * 16;         // lance drives forward as it fades
+    ctx.strokeStyle = `rgba(220,220,245,${(a * 0.9).toFixed(3)})`;
+    ctx.lineWidth = 2 * a + 0.4;
+    ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x1, 0); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+    ctx.lineWidth = 0.8 * a + 0.3;
+    ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x1, 0); ctx.stroke();
+    // tip glint
+    const g = 3 * a + 1;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x1 - g, 0); ctx.lineTo(x1 + g, 0);
+    ctx.moveTo(x1, -g);    ctx.lineTo(x1, g);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ----- Duelist COUNTER — reactive riposte jab toward the attacker ---------
+  // Same puncture motif, fired toward counterDir (not the facing) when COUNTER
+  // triggers off a melee hit. A quick flick, no body lunge.
+  if (f.ability === 'riposte' && f.counterAnim > 0) {
+    const a = f.counterAnim / 0.16;                  // 1 → 0
+    ctx.save();
+    ctx.rotate(f.counterDir);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(200,200,235,${(a * 0.85).toFixed(3)})`;
+    ctx.lineWidth = 1.6 * a + 0.3;
+    ctx.beginPath();
+    ctx.moveTo(FIGHTER_SIZE * 0.6, 0);
+    ctx.lineTo(FIGHTER_SIZE + 14, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== REAPER — bleeding crescent slash (bespoke impact) ==================
+  // A whirling blade carves an ARC, so the force signature is a crescent (the
+  // fourth distinct primitive — circle / bar / line / ARC). The Reaper's VOICE on
+  // top of that shared grammar is BLOOD: crimson droplets flick off the cutting
+  // edge as the arc sweeps out. Droplets are deterministic render flecks (no rng,
+  // no particle pool), bounded and shape-based — within the GPU budget.
+  if (f.ability === 'sweep' && f.meleeImpact > 0) {
+    const prog = 1 - impactK;                        // 0 → 1
+    const a = 1 - prog;
+    const r = FIGHTER_SIZE + 6 + prog * 10;          // sweeps outward as it fades
+    const span = 1.7;                                // ~100° crescent
+    const mid = facing + 0.5 - prog * 1.0;           // arc carves across the front
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(170,0,0,${(a * 0.9).toFixed(3)})`;
+    ctx.lineWidth = 3.5 * a + 0.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, mid - span / 2, mid + span / 2);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,90,70,${a.toFixed(3)})`;   // bright cutting edge
+    ctx.lineWidth = 1.4 * a + 0.3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r - 2.5, mid - span / 2, mid + span / 2);
+    ctx.stroke();
+    // Blood flicked off the cutting edge — a few thin radial spray streaks,
+    // deterministic (no rng). Kept RESTRAINED: the Reaper is the lowest-damage
+    // melee (16) and fires most often (cd 1.0), so by Principle 5 its impact sits
+    // on the LIGHT side of the four. Blood is its voice, not a bigger hit.
+    const N = 5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(165,0,0,${(a * 0.9).toFixed(3)})`;
+    for (let i = 0; i < N; i++) {
+      const frac = i / (N - 1);
+      const da = mid - span / 2 + frac * span;        // spread along the arc
+      const r0 = r + 1 + prog * (6 + (i % 3) * 4);    // flung outward, varied
+      const len = (4 + (i % 2) * 3) * (0.4 + prog);   // short streak, elongates a little
+      const ux = Math.cos(da), uy = Math.sin(da);
+      ctx.lineWidth = (1.8 - frac * 0.5) * a + 0.4;
+      ctx.beginPath();
+      ctx.moveTo(ux * r0, uy * r0);
+      ctx.lineTo(ux * (r0 + len), uy * (r0 + len));
+      ctx.stroke();
+    }
   }
 
   ctx.restore();

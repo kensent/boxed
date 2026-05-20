@@ -130,6 +130,7 @@ function fireAbility(f, enemy) {
       f.parryTimer = 0.25;
       f.swingTimer = 0.3;
       f.dashHit = false;
+      f.dashStartX = f.x; f.dashStartY = f.y; // visual anchor for the wind-up hold
       break;
     }
     case 'raise': {
@@ -157,6 +158,7 @@ function fireAbility(f, enemy) {
       f.sweepTimer = 0.3;
       f.sweepHit = false;
       f.dashHit = false;
+      f.dashStartX = f.x; f.dashStartY = f.y; // visual anchor for the wind-up hold
       break;
     }
     case 'iai': {
