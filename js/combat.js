@@ -45,7 +45,7 @@ function damage(target, dmg, srcKind, src) {
   }
   if (target.ability === 'blink' && target.dodgeReady) {
     target.dodgeReady = false;
-    target.dodgeTimer = 6.0;
+    target.dodgeTimer = target.dodgeCd;
     target.dodgeInvuln = 0.3;
     target.negateFlash = 0.25;
     spawnParticles(target.x, target.y, 8, '#e8d8b8', 'spark');
@@ -62,11 +62,11 @@ function damage(target, dmg, srcKind, src) {
     sfx('parry', null, target.x);
     return;
   }
-  // Knight: Plate Armor — flat −2 dmg per hit (min 1).
+  // Knight: Plate Armor — flat −armorFlat dmg per hit (min 1).
   if (target.ability === 'sword') {
-    dmg = Math.max(1, dmg - 2);
+    dmg = Math.max(1, dmg - target.armorFlat);
   }
-  // Wizard: Mana Shield — 20% dmg reduction per live orb (1 orb=20%, 4 orbs=80%).
+  // Wizard: Mana Shield — shieldReduction dmg reduction per live orb, up to orbCap*shieldReduction.
   // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,
   // so the Wizard trades offense (orbs hitting the enemy) against defense.
   let shielded = false;
@@ -74,7 +74,7 @@ function damage(target, dmg, srcKind, src) {
     const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team && !p.spent);
     if (orbIdx !== -1) {
       const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
-      dmg = dmg * (1 - orbCount * 0.2); // 20% reduction per orb (1=20%, 4=80%)
+      dmg = dmg * (1 - orbCount * target.shieldReduction);
       game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
       shielded = true;
     }

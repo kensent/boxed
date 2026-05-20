@@ -801,15 +801,15 @@ function step(dt) {
     }
 
     // ---- PASSIVES ----
-    // Priest: Divine Grace — regen 1.0 hp/s
+    // Priest: Divine Grace — regen f.healRate hp/s
     if (f.ability === 'lightning' && f.hp < f.maxHp) {
-      f.hp = Math.min(f.maxHp, f.hp + 1.0 * dt);
+      f.hp = Math.min(f.maxHp, f.hp + f.healRate * dt);
     }
-    // Berserker: Bloodrage — +33% speed when below 50% hp.
+    // Berserker: Bloodrage — +rageBoost% speed when below 50% hp.
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
     if (f.ability === 'tackle') {
       const rageActive = f.hp < f.maxHp * 0.5;
-      const targetSpeed = rageActive ? f.baseSpeed * 1.33 : f.baseSpeed;
+      const targetSpeed = rageActive ? f.baseSpeed * (1 + f.rageBoost) : f.baseSpeed;
       // Renormalize current velocity to new speed when not dashing
       if (f.dashTimer <= 0) {
         const sp = Math.hypot(f.vx, f.vy) || 1;
@@ -872,10 +872,10 @@ function step(dt) {
         // fighter's strike range, the single hit lands (once per dash).
         if (!f.dashHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach) {
           const dealtDmg = damage(enemy, f.dmg, undefined, f);
-          // Reaper: Blood Harvest — heal 50% of the damage dealt.
+          // Reaper: Blood Harvest — heal f.harvestRate of the damage dealt.
           // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
           if (f.ability === 'sweep' && !f.dead) {
-            const healAmt = Math.round((dealtDmg || 0) * 0.5);
+            const healAmt = Math.round((dealtDmg || 0) * f.harvestRate);
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
             spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
@@ -943,7 +943,7 @@ function step(dt) {
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
 
     // Warlock: drain beam channel. Ticks f.dmg every 0.2s while the enemy stays in
-    // range, slowing them (ENERVATE passive) and healing f.dmg * 0.35 per tick.
+    // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
     if (f.drainTimer > 0) {
       f.drainTimer -= dt;
       f.drainElapsed += dt;
@@ -955,11 +955,12 @@ function step(dt) {
           f.drainTarget = null;
         } else {
           t.slowTimer = Math.max(t.slowTimer, 0.3); // tethered targets are slowed
+          t.activeSlowRate = f.slowRate;
           f.drainTickTimer -= dt;
           if (f.drainTickTimer <= 0) {
             f.drainTickTimer = 0.2;
             damage(t, f.dmg, 'drain');
-            f.hp = Math.min(f.maxHp, f.hp + f.dmg * 0.35);
+            f.hp = Math.min(f.maxHp, f.hp + f.dmg * f.drainHealRate);
             spawnParticles(t.x, t.y, 4, '#c050ff', 'spark');
           }
         }
@@ -1120,7 +1121,7 @@ function step(dt) {
   [red, blue].forEach(f => {
     if (f.dead) return;
     if (f.dashTimer > 0 || f.aimTimer > 0 || f.blastTimer > 0) return; // dashes/aims/blasts set their own speed
-    const targetSpeed = f.slowTimer > 0 ? f.speed * 0.6 : f.speed;
+    const targetSpeed = f.slowTimer > 0 ? f.speed * (f.activeSlowRate ?? 0.6) : f.speed;
     const sp = Math.hypot(f.vx, f.vy);
     if (sp > 0.01) {
       f.vx = f.vx / sp * targetSpeed;
@@ -1242,9 +1243,9 @@ function step(dt) {
       let dmgOut = p.dmg;
       if (p.kind === 'hex') {
         if (target.witchMarkTimer > 0) {
-          dmgOut = dmgOut * 1.5;
+          dmgOut = dmgOut * (1 + p.markBonus);
         }
-        target.witchMarkTimer = 3.0;
+        target.witchMarkTimer = p.markDuration;
       }
       damage(target, dmgOut, 'projectile');
       const pColor = p.kind === 'lightning' ? '#ffe83d' : p.kind === 'cannon' ? '#ff8c1a' : (p.kind === 'hex' ? '#7dff3d' : '#3dff8a');

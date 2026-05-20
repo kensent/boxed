@@ -20,7 +20,7 @@ function fireAbility(f, enemy) {
   switch (f.ability) {
     case 'lightning': {
       // Wind-up: charge, then aim and fire at the moment of release
-      f.aimTimer = 0.45;
+      f.aimTimer = f.windupTime;
       f.aimAbility = 'lightning';
       sfx('chargeUp', null, f.x);
       // slow the priest during wind-up
@@ -31,12 +31,12 @@ function fireAbility(f, enemy) {
       // No wind-up: fire immediately while moving
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
       f.shotCount = (f.shotCount || 0) + 1;
-      const isVolley = (f.shotCount % 4 === 0);
+      const isVolley = (f.shotCount % f.volleyEvery === 0);
       if (isVolley) {
-        // 4-arrow fan — same 7 dmg per arrow, just more of them
+        // volleyCount-arrow fan — same dmg per arrow, just more of them
         const spread = 0.10;
-        for (let i = 0; i < 4; i++) {
-          const a2 = ang + (i - 1.5) * spread;
+        for (let i = 0; i < f.volleyCount; i++) {
+          const a2 = ang + (i - (f.volleyCount - 1) / 2) * spread;
           game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*290, vy:Math.sin(a2)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
         }
         // visual cue: green particle burst at the archer
@@ -66,16 +66,16 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'mine': {
-      game.mines.push({ x:f.x, y:f.y, team:f.team, dmg:f.dmg, life:6, armed:0.5, size:10 });
+      game.mines.push({ x:f.x, y:f.y, team:f.team, dmg:f.dmg, life:6, armed:f.mineArmDelay, size:10 });
       break;
     }
     case 'cast': {
-      // Spawn 2 orb projectiles. They home toward enemy, don't despawn at edges,
-      // and can be parried/reflected by Duelist. Max 4 alive per team.
-      // More orbs = stronger Mana Shield (20% reduction each, up to 80% at 4).
+      // Spawn f.orbsPerCast orb projectiles. They home toward enemy, don't despawn at edges,
+      // and can be parried/reflected by Duelist. Max f.orbCap alive per team.
+      // More orbs = stronger Mana Shield (f.shieldReduction each, up to orbCap*shieldReduction).
       const existing = game.projectiles.filter(p => p.team === f.team && p.kind === 'orb').length;
-      const toSpawn = Math.min(2, 4 - existing);
-      // At the 4-orb cap nothing spawns — flag it so the cooldown is refunded
+      const toSpawn = Math.min(f.orbsPerCast, f.orbCap - existing);
+      // At the orbCap nothing spawns — flag it so the cooldown is refunded
       // (a short retry) instead of burning the full cast on a no-op, and skip
       // the sound + particles so a capped cast has no misleading feedback.
       f.castCapped = (toSpawn <= 0);
@@ -124,8 +124,8 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'cannon': {
-      // 1.0s windup, then fires a fast straight-line cannonball
-      f.aimTimer = 1.0;
+      // f.windupTime windup, then fires a fast straight-line cannonball
+      f.aimTimer = f.windupTime;
       f.aimAbility = 'cannon';
       sfx('chargeBig', null, f.x);
       // Stop in place during windup
@@ -173,14 +173,14 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'iai': {
-      // Ronin: 0.7s windup, then teleport-step strike. Resolve passive reduces dmg during windup.
-      f.iaiWindup = 0.7;
+      // Ronin: f.windupTime windup, then teleport-step strike. Resolve passive reduces dmg during windup.
+      f.iaiWindup = f.windupTime;
       f.iaiHit = false;
       spawnParticles(f.x, f.y, 8, '#e8c020', 'rune');
       break;
     }
     case 'hex': {
-      // Witch: fires a fast bouncing projectile. Up to 5 wall bounces.
+      // Witch: fires a fast bouncing projectile. Up to f.maxBounces wall bounces.
       const enemy = f === game.red ? game.blue : game.red;
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
       game.projectiles.push({
@@ -188,7 +188,9 @@ function fireAbility(f, enemy) {
         vx: Math.cos(ang) * 280, vy: Math.sin(ang) * 280,
         team: f.team, dmg: f.dmg, life: 4.5,
         kind: 'hex', size: 5, homing: 60,
-        bounces: 5,
+        bounces: f.maxBounces,
+        markBonus: f.markBonus,
+        markDuration: f.markDuration,
         spin: 0,
       });
       spawnParticles(f.x, f.y, 3, '#7dff3d', 'rune');
