@@ -42,6 +42,7 @@ function fireAbility(f, enemy) {
       } else {
         game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*290, vy:Math.sin(ang)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
       }
+      f.fireKick = 0.12; f.fireKickMax = 0.12; f.fireDir = ang; // light bowstring snap-back
       break;
     }
     case 'tackle': {
@@ -65,6 +66,7 @@ function fireAbility(f, enemy) {
     }
     case 'mine': {
       game.mines.push({ x:f.x, y:f.y, team:f.team, dmg:f.dmg, life:6, armed:f.mineArmDelay, size:10 });
+      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x); // set the trap, step back
       break;
     }
     case 'cast': {
@@ -150,6 +152,7 @@ function fireAbility(f, enemy) {
         attackCd: 0.5, spin: 0, hitCd: 0, flash: 0,
         chargeTimer: 0, chargeHit: false,
       });
+      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x); // raise gesture (thrust)
       break;
     }
     case 'sweep': {
@@ -185,6 +188,7 @@ function fireAbility(f, enemy) {
         markDuration: f.markDuration,
         spin: 0,
       });
+      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // hex conjure (thrust)
       break;
     }
     case 'grapple': {
@@ -200,6 +204,7 @@ function fireAbility(f, enemy) {
         kind: 'hook', size: 5, homing: 0,
         hookSrc: f,
       });
+      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw the hook (thrust)
       break;
     }
     case 'drain': {
@@ -244,6 +249,7 @@ function resolveAim(f) {
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
     game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:f.dmg, life:2.2, kind:'lightning', size:5, homing:70, cruise:200 });
     sfx('lightning', null, f.x);
+    f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = ang; // staff-bolt discharge (recoil)
   } else if (f.aimAbility === 'cannon') {
     // Straight line, fast, big, no homing. Muzzle flash + smoke.
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
@@ -257,6 +263,7 @@ function resolveAim(f) {
     // more on average (verified monotonic in the sim). COIN_DMG (top-level)
     // is the single balance lever — per-coin damage.
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
+    f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = ang; // coin throw (thrust)
     // The die has just settled on its face — a hard clack, brighter on a
     // high roll (5-6) to signal the lucky result before the coins fly.
     sfx(f.gamblerRoll >= 5 ? 'diceLandBig' : 'diceLand', null, f.x);

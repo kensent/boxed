@@ -1105,8 +1105,11 @@ function drawFighter(f) {
   let fireX = 0, fireY = 0;
   if (f.fireKick > 0) {
     const k = f.fireKick / f.fireKickMax;            // 1 → 0
-    const recoil = (f.ability === 'cannon' || f.ability === 'lightning' || f.ability === 'arrow');
-    const mag = (f.ability === 'cannon' ? 12 : 7) * k;  // Cannoneer = the heaviest kick
+    // Discharged-from-an-implement weapons recoil BACK; casts/throws thrust FORWARD.
+    // (Sapper "mine" steps back from the trap it just set.)
+    const recoil = (f.ability === 'cannon' || f.ability === 'lightning' ||
+                    f.ability === 'arrow' || f.ability === 'mine');
+    const mag = ({ cannon: 12, lightning: 8, arrow: 5, mine: 5 }[f.ability] || 7) * k;
     const along = recoil ? -mag : mag;               // − = back (recoil), + = forward (thrust)
     fireX = Math.cos(f.fireDir) * along;
     fireY = Math.sin(f.fireDir) * along;
@@ -1426,6 +1429,125 @@ function drawFighter(f) {
     ctx.fillStyle = `rgba(255,232,61,${a.toFixed(3)})`;            // yellow sigil core
     drawStar(ctx, 0, 0, 4, 6 + prog * 6, 2);
     ctx.fill();
+    ctx.restore();
+  }
+
+  // ===== PRIEST — divine spark (bespoke launch flash) =======================
+  // A white cross-spark + yellow ring at the staff tip as the bolt discharges.
+  if (f.ability === 'lightning' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 5), Math.sin(f.fireDir) * (FIGHTER_SIZE + 5));
+    ctx.lineCap = 'round';
+    const len = 5 + prog * 10;
+    ctx.strokeStyle = `rgba(255,255,220,${a.toFixed(3)})`;
+    ctx.lineWidth = 2 * a + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-len, 0); ctx.lineTo(len, 0); ctx.moveTo(0, -len); ctx.lineTo(0, len);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,232,61,${(a * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 1.5 * a + 0.5;
+    ctx.beginPath(); ctx.arc(0, 0, 3 + prog * 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== ARCHER — bowstring snap (bespoke launch flash) =====================
+  // A short forward release streak + a perpendicular string-snap, fired green.
+  if (f.ability === 'arrow' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 4), Math.sin(f.fireDir) * (FIGHTER_SIZE + 4));
+    ctx.rotate(f.fireDir);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(61,255,138,${a.toFixed(3)})`;
+    ctx.lineWidth = 1.5 * a + 0.4;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(6 + prog * 14, 0); ctx.stroke();
+    const s = 5 * a;
+    ctx.lineWidth = 1 * a + 0.3;
+    ctx.beginPath(); ctx.moveTo(-2, -s); ctx.lineTo(-2, s); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== NECROMANCER — summoning circle (bespoke launch flash) ==============
+  // Centred on the Necromancer (the dead rise at its feet, not forward): an
+  // expanding purple rune ring with bone ticks rising around it.
+  if (f.ability === 'raise' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;
+    const a = 1 - prog;
+    const r = FIGHTER_SIZE + 2 + prog * 10;
+    ctx.strokeStyle = `rgba(199,125,255,${(a * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 2 * a + 0.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(232,224,208,${a.toFixed(3)})`;   // bone ticks
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 6; i++) {
+      const ag = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ag) * r, Math.sin(ag) * r);
+      ctx.lineTo(Math.cos(ag) * (r + 4), Math.sin(ag) * (r + 4));
+      ctx.stroke();
+    }
+  }
+
+  // ===== WITCH — hex pop (bespoke launch flash) =============================
+  // A sickly-green radial pop + ring at the cast point.
+  if (f.ability === 'hex' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 4), Math.sin(f.fireDir) * (FIGHTER_SIZE + 4));
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(125,255,61,${a.toFixed(3)})`;
+    ctx.lineWidth = 2 * a + 0.4;
+    for (let i = 0; i < 6; i++) {
+      const ag = (i / 6) * Math.PI * 2 + prog;
+      const len = 4 + prog * 9;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ag) * 2, Math.sin(ag) * 2);
+      ctx.lineTo(Math.cos(ag) * len, Math.sin(ag) * len);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = `rgba(125,255,61,${(a * 0.6).toFixed(3)})`;
+    ctx.lineWidth = 1.5 * a + 0.4;
+    ctx.beginPath(); ctx.arc(0, 0, 3 + prog * 8, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== GAMBLER — coin glint (bespoke launch flash) ========================
+  // A gold flick fan + a bright glint at the throw point.
+  if (f.ability === 'wildcard' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 4), Math.sin(f.fireDir) * (FIGHTER_SIZE + 4));
+    ctx.rotate(f.fireDir);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(255,210,61,${a.toFixed(3)})`;
+    ctx.lineWidth = 1.5 * a + 0.4;
+    for (let i = 0; i < 3; i++) {
+      const off = (i - 1) * 0.4;
+      const len = 6 + prog * 12;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(off) * len, Math.sin(off) * len); ctx.stroke();
+    }
+    ctx.fillStyle = `rgba(255,240,180,${a.toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(2, 0, 2 * a + 1, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // ===== HUNTER — launch flick (bespoke launch flash) =======================
+  // A small copper flick along the throw; the steel cable carries the rest.
+  if (f.ability === 'grapple' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 4), Math.sin(f.fireDir) * (FIGHTER_SIZE + 4));
+    ctx.rotate(f.fireDir);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(200,144,96,${a.toFixed(3)})`;
+    ctx.lineWidth = 2 * a + 0.5;
+    ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(5 + prog * 8, 0); ctx.stroke();
     ctx.restore();
   }
 
