@@ -885,6 +885,34 @@ function meleeWindupHold(f, enemy, dashDur, windupDur) {
   return { active: true, ease };
 }
 
+// drawChargeRing() — the shared charge-telegraph grammar for windup fighters. A
+// ring that FILLS like a clock (the timing read — you can see when it'll fire),
+// TIGHTENS inward + brightens (energy gathering), and FLASHES full just before
+// release. `rgb` is the fighter's colour voice; `prog` is 0→1. ctx must be
+// translated to the fighter's centre. Line-drawn — no particles.
+function drawChargeRing(rgb, prog) {
+  const r = FIGHTER_SIZE + 12 - prog * 5;            // tightens inward as it charges
+  const a = 0.3 + prog * 0.6;                         // brightens toward release
+  // faint backing track — the full ring it's filling toward
+  ctx.strokeStyle = `rgba(${rgb},${(a * 0.25).toFixed(3)})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+  // filling clock arc — sweeps from the top to full as the windup completes
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = `rgba(${rgb},${a.toFixed(3)})`;
+  ctx.lineWidth = 2 + prog * 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
+  ctx.stroke();
+  // pre-release flash in the last sliver
+  if (prog > 0.88) {
+    const fa = (prog - 0.88) / 0.12;
+    ctx.strokeStyle = `rgba(255,255,255,${(fa * 0.85).toFixed(3)})`;
+    ctx.lineWidth = 2 + fa * 2;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+
 // drawFighter() — fresh animation system, built fighter by fighter.
 // Shared grammar (ANIMATION.md #9): the fighter IS the weapon, so melee is sold
 // by deforming the BODY (squash/stretch/lunge) plus a victim recoil, not by
@@ -953,6 +981,38 @@ function drawFighter(f) {
   ctx.beginPath();
   ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
   ctx.stroke();
+
+  // Charge telegraph (windup fighters) — the shared filling charge ring plus each
+  // fighter's accent, drawn behind the body. Telegraphs "a big attack is coming."
+  if (f.aimTimer > 0 && f.aimAbility === 'cannon') {
+    const prog = 1 - f.aimTimer / f.windupTime;
+    // Cannoneer voice: an aim-line to the target — its shot is a dodgeable straight.
+    if (enemy && !enemy.dead) {
+      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      ctx.save();
+      ctx.rotate(ang);
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = `rgba(255,140,26,${(0.2 + prog * 0.5).toFixed(3)})`;
+      ctx.lineWidth = 1 + prog;
+      ctx.beginPath(); ctx.moveTo(FIGHTER_SIZE + 6, 0); ctx.lineTo(190, 0); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+    drawChargeRing('255,140,26', prog);
+  } else if (f.aimTimer > 0 && f.aimAbility === 'lightning') {
+    const prog = 1 - f.aimTimer / f.windupTime;
+    drawChargeRing('255,232,61', prog);
+    // Priest voice: a few orbiting divine gleams (lightning homes — no aim-line).
+    const gr = FIGHTER_SIZE + 12 - prog * 5;
+    for (let i = 0; i < 3; i++) {
+      const ga = (i / 3) * Math.PI * 2 + prog * 6;   // orbit (deterministic)
+      ctx.fillStyle = `rgba(255,255,220,${(0.4 + prog * 0.5).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(Math.cos(ga) * gr, Math.sin(ga) * gr, 1.5 + prog, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (f.iaiWindup > 0) {
+    // Ronin voice: the gold ring on top of the coil + tremor it already has.
+    drawChargeRing('232,192,32', 1 - f.iaiWindup / f.windupTime);
+  }
 
   // Orientation: face the enemy. Mirror rather than rotate past vertical so the
   // sprite never goes upside-down (forward is local +x).
