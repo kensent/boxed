@@ -610,10 +610,10 @@ function updateHp() {
 // Collect the active status badges for a fighter. Each badge is {label, color}.
 function fighterStatuses(f) {
   const out = [];
-  // Berserker — Bloodrage active below 50% HP
-  if (f.ability === 'tackle' && f.hp < f.maxHp * 0.5 && !f.dead) {
-    out.push({ label: 'RAGE', color: '#ff2e2e' });
-  }
+  // Badges are ONLY for states with no on-fighter visual. Anything that reads on
+  // the fighter itself gets no badge (avoid double-reporting): Bloodrage (red ring),
+  // mana-shield/dodge/parry (armed rings), Witch's Mark (green sigil), Slowed
+  // (drag-trail), Stunned (orbiting stars).
   // Gambler — LOADED DICE: a low roll has rushed the next cooldown
   if (f.ability === 'wildcard' && f.loadedTimer > 0 && !f.dead) {
     out.push({ label: 'LOADED', color: '#ffd23d' });
@@ -623,27 +623,10 @@ function fighterStatuses(f) {
     out.push({ label: 'VOLLEY', color: '#3dff8a' });
   }
   // Ronin — FOCUS: held while on a clean-hit streak (each landed iai halves the
-  // cooldown); persists until a missed iai breaks it. The windup itself is shown by
-  // the gold charge ring, so it gets no text badge.
+  // cooldown); persists until a missed iai breaks it. No on-fighter visual.
   if (f.focused && !f.dead) {
     out.push({ label: 'FOCUS', color: '#e8c020' });
   }
-  // Warlock — no DRAINING badge: the essence-streaming visual already reads clearly.
-  // Witch's Mark — this fighter is marked, takes +50% damage
-  if (f.witchMarkTimer > 0) {
-    out.push({ label: 'MARKED', color: '#7dff3d' });
-  }
-  // Slowed — Hunter's CRIPPLING HOOK wound. 40% slower.
-  if (f.slowTimer > 0 && !f.dead) {
-    out.push({ label: 'SLOWED', color: '#c89060' });
-  }
-  // Stunned — frozen by the Hunter's CRIPPLING HOOK, can't move or act
-  if (f.stunTimer > 0 && !f.dead) {
-    out.push({ label: 'STUNNED', color: '#ffd23d' });
-  }
-  // NOTE: Wizard/Jester/Duelist defensive passives no longer get a "DOWN"
-  // badge — their ready-state is shown by the solid ring around the fighter
-  // (present = armed, absent = down), so a badge would just double-report.
   // Caught in the closing-ring fog
   if (game.elapsed > 20 && !f.dead) {
     const dc = Math.hypot(f.x - game.w / 2, f.y - game.h / 2);

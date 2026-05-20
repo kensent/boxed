@@ -977,6 +977,26 @@ function drawFighter(f) {
     ctx.restore();
   }
 
+  // SLOWED — drag-trail (debuff): faint ghost copies of the sprite lag behind as it
+  // moves, reading as "it can't keep up." World space, behind the body; only while moving.
+  if (f.slowTimer > 0 && !f.dead) {
+    const sp = Math.hypot(f.vx, f.vy);
+    if (sp > 25) {
+      const dragFacing = (enemy && !enemy.dead) ? Math.atan2(enemy.y - f.y, enemy.x - f.x) : (f.lastFacing || 0);
+      const nx = f.vx / sp, ny = f.vy / sp;
+      for (let i = 1; i <= 2; i++) {
+        ctx.save();
+        ctx.translate(f.x - nx * 8 * i, f.y - ny * 8 * i);
+        ctx.globalAlpha = 0.16 / i;
+        if (Math.cos(dragFacing) < 0) { ctx.scale(-1, 1); ctx.rotate(Math.PI - dragFacing); }
+        else { ctx.rotate(dragFacing); }
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
   ctx.save();
   ctx.translate(f.x, f.y);
 
@@ -1560,11 +1580,39 @@ function drawFighter(f) {
     ctx.restore();
   }
 
-  ctx.restore();
+  // ===== Negative-status marks (debuffs) — afflict the fighter, drawn distinctly
+  // from the beneficial edge-rings so a buff never reads like a debuff. =========
+  // MARKED (Witch's Mark) — a slow-rotating green sigil painted over the fighter.
+  if (f.witchMarkTimer > 0 && !f.dead) {
+    const pulse = 0.5 + Math.sin(performance.now() / 200) * 0.3;
+    ctx.save();
+    ctx.rotate(performance.now() / 700);
+    ctx.strokeStyle = `rgba(125,255,61,${(0.45 + pulse * 0.4).toFixed(3)})`;
+    ctx.lineWidth = 1.5;
+    const r = FIGHTER_SIZE * 0.78;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+      const ang = (i / 4) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang) * r, Math.sin(ang) * r);
+      ctx.lineTo(Math.cos(ang) * (r + 4), Math.sin(ang) * (r + 4));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // STUNNED — yellow stars orbiting above the head (the universal stun read).
+  if (f.stunTimer > 0 && !f.dead) {
+    const cy = -(FIGHTER_SIZE + 14);
+    const t = performance.now() / 280;
+    ctx.fillStyle = '#ffd23d';
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2 + t;
+      drawStar(ctx, Math.cos(ang) * 9, cy + Math.sin(ang) * 3, 4, 2.6, 1.1);
+      ctx.fill();
+    }
+  }
 
-  // Name label
-  ctx.fillStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
-  ctx.font = 'bold 8px JetBrains Mono';
-  ctx.textAlign = 'center';
-  ctx.fillText(f.name, f.x, f.y - FIGHTER_SIZE - 8);
+  ctx.restore();
+  // No in-arena name label — the HUD already names both fighters, and dropping it
+  // declutters the space above the head so the stun stars read clearly.
 }
