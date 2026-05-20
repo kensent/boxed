@@ -1093,10 +1093,10 @@ function drawFighter(f) {
   let recoilX = 0, recoilY = 0, recoilSquash = 0;
   if (f.recoilTimer > 0) {
     const k = f.recoilTimer / 0.16;
-    const mag = 13 * k;
+    const mag = (f.recoilMag || 13) * k;
     recoilX = Math.cos(f.recoilDir) * mag;
     recoilY = Math.sin(f.recoilDir) * mag;
-    recoilSquash = 0.22 * k;
+    recoilSquash = 0.22 * (mag / 13) * k;          // crumple scales with the knockback
   }
 
   // ----- Ranged fire reaction (shared) — a sharp impulse along the firing axis at

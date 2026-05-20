@@ -107,6 +107,7 @@ function damage(target, dmg, srcKind, src) {
   if (src && !srcKind) {
     target.recoilDir = Math.atan2(target.y - src.y, target.x - src.x);
     target.recoilTimer = 0.16;
+    target.recoilMag = 13;
   }
   // Sound: drain ticks are silent — the sustained `drain` beam drone (played
   // once when the channel starts) covers the whole leech. Other hits play a

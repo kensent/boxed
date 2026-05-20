@@ -359,7 +359,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [],
+    projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
@@ -449,8 +449,8 @@ function makeFighter(t, team, x, y) {
     //   dashStartX/Y — launch anchor for the anticipation hold
     //   meleeImpact / meleeImpactMax — countdown (and its start value) driving the
     //     impact squash + each fighter's bespoke impact effect
-    //   recoilTimer/recoilDir — the struck fighter's knockback
-    dashStartX: 0, dashStartY: 0, meleeImpact: 0, meleeImpactMax: 0.18, recoilTimer: 0, recoilDir: 0,
+    //   recoilTimer/recoilDir/recoilMag — the struck fighter's knockback (mag scales with damage)
+    dashStartX: 0, dashStartY: 0, meleeImpact: 0, meleeImpactMax: 0.18, recoilTimer: 0, recoilDir: 0, recoilMag: 0,
     // Ranged fire reaction (visual only): fireKick countdown + fireDir (firing
     // angle) drive the body recoil/thrust at release and each fighter's muzzle flash.
     fireKick: 0, fireKickMax: 0.2, fireDir: 0,
@@ -1025,6 +1025,7 @@ function step(dt) {
             if (m.team === f.team || m.armed > 0) return true;
             if (segDist(m.x, m.y) < FIGHTER_SIZE + m.size + 6) {
               damage(f, m.dmg);
+              spawnImpact(m.x, m.y, 'mine', 0, 1); // the mine still explodes
               return false;
             }
             return true;
@@ -1236,6 +1237,7 @@ function step(dt) {
         target.tetherStartX = target.x;
         target.tetherStartY = target.y;
         damage(target, p.dmg, 'projectile');
+        if (!target.dead) spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5); // bite clink (no recoil — it reels IN)
         target.stunTimer = Math.max(target.stunTimer, CRIPPLE_STUN);
         return false;
       }
@@ -1248,6 +1250,14 @@ function step(dt) {
         target.witchMarkTimer = p.markDuration;
       }
       damage(target, dmgOut, 'projectile');
+      // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
+      // at the contact point + a damage-scaled victim knockback along the shot.
+      if (!target.dead) {
+        const big = Math.min(1, dmgOut / 26);
+        const hitAng = Math.atan2(p.vy, p.vx);
+        spawnImpact(p.x, p.y, p.kind, hitAng, big);
+        target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
+      }
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
       if (p.kind === 'cannon') {
         game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 1.5, maxTimer: 1.5, tickCd: 0, team: p.team, dps: 2 });
@@ -1266,6 +1276,7 @@ function step(dt) {
       // Trigger radius extends 6px beyond contact — mines threaten passage, not just collision
       if (!target.dead && dist(m, target) < FIGHTER_SIZE + m.size + 6) {
         damage(target, m.dmg);
+        spawnImpact(m.x, m.y, 'mine', 0, 1); // big explosion burst
         // Blast RADIUS passive: knock the target away from the mine
         const bx = target.x - m.x, by = target.y - m.y;
         const bd = Math.hypot(bx, by) || 1;
@@ -1312,6 +1323,7 @@ function step(dt) {
         damage(enemy, 17, 'bone');
         sfx('boneBurst', null, sk.x);
       }
+      spawnImpact(sk.x, sk.y, 'bone', 0, 0.7); // bone shards erupt on death
       return true;
     }
     return false;
@@ -1425,6 +1437,9 @@ function step(dt) {
     });
   });
 
+
+  // Age transient impact bursts (visual only; empty in headless).
+  game.impacts = game.impacts.filter(im => { im.life -= dt; return im.life > 0; });
 
   game.floatTexts = game.floatTexts.filter(ft => {
     // Debounced damage floats: while "open" the float holds position (doesn't

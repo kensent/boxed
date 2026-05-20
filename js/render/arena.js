@@ -36,6 +36,109 @@ function drawHunterHook(hx, hy, ex, ey) {
   ctx.restore();
 }
 
+// drawImpact(im) — a transient impact burst, bespoke per projectile/explosion kind
+// (the contact-point equivalent of the melee force-shapes). `a` fades 1→0, `prog`
+// expands 0→1, `im.mag` (0..1) scales the size with damage. Line-drawn, no rng.
+function drawImpact(im) {
+  const a = im.life / im.maxLife;                  // 1 → 0
+  const prog = 1 - a;                               // 0 → 1
+  const m = im.mag;
+  ctx.save();
+  ctx.translate(im.x, im.y);
+  ctx.lineCap = 'round';
+  switch (im.kind) {
+    case 'cannon': {                                // heavy orange blast
+      const r = 6 + prog * (18 + m * 16);
+      ctx.strokeStyle = `rgba(255,140,26,${(a * 0.9).toFixed(3)})`;
+      ctx.lineWidth = 3 * a + 0.5;
+      for (let i = 0; i < 8; i++) { const g = (i / 8) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 4, Math.sin(g) * 4); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
+      ctx.strokeStyle = `rgba(255,200,80,${(a * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,255,220,${a.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 3 * a + 1, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'mine': {                                  // the biggest explosion
+      const r = 8 + prog * 34;
+      ctx.strokeStyle = `rgba(255,120,20,${(a * 0.95).toFixed(3)})`;
+      ctx.lineWidth = 3.5 * a + 0.6;
+      for (let i = 0; i < 10; i++) { const g = (i / 10) * Math.PI * 2; const rr = r * (0.7 + (i % 2) * 0.3); ctx.beginPath(); ctx.moveTo(Math.cos(g) * 5, Math.sin(g) * 5); ctx.lineTo(Math.cos(g) * rr, Math.sin(g) * rr); ctx.stroke(); }
+      ctx.strokeStyle = `rgba(255,90,20,${(a * 0.8).toFixed(3)})`;
+      ctx.lineWidth = 3 * a + 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,240,200,${a.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 4 * a + 1, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'bone': {                                  // bone shards erupt
+      const r = 4 + prog * (10 + m * 10);
+      ctx.strokeStyle = `rgba(232,224,208,${a.toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.5;
+      for (let i = 0; i < 7; i++) { const g = (i / 7) * Math.PI * 2 + i * 0.5; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 3, Math.sin(g) * 3); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
+      break;
+    }
+    case 'lightning': {                             // yellow zap
+      const r = 4 + prog * 11;
+      ctx.strokeStyle = `rgba(255,232,61,${a.toFixed(3)})`;
+      ctx.lineWidth = 1.6 * a + 0.4;
+      for (let i = 0; i < 6; i++) { const g = (i / 6) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(g) * r * 0.6 + Math.cos(g + 1) * 2, Math.sin(g) * r * 0.6 + Math.sin(g + 1) * 2); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
+      break;
+    }
+    case 'orb': {                                   // purple rune pop
+      ctx.strokeStyle = `rgba(199,125,255,${a.toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.4;
+      ctx.beginPath(); ctx.arc(0, 0, 3 + prog * 10, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,232,61,${a.toFixed(3)})`;
+      drawStar(ctx, 0, 0, 4, 3 + prog * 4, 1.5); ctx.fill();
+      break;
+    }
+    case 'hex': {                                   // green splat
+      const r = 3 + prog * 10;
+      ctx.strokeStyle = `rgba(125,255,61,${a.toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.4;
+      for (let i = 0; i < 6; i++) { const g = (i / 6) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 2, Math.sin(g) * 2); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
+      ctx.strokeStyle = `rgba(125,255,61,${(a * 0.6).toFixed(3)})`;
+      ctx.lineWidth = 1.5 * a + 0.3;
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2); ctx.stroke();
+      break;
+    }
+    case 'coin': {                                  // gold ding
+      ctx.strokeStyle = `rgba(255,210,61,${a.toFixed(3)})`;
+      ctx.lineWidth = 1.5 * a + 0.4;
+      ctx.beginPath(); ctx.arc(0, 0, 3 + prog * 9, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,240,180,${a.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 1.5 * a + 0.5, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'hook': {                                  // small steel clink
+      const r = 3 + prog * 7;
+      ctx.strokeStyle = `rgba(220,224,232,${a.toFixed(3)})`;
+      ctx.lineWidth = 1.5 * a + 0.4;
+      for (let i = 0; i < 3; i++) { const g = (i / 3) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
+      break;
+    }
+    case 'arrow': {                                 // sharp puncture along the shot + green splinters
+      ctx.rotate(im.dir);
+      ctx.strokeStyle = `rgba(220,255,230,${a.toFixed(3)})`;
+      ctx.lineWidth = 1.6 * a + 0.4;
+      ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(4 + prog * 6, 0); ctx.stroke();   // puncture line
+      ctx.strokeStyle = `rgba(61,255,138,${a.toFixed(3)})`;
+      const sp = 3 + prog * 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(-sp, -sp * 0.6);                                     // splinters fanning back
+      ctx.moveTo(0, 0); ctx.lineTo(-sp, sp * 0.6);
+      ctx.stroke();
+      break;
+    }
+    default: {                                      // generic flash
+      ctx.fillStyle = `rgba(255,255,255,${(a * 0.7).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 3 + prog * 6, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, game.w, game.h);
 
@@ -49,6 +152,27 @@ function draw() {
     shaken = true;
   }
 
+  // Cannoneer INCENDIARY hazard zones — a pulsing boundary ring + inward flame
+  // licks (line-drawn, no big alpha fill) so the danger area reads; fades with the
+  // zone's timer. Drawn behind everything else.
+  (game.hazards || []).forEach(h => {
+    const fade = h.timer / h.maxTimer;               // 1 → 0
+    const pulse = 0.6 + Math.sin(performance.now() / 120) * 0.4;
+    ctx.strokeStyle = `rgba(255,140,26,${(fade * 0.45 * pulse + 0.12).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,90,20,${(fade * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 10; i++) {
+      const ag = (i / 10) * Math.PI * 2;
+      const fl = 4 + Math.abs(Math.sin(performance.now() / 90 + i * 1.7)) * 6;  // flicker
+      ctx.beginPath();
+      ctx.moveTo(h.x + Math.cos(ag) * (h.radius - 2), h.y + Math.sin(ag) * (h.radius - 2));
+      ctx.lineTo(h.x + Math.cos(ag) * (h.radius - 2 - fl), h.y + Math.sin(ag) * (h.radius - 2 - fl));
+      ctx.stroke();
+    }
+  });
 
   game.mines.forEach(m => {
     const pulse = Math.sin(m.life * 8) * 0.5 + 0.5;
@@ -474,6 +598,9 @@ function draw() {
 
   drawFighter(game.red);
   drawFighter(game.blue);
+
+  // Impact bursts — at the contact point, on top of the fighters they struck.
+  game.impacts.forEach(drawImpact);
 
   // Closing ring — once active, draw the encroaching fog beyond the safe circle
   // plus a bright pulsing boundary line. Sits above fighters so the danger reads.
