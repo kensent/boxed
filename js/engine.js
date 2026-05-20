@@ -563,9 +563,11 @@ function drawVsEmblem(cnv, t) {
   c.globalAlpha = 1;
   // Real sprite — drawShape draws in local space, so translate to center.
   // Build a minimal fighter-like object: drawShape only reads size/color/accent/shape.
-  const spriteF = { size: W * 0.26, color: t.color, accent: t.accent, shape: t.shape };
+  const spriteF = { color: t.color, accent: t.accent, shape: t.shape };
+  const spriteScale = (W * 0.28) / FIGHTER_SIZE;
   c.save();
   c.translate(cx, cy);
+  c.scale(spriteScale, spriteScale);
   // Blue sits on the right of the VS — flip it so its forward edge faces inward.
   if (t.side === 'blue') c.scale(-1, 1);
   c.fillStyle = spriteF.color;

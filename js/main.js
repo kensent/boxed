@@ -62,9 +62,11 @@ function showWinnerOverlay() {
     c.stroke();
     c.globalAlpha = 1;
     // Real sprite via the shared drawShape — sized for the overlay
-    const spriteF = { size: W * 0.3, color: w.color, accent: w.accent, shape: w.shape };
+    const spriteF = { color: w.color, accent: w.accent, shape: w.shape };
+    const spriteScale = (W * 0.28) / FIGHTER_SIZE;
     c.save();
     c.translate(W / 2, H / 2);
+    c.scale(spriteScale, spriteScale);
     c.fillStyle = spriteF.color;
     drawShape(c, spriteF);
     c.restore();
