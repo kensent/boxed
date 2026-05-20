@@ -805,11 +805,11 @@ function step(dt) {
     if (f.ability === 'lightning' && f.hp < f.maxHp) {
       f.hp = Math.min(f.maxHp, f.hp + 1.0 * dt);
     }
-    // Berserker: Bloodrage — +30% speed when below 50% hp.
+    // Berserker: Bloodrage — +33% speed when below 50% hp.
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
     if (f.ability === 'tackle') {
       const rageActive = f.hp < f.maxHp * 0.5;
-      const targetSpeed = rageActive ? f.baseSpeed * 1.3 : f.baseSpeed;
+      const targetSpeed = rageActive ? f.baseSpeed * 1.33 : f.baseSpeed;
       // Renormalize current velocity to new speed when not dashing
       if (f.dashTimer <= 0) {
         const sp = Math.hypot(f.vx, f.vy) || 1;
