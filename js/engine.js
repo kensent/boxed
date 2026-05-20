@@ -445,6 +445,12 @@ function makeFighter(t, team, x, y) {
     vy: Math.sin(a) * t.speed,
     cdTimer: t.cd * 0.5 + rng() * 0.5,
     swingTimer: 0, dashTimer: 0, dashHit: false, blastTimer: 0, flash: 0, negateFlash: 0, dead: false,
+    // Melee body-language (visual only — never read by the sim/balance):
+    //   dashStartX/Y — launch anchor for the anticipation hold
+    //   meleeImpact / meleeImpactMax — countdown (and its start value) driving the
+    //     impact squash + each fighter's bespoke impact effect
+    //   recoilTimer/recoilDir — the struck fighter's knockback
+    dashStartX: 0, dashStartY: 0, meleeImpact: 0, meleeImpactMax: 0.18, recoilTimer: 0, recoilDir: 0,
     aimTimer: 0, aimAngle: 0, aimAbility: null,
     shotCount: 0, trail: [],
     slowTimer: 0, stunTimer: 0,
@@ -861,6 +867,7 @@ function step(dt) {
         // Berserker: the tackle is a pure collision charge — crashing in IS the hit.
         if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
           damage(enemy, f.dmg, undefined, f);
+          f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + concussive ring
           f.dashTimer = 0;
           const a = Math.atan2(f.vy, f.vx);
           f.vx = Math.cos(a) * f.speed;
@@ -881,6 +888,7 @@ function step(dt) {
             spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
           }
           f.dashHit = true;
+          f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
           f.dashTimer = 0;
           const a = Math.atan2(f.vy, f.vx);
           f.vx = Math.cos(a) * f.speed;
@@ -1092,6 +1100,8 @@ function step(dt) {
     }
     if (f.flash > 0) f.flash -= dt;
     if (f.negateFlash > 0) f.negateFlash -= dt;
+    if (f.meleeImpact > 0) f.meleeImpact -= dt;
+    if (f.recoilTimer > 0) f.recoilTimer -= dt;
     if (f.blastTimer > 0) f.blastTimer -= dt;
     // Tick slow timer
     if (f.slowTimer > 0) f.slowTimer -= dt;

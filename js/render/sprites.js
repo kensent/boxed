@@ -870,16 +870,44 @@ function drawShape(c, f) {
   }
 }
 
-// drawFighter() — STRIPPED TO A BLANK CANVAS (animation revamp). All per-fighter
-// juice, telegraphs, state glows, particles, and hit feedback were removed so the
-// new animation system can be built up fresh. What remains is the irreducible
-// minimum: the team-colour ring (position + team), the static sprite oriented to
-// face the enemy, and the name label. drawShape (the sprite identity) is untouched.
+// meleeWindupHold() — shared anticipation for dashing melee fighters. The sim
+// applies dash velocity instantly, so to read a wind-up we HOLD the whole fighter
+// near its launch point for `windupDur` (offsetting back toward dashStart by
+// (1-ease) cancels the sim's forward advance), then release as a cubic ease climbs
+// — whipping it forward to catch up. Enemy-proximity capped so contact never pops.
+// Applies the translate to the current ctx; returns {active, ease}. Visual only.
+function meleeWindupHold(f, enemy, dashDur, windupDur) {
+  if (f.meleeImpact > 0 || f.dashTimer <= dashDur - windupDur) return { active: false, ease: 1 };
+  const wt = (dashDur - f.dashTimer) / windupDur;   // 0 → 1 across the wind-up
+  let ease = wt * wt * wt;                            // dwell early, whip late
+  if (enemy && !enemy.dead) {
+    const d = Math.hypot(enemy.x - f.x, enemy.y - f.y);
+    const near = 1 - Math.max(0, Math.min(1, (d - FIGHTER_SIZE * 2) / 70));
+    ease = Math.max(ease, near);                      // caught up by the moment of contact
+  }
+  ctx.translate((f.dashStartX - f.x) * (1 - ease), (f.dashStartY - f.y) * (1 - ease));
+  return { active: true, ease };
+}
+
+// drawFighter() — fresh animation system, built fighter by fighter.
+// Shared grammar (ANIMATION.md #9): the fighter IS the weapon, so melee is sold
+// by deforming the BODY (squash/stretch/lunge) plus a victim recoil, not by
+// floating weapon-effects. Each fighter adds its own body-deform branch and a
+// bespoke impact effect (its unique voice). drawShape (sprite identity) is never
+// touched. All state read here is visual-only — the sim/balance never reads it.
 function drawFighter(f) {
   if (f.dead) return;
 
+  const enemy = f.team === 'red' ? game.blue : game.red;
+
   ctx.save();
   ctx.translate(f.x, f.y);
+
+  // Anticipation hold — per-fighter dash/wind-up timings (heavier fighters dwell
+  // longer relative to their dash). Applies the hold translate to the whole body.
+  let windup = { active: false, ease: 1 };
+  if (f.ability === 'tackle')      windup = meleeWindupHold(f, enemy, 0.42, 0.16);
+  else if (f.ability === 'sword')  windup = meleeWindupHold(f, enemy, 0.26, 0.12);
 
   // Team-colour border ring — reads position and team allegiance.
   ctx.strokeStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
@@ -888,22 +916,122 @@ function drawFighter(f) {
   ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Orientation only (not animation): face the enemy. Mirror rather than rotate
-  // past vertical so the sprite never goes upside-down (forward is local +x).
-  const enemy = f.team === 'red' ? game.blue : game.red;
+  // Orientation: face the enemy. Mirror rather than rotate past vertical so the
+  // sprite never goes upside-down (forward is local +x).
   const facing = (enemy && !enemy.dead)
     ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
     : (f.lastFacing || 0);
   f.lastFacing = facing;
+
+  // ----- Victim recoil (shared: any fighter that just took a melee hit) -----
+  // Knocks the body back along the hit axis and crumples it. World-aligned, so
+  // applied before the facing rotation.
+  let recoilX = 0, recoilY = 0, recoilSquash = 0;
+  if (f.recoilTimer > 0) {
+    const k = f.recoilTimer / 0.16;
+    const mag = 13 * k;
+    recoilX = Math.cos(f.recoilDir) * mag;
+    recoilY = Math.sin(f.recoilDir) * mag;
+    recoilSquash = 0.22 * k;
+  }
+
+  // ----- Per-fighter body deform (stretch/squash along FORWARD = local +x) -----
+  let bodyX = 1, bodyY = 1;
+  const impactK = f.meleeImpact > 0 ? f.meleeImpact / f.meleeImpactMax : 0;  // 1 → 0
+  if (f.ability === 'tackle') {
+    // Berserker — fast, whippy PUNCH.
+    if (f.meleeImpact > 0) {
+      bodyX = 1 - 0.40 * impactK;                   // flatten hard on contact, spring back
+      bodyY = 1 + 0.40 * impactK;
+    } else if (windup.active) {
+      const coil = 1 - windup.ease;                 // anticipation: squat while held
+      bodyX = 1 - 0.24 * coil;
+      bodyY = 1 + 0.24 * coil;
+    } else if (f.dashTimer > 0) {
+      bodyX = 1.35;                                 // in-flight: stretch along the charge
+      bodyY = 0.74;
+    }
+  } else if (f.ability === 'sword') {
+    // Knight — heavy, deliberate shield BASH. Less whip than the Berserker: it
+    // braces, rams as a firm wall, and dead-stops hard on contact.
+    if (f.meleeImpact > 0) {
+      bodyX = 1 - 0.30 * impactK;                   // dead stop: the shield slams flat
+      bodyY = 1 + 0.30 * impactK;
+    } else if (windup.active) {
+      const coil = 1 - windup.ease;                 // brace back
+      bodyX = 1 - 0.18 * coil;
+      bodyY = 1 + 0.14 * coil;
+    } else if (f.dashTimer > 0) {
+      bodyX = 1.16;                                 // ram: firm forward set, not a whip
+      bodyY = 0.90;
+    }
+  }
+
   ctx.save();
+  ctx.translate(recoilX, recoilY);
+  if (recoilSquash > 0) {
+    ctx.rotate(f.recoilDir);
+    ctx.scale(1 - recoilSquash, 1 + recoilSquash * 0.4);
+    ctx.rotate(-f.recoilDir);
+  }
   if (Math.cos(facing) < 0) {
     ctx.scale(-1, 1);
     ctx.rotate(Math.PI - facing);
   } else {
     ctx.rotate(facing);
   }
+  ctx.scale(bodyX, bodyY);
   drawShape(ctx, f);
   ctx.restore();
+
+  // ===== BERSERKER — concussive shockwave ring (bespoke impact) =============
+  // A blunt-force double ring snaps out from the contact point and fades. Pure
+  // line-drawing (cheap on the GPU budget); nothing else in the game does it, so
+  // it's the Berserker's voice — no particles needed.
+  if (f.ability === 'tackle' && f.meleeImpact > 0) {
+    const prog = 1 - impactK;                        // 0 → 1 as it expands
+    const a = 1 - prog;                              // fades as it grows
+    const cx = Math.cos(facing) * (FIGHTER_SIZE + 2);
+    const cy = Math.sin(facing) * (FIGHTER_SIZE + 2);
+    const r = 4 + prog * 22;
+    ctx.strokeStyle = `rgba(255,60,30,${(a * 0.8).toFixed(3)})`;
+    ctx.lineWidth = 3 * a + 0.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,210,150,${(a * 0.9).toFixed(3)})`;
+    ctx.lineWidth = 1.5 * a + 0.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // ===== KNIGHT — flat shield-slam shock (bespoke impact) ===================
+  // A flat bar of force perpendicular to the bash direction snaps wide at the
+  // contact point and fades — a blunt WALL hit, deliberately NOT a radial ring
+  // (that's the Berserker's voice). Steel-blue, line-drawn, no particles.
+  if (f.ability === 'sword' && f.meleeImpact > 0) {
+    const prog = 1 - impactK;                        // 0 → 1
+    const a = 1 - prog;                              // fades as it widens
+    ctx.save();
+    ctx.rotate(facing);
+    ctx.translate(FIGHTER_SIZE + 2, 0);              // contact point, ahead of the shield
+    const half = 9 + prog * 16;                      // bar flares outward
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(190,215,255,${(a * 0.85).toFixed(3)})`;
+    ctx.lineWidth = 4 * a + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -half);
+    ctx.lineTo(0, half);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+    ctx.lineWidth = 1.5 * a + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -half * 0.7);
+    ctx.lineTo(0, half * 0.7);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   ctx.restore();
 

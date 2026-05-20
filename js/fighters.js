@@ -33,7 +33,7 @@ const FIGHTERS = [
   { id:'knight',  name:'KNIGHT',    hp:111, speed:90,  color:'#c0c0c0', accent:'#2e9eff', shape:'shield',
     ability:'sword', cd:1.2, dmg:20, strikeReach:12,
     armorFlat: 2,
-    active: 'SWORD LUNGE — dash in and strike on reach',
+    active: 'SHIELD BASH — dash in and slam on reach',
     get passive() { return `PLATE ARMOR — −${this.armorFlat} dmg per hit (min 1)`; },
   },
   { id:'sapper', name:'SAPPER',    hp:72,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
