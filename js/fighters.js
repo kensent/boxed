@@ -96,7 +96,7 @@ const FIGHTERS = [
   { id:'warlock', name:'WARLOCK',   hp:57,  speed:100, color:'#2a0e2e', accent:'#c050ff', shape:'cowl',
     ability:'drain', cd:2.2, dmg:4,
     slowRate: 0.6, drainHealRate: 0.35,
-    active: 'DRAIN BEAM — channels a beam that drains the enemy\'s HP',
+    active: 'SIPHON — channels, leeching the enemy\'s life',
     get passive() { return `ENERVATE — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
   { id:'gambler', name:'GAMBLER',   hp:91,  speed:100, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',

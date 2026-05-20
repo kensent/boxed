@@ -208,7 +208,7 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'drain': {
-      // Warlock: lock a drain beam onto the enemy if within close range. Channels
+      // Warlock: open a drain channel onto the enemy if within close range. Channels
       // for 1.2s, ticking f.dmg every 0.2s and healing the Warlock (Leech passive).
       // If the enemy is out of range the cast whiffs — we flag it so the cooldown
       // block can retry quickly instead of burning the full 2.2s on a no-op.
@@ -221,6 +221,7 @@ function fireAbility(f, enemy) {
         f.drainElapsed = 0;
         sfx('drain', null, f.x); // sustained beam drone — only on a real connect
         f.drainWhiffed = false;
+        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x); // channel lock-on reach
       } else {
         f.drainWhiffed = true;
       }

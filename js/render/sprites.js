@@ -1187,6 +1187,15 @@ function drawFighter(f) {
       bodyY = 1 + 0.06 * wp;
       if (wp > 0.5) bodyRot = Math.sin(performance.now() / 22) * 0.05 * ((wp - 0.5) / 0.5);
     }
+  } else if (f.ability === 'drain') {
+    // Warlock — CHANNEL (the channeler grammar; reusable by any future channeler):
+    // while channelling, the body gulps in rhythm with the drain ticks (~0.2s) — a
+    // sustained feeding pulse, distinct from any one-shot melee/ranged reaction.
+    if (f.drainTimer > 0) {
+      const gulp = Math.sin((f.drainElapsed % 0.2) / 0.2 * Math.PI);  // 0 → 1 → 0 each tick
+      const s = 1 + 0.08 * gulp;
+      bodyX = s; bodyY = s;
+    }
   }
 
   // Jester — THE SNAP. No dash (it teleports), so there's no hold-and-whip; the

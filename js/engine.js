@@ -471,7 +471,7 @@ function makeFighter(t, team, x, y) {
     witchMarkTimer: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
-    // Warlock drain beam channel state
+    // Warlock drain channel state
     drainTimer: 0, drainTickTimer: 0, drainTarget: null, drainElapsed: 0, drainWhiffed: false,
     // Gambler — WILDCARD die roll. gamblerRoll is the face shown (1-6) while
     // the die tumbles + after it settles; gamblerShots is a queue of timed
@@ -944,7 +944,7 @@ function step(dt) {
     // Witch mark timer decay
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
 
-    // Warlock: drain beam channel. Ticks f.dmg every 0.2s while the enemy stays in
+    // Warlock: drain channel. Ticks f.dmg every 0.2s while the enemy stays in
     // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
     if (f.drainTimer > 0) {
       f.drainTimer -= dt;
@@ -1064,7 +1064,7 @@ function step(dt) {
     }
 
     f.cdTimer -= dt;
-    // Warlock can't recast while a drain beam is still channeling.
+    // Warlock can't recast while a drain channel is still active.
     // A stunned fighter (Hunter's CRIPPLING HOOK) can't act — the cdTimer stays
     // ready, so they fire the instant the stun ends (cooldown isn't wasted).
     if (f.cdTimer <= 0 && !f.dead && f.aimTimer <= 0 && f.drainTimer <= 0 && f.stunTimer <= 0) {
