@@ -39,8 +39,6 @@ function fireAbility(f, enemy) {
           const a2 = ang + (i - (f.volleyCount - 1) / 2) * spread;
           game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*290, vy:Math.sin(a2)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
         }
-        // visual cue: green particle burst at the archer
-        spawnParticles(f.x, f.y, 8, '#3dff8a', 'streak');
       } else {
         game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*290, vy:Math.sin(ang)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
       }
@@ -51,7 +49,6 @@ function fireAbility(f, enemy) {
       f.vx = Math.cos(ang) * f.speed * 3;
       f.vy = Math.sin(ang) * f.speed * 3;
       f.dashTimer = 0.42;
-      spawnParticles(f.x, f.y, 8, '#ff5555', 'shard');
       break;
     }
     case 'sword': {
@@ -62,7 +59,6 @@ function fireAbility(f, enemy) {
       f.dashTimer = 0.26;
       f.swingTimer = 0.3;
       f.dashHit = false;
-      spawnParticles(f.x, f.y, 6, '#dfefff', 'spark');
       break;
     }
     case 'mine': {
@@ -77,7 +73,7 @@ function fireAbility(f, enemy) {
       const toSpawn = Math.min(f.orbsPerCast, f.orbCap - existing);
       // At the orbCap nothing spawns — flag it so the cooldown is refunded
       // (a short retry) instead of burning the full cast on a no-op, and skip
-      // the sound + particles so a capped cast has no misleading feedback.
+      // the sound so a capped cast has no misleading feedback.
       f.castCapped = (toSpawn <= 0);
       for (let i = 0; i < toSpawn; i++) {
         const a = rng() * Math.PI * 2;
@@ -92,7 +88,6 @@ function fireAbility(f, enemy) {
       }
       if (toSpawn > 0) {
         sfx('cast', null, f.x);
-        spawnParticles(f.x, f.y, 12, '#c77dff', 'rune');
       }
       break;
     }
@@ -102,17 +97,9 @@ function fireAbility(f, enemy) {
       const behindAng = enemyHeading + Math.PI;
       const tx = enemy.x + Math.cos(behindAng) * 25;
       const ty = enemy.y + Math.sin(behindAng) * 25;
-      // Save starting position for the blink trail VFX
-      f.blinkFromX = f.x;
-      f.blinkFromY = f.y;
-      f.blinkFx = 0.35;
-      // Sparkle at the depart point
-      spawnParticles(f.x, f.y, 14, '#e8d8b8', 'spark');
       // Clamp to arena
       f.x = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, tx));
       f.y = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, ty));
-      // Sparkle at the arrive point
-      spawnParticles(f.x, f.y, 14, '#fff', 'spark');
       // Stab — f.dmg if in range after blink
       if (dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + 4) {
         damage(enemy, f.dmg, undefined, f);
@@ -141,7 +128,6 @@ function fireAbility(f, enemy) {
       f.parryTimer = 0.25;
       f.swingTimer = 0.3;
       f.dashHit = false;
-      spawnParticles(f.x, f.y, 6, '#c0c0e8', 'spark');
       break;
     }
     case 'raise': {
@@ -169,14 +155,12 @@ function fireAbility(f, enemy) {
       f.sweepTimer = 0.3;
       f.sweepHit = false;
       f.dashHit = false;
-      spawnParticles(f.x, f.y, 5, '#aa0000', 'shard');
       break;
     }
     case 'iai': {
       // Ronin: f.windupTime windup, then teleport-step strike. Resolve passive reduces dmg during windup.
       f.iaiWindup = f.windupTime;
       f.iaiHit = false;
-      spawnParticles(f.x, f.y, 8, '#e8c020', 'rune');
       break;
     }
     case 'hex': {
@@ -193,7 +177,6 @@ function fireAbility(f, enemy) {
         markDuration: f.markDuration,
         spin: 0,
       });
-      spawnParticles(f.x, f.y, 3, '#7dff3d', 'rune');
       break;
     }
     case 'grapple': {
@@ -209,7 +192,6 @@ function fireAbility(f, enemy) {
         kind: 'hook', size: 5, homing: 0,
         hookSrc: f,
       });
-      spawnParticles(f.x, f.y, 6, '#c89060', 'spark');
       break;
     }
     case 'drain': {
@@ -253,14 +235,11 @@ function resolveAim(f) {
     // Aim is taken at the moment of release, not at the start of the windup
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
     game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:f.dmg, life:2.2, kind:'lightning', size:5, homing:70, cruise:200 });
-    spawnParticles(f.x, f.y, 8, '#ffe83d', 'cross');
     sfx('lightning', null, f.x);
   } else if (f.aimAbility === 'cannon') {
     // Straight line, fast, big, no homing. Muzzle flash + smoke.
     const ang = Math.atan2(target.y - f.y, target.x - f.x);
     game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*340, vy:Math.sin(ang)*340, team:f.team, dmg:f.dmg, life:1.8, kind:'cannon', size:7, homing:0, angle:ang });
-    spawnParticles(f.x + Math.cos(ang) * FIGHTER_SIZE, f.y + Math.sin(ang) * FIGHTER_SIZE, 16, '#ff8c1a', 'shard');
-    spawnParticles(f.x + Math.cos(ang) * FIGHTER_SIZE, f.y + Math.sin(ang) * FIGHTER_SIZE, 14, '#666', 'smoke');
     sfx('cannon', null, f.x);
     shake(7); // muzzle kick
   } else if (f.aimAbility === 'wildcard') {
@@ -345,7 +324,6 @@ function resolveAim(f) {
       f.loadedTimer = f.cdTimer;   // LOADED badge shows during the rushed cooldown
     }
     f.gamblerRefund = false;
-    spawnParticles(f.x, f.y, 8 + roll * 2, '#ffd23d', 'spark');
   }
   f.aimAbility = null;
   // restore speed

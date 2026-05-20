@@ -33,7 +33,6 @@ function damage(target, dmg, srcKind, src) {
       target.hp = 0;
       target.dead = true;
       sfx('death', null, target.x);
-      spawnParticles(target.x, target.y, 24, '#ffe83d', 'shard');
       endGame();
     }
     return;
@@ -47,7 +46,6 @@ function damage(target, dmg, srcKind, src) {
     target.dodgeTimer = target.dodgeCd;
     target.dodgeInvuln = 0.3;
     target.negateFlash = 0.25;
-    spawnParticles(target.x, target.y, 8, '#e8d8b8', 'spark');
     sfx('negate', null, target.x);
     return;
   }
@@ -57,7 +55,6 @@ function damage(target, dmg, srcKind, src) {
   // projectile loop). Melee hits fall through to COUNTER instead.
   if (target.ability === 'riposte' && target.parryTimer > 0 && srcKind === 'projectile') {
     target.negateFlash = 0.25;
-    spawnParticles(target.x, target.y, 10, '#c0c0e8', 'spark');
     sfx('parry', null, target.x);
     return;
   }
@@ -68,14 +65,12 @@ function damage(target, dmg, srcKind, src) {
   // Wizard: Mana Shield — shieldReduction dmg reduction per live orb, up to orbCap*shieldReduction.
   // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,
   // so the Wizard trades offense (orbs hitting the enemy) against defense.
-  let shielded = false;
   if (target.ability === 'cast') {
     const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team && !p.spent);
     if (orbIdx !== -1) {
       const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
       dmg = dmg * (1 - orbCount * target.shieldReduction);
       game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
-      shielded = true;
     }
   }
   target.hp -= dmg;
@@ -103,8 +98,6 @@ function damage(target, dmg, srcKind, src) {
     target.flash = 0.14 + big * 0.20;
     shake(2 + big * 9);
     if (feedbackDmg >= 12) hitStop(0.03 + big * 0.05);
-    spawnParticles(target.x, target.y, 3 + Math.round(big * 9),
-                   target.team === 'red' ? '#ff6b6b' : '#6bb6ff', 'spark');
   } else {
     target.flash = 0.12;
   }
@@ -144,14 +137,9 @@ function damage(target, dmg, srcKind, src) {
       target.dmgFloat = f;
     }
   }
-  if (shielded) {
-    spawnParticles(target.x, target.y, 10, '#c77dff', 'rune');
-  }
-  spawnParticles(target.x, target.y, 6, target.team === 'red' ? '#ff2e2e' : '#2e9eff', 'shard');
   if (target.hp <= 0) {
     target.dead = true;
     sfx('death', null, target.x);
-    spawnParticles(target.x, target.y, 24, '#ffe83d', 'shard');
     endGame();
   }
   // Duelist: COUNTER — melee hits trigger an automatic counter-thrust back at the attacker.
@@ -160,7 +148,6 @@ function damage(target, dmg, srcKind, src) {
     target.counterAnim = 0.16;
     target.counterDir = Math.atan2(src.y - target.y, src.x - target.x);
     sfx('counter', null, target.x);
-    spawnParticles(src.x, src.y, 5, '#c0c0e8', 'spark');
     damage(src, 8, 'counter');
   }
   return dmg;

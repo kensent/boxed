@@ -359,7 +359,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], mines: [], hazards: [], skeletons: [], particles: [], floatTexts: [],
+    projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
@@ -759,7 +759,7 @@ function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 // === STEP (per-frame simulation) ============================================
 // Runs every frame at variable dt. Handles fighter movement, passive ticks
 // (regen, bloodrage, wakes, shield/dodge recharge), dash & swing windows,
-// body collisions, ability cooldowns, projectiles, mines, particles.
+// body collisions, ability cooldowns, projectiles, mines.
 // This is the heart of the game loop.
 // ============================================================================
 
@@ -879,7 +879,6 @@ function step(dt) {
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
             spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
-            spawnParticles(f.x, f.y, 5, '#aa0000', 'shard');
           }
           f.dashHit = true;
           f.dashTimer = 0;
@@ -901,12 +900,6 @@ function step(dt) {
     // the single in-range hit landed during the dash.
     if (f.ability === 'sweep' && f.sweepTimer > 0) {
       f.sweepTimer -= dt;
-      // Trail blood-mist particles while spinning
-      if (vrng() < 0.2) {
-        const ra = vrng() * Math.PI * 2;
-        const rr = FIGHTER_SIZE + 10 + vrng() * 6;
-        spawnParticles(f.x + Math.cos(ra) * rr, f.y + Math.sin(ra) * rr, 1, '#aa0000', 'streak');
-      }
       if (f.sweepTimer <= 0) f.sweepHit = false;
     }
 
@@ -930,7 +923,6 @@ function step(dt) {
         f.y = f.tetherStartY + (endY - f.tetherStartY) * progress;
         if (f.tetherTimer <= 0) {
           sfx('yank');
-          spawnParticles(f.x, f.y, 16, '#c89060', 'shard');
           f.tetherTarget = null;
         }
       } else {
@@ -961,7 +953,6 @@ function step(dt) {
             f.drainTickTimer = 0.2;
             damage(t, f.dmg, 'drain');
             f.hp = Math.min(f.maxHp, f.hp + f.dmg * f.drainHealRate);
-            spawnParticles(t.x, t.y, 4, '#c050ff', 'spark');
           }
         }
       } else {
@@ -1001,8 +992,6 @@ function step(dt) {
           f.vy = Math.sin(ang) * f.speed;
           // Store dash trail for the renderer (fades over the strike window)
           f.iaiTrail = { x1: startX, y1: startY, x2: f.x, y2: f.y };
-          spawnParticles(f.x, f.y, 20, '#e8c020', 'streak');
-          spawnParticles(startX, startY, 12, '#e8c020', 'streak');
           // Cleave everything along the dash line — skeletons and the enemy
           // fighter if they fall within the slash width of the path segment.
           const sdx = f.x - startX, sdy = f.y - startY;
@@ -1026,8 +1015,6 @@ function step(dt) {
             if (m.team === f.team || m.armed > 0) return true;
             if (segDist(m.x, m.y) < FIGHTER_SIZE + m.size + 6) {
               damage(f, m.dmg);
-              spawnParticles(m.x, m.y, 12, '#3a2a1a', 'smoke');
-              spawnParticles(m.x, m.y, 10, '#ff8c1a', 'shard');
               return false;
             }
             return true;
@@ -1202,7 +1189,6 @@ function step(dt) {
       if (p.y > h - p.size) { p.y = h - p.size; p.vy = -p.vy; bounced = true; }
       if (bounced) {
         p.bounces -= 1;
-        spawnParticles(p.x, p.y, 2, '#7dff3d', 'spark');
         if (p.bounces < 0) return false;
       }
     } else if (!p.noEdgeDespawn) {
@@ -1223,7 +1209,6 @@ function step(dt) {
         p.vy = -p.vy;
         p.life = Math.max(p.life, 1.5);
         if (p.homing <= 0) { p.homing = 25; p.cruise = Math.hypot(p.vx, p.vy); }
-        spawnParticles(target.x, target.y, 14, '#c0c0e8', 'spark');
         return true; // keep alive, flipped — angle re-syncs to velocity next frame
       }
       // Hook (Hunter): deals damage, tethers + reels the target, and triggers
@@ -1234,7 +1219,6 @@ function step(dt) {
         target.tetherTarget = p.hookSrc;
         target.tetherStartX = target.x;
         target.tetherStartY = target.y;
-        spawnParticles(p.x, p.y, 10, '#c89060', 'spark');
         damage(target, p.dmg, 'projectile');
         target.stunTimer = Math.max(target.stunTimer, CRIPPLE_STUN);
         return false;
@@ -1248,16 +1232,9 @@ function step(dt) {
         target.witchMarkTimer = p.markDuration;
       }
       damage(target, dmgOut, 'projectile');
-      const pColor = p.kind === 'lightning' ? '#ffe83d' : p.kind === 'cannon' ? '#ff8c1a' : (p.kind === 'hex' ? '#7dff3d' : '#3dff8a');
-      const pStyle = p.kind === 'lightning' ? 'cross' : 'streak';
-      spawnParticles(p.x, p.y, 5, pColor, pStyle);
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
       if (p.kind === 'cannon') {
         game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 1.5, maxTimer: 1.5, tickCd: 0, team: p.team, dps: 2 });
-        // A tight cluster of hot embers at the center — the zone glow in arena.js
-        // shows the area; these just mark where the round landed.
-        spawnParticles(p.x, p.y, 6, '#ff6010', 'streak');
-        spawnParticles(p.x, p.y, 3, '#ffb040', 'streak');
       }
       return false;
     }
@@ -1279,8 +1256,6 @@ function step(dt) {
         target.vx = bx / bd * 400;
         target.vy = by / bd * 400;
         target.blastTimer = 0.22;
-        spawnParticles(m.x, m.y, 12, '#3a2a1a', 'smoke');
-        spawnParticles(m.x, m.y, 10, '#ff8c1a', 'shard');
         return false;
       }
     }
@@ -1298,12 +1273,6 @@ function step(dt) {
       if (!target.dead && dist(h, target) < h.radius) {
         damage(target, h.dps * 0.5, 'hazard'); // 0.5s × 4 dps = 2.0 dmg per tick
       }
-      // Scatter embers across the zone — Math.random() so it doesn't touch the seeded RNG streams.
-      for (let i = 0; i < 4; i++) {
-        const ang = Math.random() * Math.PI * 2;
-        const r   = Math.random() * h.radius * 0.85;
-        spawnParticles(h.x + Math.cos(ang) * r, h.y + Math.sin(ang) * r, 1, i < 2 ? '#ff6010' : '#ffb040', 'streak');
-      }
     }
     return true;
   });
@@ -1319,17 +1288,14 @@ function step(dt) {
     // Damage float over the skeleton, same style as fighter hits.
     spawnFloat(sk.x, sk.y - sk.size - 4, '-' + Math.ceil(dmg),
                sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
-    spawnParticles(sk.x, sk.y, 4, sk.team === 'red' ? '#ff6b6b' : '#6bb6ff', 'spark');
     if (sk.hp <= 0) {
       // Bone Burst: shards erupt on death — any enemy within 55px takes dmg.
       // Punishes melee fighters rushing in to kill skeletons; ranged killers are safe.
       const enemy = sk.team === 'red' ? blue : red;
       if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
         damage(enemy, 17, 'bone');
-        spawnBoneBurst(sk.x, sk.y);
         sfx('boneBurst', null, sk.x);
       }
-      spawnParticles(sk.x, sk.y, 4, '#e8e0d0', 'shard');
       return true;
     }
     return false;
@@ -1373,7 +1339,6 @@ function step(dt) {
         sk.vy = Math.sin(ang) * SKEL_CHARGE_SPEED;
         sk.chargeTimer = 0.65;
         sk.chargeHit = false;
-        spawnParticles(sk.x, sk.y, 3, '#e8e0d0', 'streak');
       }
     }
 
@@ -1444,27 +1409,6 @@ function step(dt) {
     });
   });
 
-  game.particles = game.particles.filter(pt => {
-    pt.life -= dt;
-    if (pt.life <= 0) return false;
-    pt.x += pt.vx * dt;
-    pt.y += pt.vy * dt;
-    if (pt.style === 'smoke') {
-      pt.vx *= 0.9; pt.vy *= 0.9;
-      pt.size += pt.grow * dt;
-    } else if (pt.style === 'rune') {
-      pt.vx *= 0.92; pt.vy *= 0.92;
-      pt.rot += pt.vrot * dt;
-    } else if (pt.style === 'cross') {
-      pt.vx *= 0.96;
-      // gentle upward float
-    } else {
-      pt.vx *= 0.94;
-      pt.vy *= 0.94;
-      if (pt.vrot) pt.rot += pt.vrot * dt;
-    }
-    return true;
-  });
 
   game.floatTexts = game.floatTexts.filter(ft => {
     // Debounced damage floats: while "open" the float holds position (doesn't
