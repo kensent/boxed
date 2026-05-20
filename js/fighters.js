@@ -80,7 +80,7 @@ const FIGHTERS = [
     ability:'iai', cd:3.6, dmg:35,
     windupTime: 0.7,
     get active() { return `IAI SLASH — ${this.windupTime}s windup, then dashing heavy strike`; },
-    passive: 'IAIJUTSU — hitting with iai halves the cooldown',
+    passive: 'FOCUS — hitting with iai halves the cooldown',
   },
   { id:'witch',   name:'WITCH',     hp:78,  speed:100, color:'#2d4a2a', accent:'#7dff3d', shape:'hat',
     ability:'hex', cd:1.5, dmg:11,

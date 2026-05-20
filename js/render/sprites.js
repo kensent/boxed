@@ -31,7 +31,7 @@ function drawStar(c, cx, cy, spikes, outer, inner) {
 // the VS intro can use it. `c` is any 2D context; the caller has already
 // translated/rotated into the sprite's local space. Only reads FIGHTER_SIZE,
 // f.color, f.accent, f.shape.
-function drawShape(c, f) {
+function drawShape(c, f, hinge = 0) {
   switch (f.shape) {
     case 'cross': {
       // Priest — vertical scepter icon: dark shaft, horizontal crossguard, glowing orb at tip.
@@ -326,44 +326,23 @@ function drawShape(c, f) {
     }
     case 'mask': {
       // Jester — a symmetric harlequin diamond mask: red/blue split, jester-cap
-      // points along the top. The mask IS the whole sprite (no weapon).
+      // points along the top. The mask IS the whole sprite (no weapon). It's drawn
+      // as two independent halves so the SNAP animation can slide them apart and
+      // scissor them shut; `hinge` is the split distance in px (0 at rest, which
+      // reproduces the static diamond exactly).
       const m = FIGHTER_SIZE * 0.9;   // half-height / half-width of the diamond
-      // Left half — red triangle.
+      // LEFT half (red): triangle, its outline (closed → outer-left edges + the
+      // centre divide), the left eye slit, and the left cap point. Slid -hinge.
+      c.save();
+      c.translate(-hinge, 0);
       c.fillStyle = '#ff2e2e';
       c.beginPath();
-      c.moveTo(0, -m);
-      c.lineTo(-m, 0);
-      c.lineTo(0, m);
-      c.closePath();
+      c.moveTo(0, -m); c.lineTo(-m, 0); c.lineTo(0, m); c.closePath();
       c.fill();
-      // Right half — blue triangle, same size (symmetric now the dagger's gone).
-      c.fillStyle = '#2e9eff';
-      c.beginPath();
-      c.moveTo(0, -m);
-      c.lineTo(m, 0);
-      c.lineTo(0, m);
-      c.closePath();
-      c.fill();
-      // Cream outline around the diamond.
-      c.strokeStyle = f.color;
-      c.lineWidth = 2;
-      c.beginPath();
-      c.moveTo(0, -m);
-      c.lineTo(-m, 0);
-      c.lineTo(0, m);
-      c.lineTo(m, 0);
-      c.closePath();
+      c.strokeStyle = f.color; c.lineWidth = 2;
       c.stroke();
-      // Center divide (vertical).
-      c.beginPath();
-      c.moveTo(0, -m);
-      c.lineTo(0, m);
-      c.stroke();
-      // Eye slits — one per half, mirrored.
       c.fillStyle = f.color;
       c.fillRect(-FIGHTER_SIZE * 0.5, -FIGHTER_SIZE * 0.15, FIGHTER_SIZE * 0.22, 2.5);
-      c.fillRect(FIGHTER_SIZE * 0.28, -FIGHTER_SIZE * 0.15, FIGHTER_SIZE * 0.22, 2.5);
-      // Three jester-cap points along the top — left red, center, right blue.
       c.fillStyle = '#ff2e2e';
       c.beginPath();
       c.moveTo(-FIGHTER_SIZE * 0.32, -FIGHTER_SIZE * 0.62);
@@ -371,13 +350,18 @@ function drawShape(c, f) {
       c.lineTo(-FIGHTER_SIZE * 0.12, -FIGHTER_SIZE * 0.74);
       c.closePath();
       c.fill();
-      c.fillStyle = f.color;
+      c.restore();
+      // RIGHT half (blue): mirror, slid +hinge.
+      c.save();
+      c.translate(hinge, 0);
+      c.fillStyle = '#2e9eff';
       c.beginPath();
-      c.moveTo(-FIGHTER_SIZE * 0.13, -FIGHTER_SIZE * 0.74);
-      c.lineTo(0, -FIGHTER_SIZE * 1.16);
-      c.lineTo(FIGHTER_SIZE * 0.13, -FIGHTER_SIZE * 0.74);
-      c.closePath();
+      c.moveTo(0, -m); c.lineTo(m, 0); c.lineTo(0, m); c.closePath();
       c.fill();
+      c.strokeStyle = f.color; c.lineWidth = 2;
+      c.stroke();
+      c.fillStyle = f.color;
+      c.fillRect(FIGHTER_SIZE * 0.28, -FIGHTER_SIZE * 0.15, FIGHTER_SIZE * 0.22, 2.5);
       c.fillStyle = '#2e9eff';
       c.beginPath();
       c.moveTo(FIGHTER_SIZE * 0.12, -FIGHTER_SIZE * 0.74);
@@ -385,6 +369,18 @@ function drawShape(c, f) {
       c.lineTo(FIGHTER_SIZE * 0.32, -FIGHTER_SIZE * 0.62);
       c.closePath();
       c.fill();
+      c.restore();
+      // Centre cream cap point — only while ~closed, so it doesn't float in the
+      // gap when the halves are slid open.
+      if (hinge < 1) {
+        c.fillStyle = f.color;
+        c.beginPath();
+        c.moveTo(-FIGHTER_SIZE * 0.13, -FIGHTER_SIZE * 0.74);
+        c.lineTo(0, -FIGHTER_SIZE * 1.16);
+        c.lineTo(FIGHTER_SIZE * 0.13, -FIGHTER_SIZE * 0.74);
+        c.closePath();
+        c.fill();
+      }
       break;
     }
     case 'cannon': {
@@ -900,6 +896,46 @@ function drawFighter(f) {
 
   const enemy = f.team === 'red' ? game.blue : game.red;
 
+  // Jester blink streak (world space, behind the sprite) — a fading two-tone wisp
+  // connecting depart→arrive so the teleport is trackable. Red glow at the depart
+  // point, blue at the arrival; cream core line between.
+  if (f.ability === 'blink' && f.blinkFx > 0) {
+    const a = f.blinkFx / 0.3;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(232,216,184,${(a * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 2 + a * 2;
+    ctx.beginPath();
+    ctx.moveTo(f.blinkFromX, f.blinkFromY);
+    ctx.lineTo(f.x, f.y);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,46,46,${(a * 0.5).toFixed(3)})`;   // depart
+    ctx.beginPath(); ctx.arc(f.blinkFromX, f.blinkFromY, 3 + a * 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(46,158,255,${(a * 0.5).toFixed(3)})`;  // arrive
+    ctx.beginPath(); ctx.arc(f.x, f.y, 3 + a * 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Ronin iai cut (world space) — a long gold slash along the teleport-step path;
+  // it doubles as the teleport visual (for the Ronin, the dash trail IS the cut).
+  // Heaviest hit in the game (35), so the boldest streak of the set: wide gold
+  // body + white-hot core + a flash where the cut lands.
+  if (f.ability === 'iai' && f.iaiStrike > 0 && f.iaiTrail) {
+    const a = f.iaiStrike / 0.15;
+    const t = f.iaiTrail;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(232,192,32,${(a * 0.5).toFixed(3)})`;
+    ctx.lineWidth = 7 * a + 1;
+    ctx.beginPath(); ctx.moveTo(t.x1, t.y1); ctx.lineTo(t.x2, t.y2); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+    ctx.lineWidth = 2 * a + 0.5;
+    ctx.beginPath(); ctx.moveTo(t.x1, t.y1); ctx.lineTo(t.x2, t.y2); ctx.stroke();
+    ctx.fillStyle = `rgba(255,240,180,${(a * 0.85).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(t.x2, t.y2, 4 * a + 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
   ctx.save();
   ctx.translate(f.x, f.y);
 
@@ -995,6 +1031,33 @@ function drawFighter(f) {
       const s = 1 + 0.18 * Math.sin(sp * Math.PI);   // centrifugal bulge, returns to 1
       bodyX = s; bodyY = s;
     }
+  } else if (f.ability === 'iai') {
+    // Ronin — THE IAI: a long tense draw-back, then an instant teleport-flash cut.
+    // (The windup is a gameplay mechanic, not the 1-3 frame anticipation of #8 — so
+    // it gets its own slow coil + a building tremor that telegraphs the release.)
+    if (f.iaiStrike > 0) {
+      const k = f.iaiStrike / 0.15;                  // 1 → 0
+      bodyX = 1 + 0.40 * k;                          // the cut: blade thrusts forward, returns
+      bodyY = 1 - 0.10 * k;
+    } else if (f.iaiWindup > 0) {
+      const wp = 1 - f.iaiWindup / 0.7;              // 0 → 1 as the windup completes
+      bodyX = 1 - 0.18 * wp;                         // draw the blade back (coil), deepening
+      bodyY = 1 + 0.06 * wp;
+      if (wp > 0.5) bodyRot = Math.sin(performance.now() / 22) * 0.05 * ((wp - 0.5) / 0.5);
+    }
+  }
+
+  // Jester — THE SNAP. No dash (it teleports), so there's no hold-and-whip; the
+  // strike is the mask itself: the two harlequin halves slide APART (jaws gape),
+  // then SNAP shut — the snap is the bite. `hinge` (passed to drawShape) is the
+  // split distance in px; it's 0 for every other fighter.
+  let hinge = 0;
+  if (f.ability === 'blink' && f.meleeImpact > 0) {
+    const p = 1 - impactK;                           // 0 → 1 over the window
+    const MAX = 7;                                   // px each half slides apart
+    if (p < 0.5)        hinge = MAX * (p / 0.5);          // gape open (anticipation)
+    else if (p < 0.72)  hinge = MAX * (1 - (p - 0.5) / 0.22); // SNAP shut (the bite)
+    else                hinge = 0;                       // settled
   }
 
   ctx.save();
@@ -1012,7 +1075,7 @@ function drawFighter(f) {
   }
   ctx.rotate(bodyRot);          // extra spin (rotor fighters); 0 for everyone else
   ctx.scale(bodyX, bodyY);
-  drawShape(ctx, f);
+  drawShape(ctx, f, hinge);     // hinge opens/snaps the Jester's mask; 0 for everyone else
   ctx.restore();
 
   // ===== BERSERKER — concussive shockwave ring (bespoke impact) =============
@@ -1150,6 +1213,32 @@ function drawFighter(f) {
       ctx.lineTo(ux * (r0 + len), uy * (r0 + len));
       ctx.stroke();
     }
+  }
+
+  // ===== JESTER — pinch bite (bespoke impact) ===============================
+  // A bite is a PINCH: force from two converging jaws. So the signature is a
+  // converging PAIR (the fifth primitive — circle / bar / line / arc / PAIR), and
+  // the Jester's two-tone VOICE rides it: a red jaw and a blue jaw snap together
+  // on the contact point. Line-drawn, deterministic, no particles.
+  if (f.ability === 'blink' && f.meleeImpact > 0) {
+    const p = 1 - impactK;                           // 0 → 1
+    const a = p < 0.5 ? 0 : Math.max(0, 1 - (p - 0.5) / 0.5); // appears at the snap, fades
+    const snapClose = Math.max(0, Math.min(1, (p - 0.5) / 0.22)); // jaws shut during the snap
+    const gap = (1 - snapClose) * 8 + 1.5;            // vertical gap closes
+    ctx.save();
+    ctx.rotate(facing);
+    ctx.translate(FIGHTER_SIZE + 3, 0);               // contact point, toward the enemy
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2.2 * a + 0.5;
+    ctx.strokeStyle = `rgba(255,46,46,${a.toFixed(3)})`;   // red jaw (top)
+    ctx.beginPath();
+    ctx.moveTo(-5, -gap - 4); ctx.lineTo(3, -gap);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(46,158,255,${a.toFixed(3)})`;  // blue jaw (bottom)
+    ctx.beginPath();
+    ctx.moveTo(-5, gap + 4); ctx.lineTo(3, gap);
+    ctx.stroke();
+    ctx.restore();
   }
 
   ctx.restore();

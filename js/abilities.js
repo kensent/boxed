@@ -95,6 +95,7 @@ function fireAbility(f, enemy) {
     }
     case 'blink': {
       // Teleport behind enemy's heading. Brief invuln during the blink itself.
+      f.blinkFromX = f.x; f.blinkFromY = f.y; f.blinkFx = 0.3; // depart anchor + streak timer
       const enemyHeading = Math.atan2(enemy.vy, enemy.vx);
       const behindAng = enemyHeading + Math.PI;
       const tx = enemy.x + Math.cos(behindAng) * 25;
@@ -102,6 +103,7 @@ function fireAbility(f, enemy) {
       // Clamp to arena
       f.x = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, tx));
       f.y = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, ty));
+      f.meleeImpact = 0.26; f.meleeImpactMax = 0.26; // mask gape-then-snap + pinch effect
       // Stab — f.dmg if in range after blink
       if (dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + 4) {
         damage(enemy, f.dmg, undefined, f);

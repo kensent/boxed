@@ -619,9 +619,9 @@ function fighterStatuses(f) {
   if (f.ability === 'arrow' && (f.shotCount % 4 === 3) && !f.dead) {
     out.push({ label: 'VOLLEY', color: '#3dff8a' });
   }
-  // Ronin — Iai windup in progress
+  // Ronin — FOCUS: concentrating during the iai windup
   if (f.iaiWindup > 0) {
-    out.push({ label: 'WINDUP', color: '#e8c020' });
+    out.push({ label: 'FOCUS', color: '#e8c020' });
   }
   // Warlock — drain beam actively channeling
   if (f.drainTimer > 0) {
@@ -1038,7 +1038,7 @@ function step(dt) {
         if (!f.iaiHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + 25) {
           damage(enemy, f.dmg, undefined, f);
           f.iaiHit = true;
-          f.cdTimer = f.cd * 0.5; // IAIJUTSU — clean strike halves the cooldown
+          f.cdTimer = f.cd * 0.5; // FOCUS — clean strike halves the cooldown
         }
         if (f.iaiStrike <= 0) { f.iaiHit = false; f.iaiTrail = null; }
       }
