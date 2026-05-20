@@ -158,27 +158,6 @@
   .hp-block .name { font-family: 'Bungee', sans-serif; font-size: 11px; margin-bottom: 3px; }
   .name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; min-height: 14px; }
   .name-row .name { margin-bottom: 0; }
-  /* Status badges live in their OWN row beneath the hp-text, at a fixed
-     reserved height — so badges appearing/expiring never resize the block,
-     the name, the hp-bar, the other fighter's block, or the arena. */
-  .status-row {
-    display: flex;
-    gap: 3px;
-    flex-wrap: nowrap;
-    height: 13px;
-    margin-top: 2px;
-    align-items: center;
-    overflow: hidden;
-  }
-  .status-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 7px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 1px 4px;
-    border-radius: 2px;
-    white-space: nowrap;
-  }
   .hp-bar { height: 12px; background: #222; border: 2px solid var(--fg); overflow: hidden; }
   .hp-fill { height: 100%; transition: width 0.2s; }
   .hp-fill.red { background: var(--red); }
@@ -391,7 +370,6 @@
       </div>
       <div class="hp-bar"><div class="hp-fill red" id="hp-red" style="width:100%"></div></div>
       <div class="hp-text" id="hp-text-red">100 / 100</div>
-      <div class="status-row" id="status-red"></div>
     </div>
     <div class="fight-clock" id="fight-clock">0:20</div>
     <div class="hp-block">
@@ -400,7 +378,6 @@
       </div>
       <div class="hp-bar"><div class="hp-fill blue" id="hp-blue" style="width:100%; margin-left:auto"></div></div>
       <div class="hp-text" id="hp-text-blue" style="text-align:right">100 / 100</div>
-      <div class="status-row" id="status-blue" style="justify-content:flex-end"></div>
     </div>
   </div>
   <div class="arena-wrap" id="arena-wrap">

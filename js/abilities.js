@@ -338,7 +338,7 @@ function resolveAim(f) {
     // the roll settles ~1s after the ability fired (cdTimer was already set).
     if (roll <= 2) {
       f.cdTimer = Math.min(f.cdTimer, f.cd * 0.5);
-      f.loadedTimer = f.cdTimer;   // LOADED badge shows during the rushed cooldown
+      f.loadedFx = 0.45;   // brief "lucky" pop marking LOADED DICE firing
     }
     f.gamblerRefund = false;
   }

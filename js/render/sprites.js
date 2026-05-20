@@ -1099,6 +1099,40 @@ function drawFighter(f) {
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4 + np * 14, 0, Math.PI * 2); ctx.stroke();
   }
+  // FOCUS (Ronin) — steady gold aura while on a clean-hit streak. Hidden during the
+  // windup/strike so it never stacks with the (filling) charge ring.
+  if (f.ability === 'iai' && f.focused && f.iaiWindup <= 0 && f.iaiStrike <= 0 && !f.dead) {
+    armedRing('232,192,32');
+  }
+  // VOLLEY (Archer) — green fan of arrowhead ticks aimed at the enemy: the next
+  // shot fans 4 arrows, telegraphed.
+  if (f.ability === 'arrow' && (f.shotCount % 4 === 3) && !f.dead && enemy && !enemy.dead) {
+    const aim = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+    ctx.save();
+    ctx.rotate(aim);
+    ctx.strokeStyle = 'rgba(61,255,138,0.75)';
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const off = (i - 1) * 0.22;
+      ctx.save();
+      ctx.translate((FIGHTER_SIZE + 6) * Math.cos(off), (FIGHTER_SIZE + 6) * Math.sin(off));
+      ctx.rotate(off);
+      ctx.beginPath(); ctx.moveTo(-3, -3); ctx.lineTo(2, 0); ctx.lineTo(-3, 3); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  // FOG — fast magenta alarm ring while caught outside the closing ring (danger).
+  if (game.elapsed > 20 && !f.dead) {
+    const dc = Math.hypot(f.x - game.w / 2, f.y - game.h / 2);
+    if (dc > (game.ringRadius || 999)) {
+      const pulse = 0.5 + Math.sin(performance.now() / 90) * 0.5;
+      ctx.strokeStyle = `rgba(210,90,255,${(0.4 + pulse * 0.5).toFixed(3)})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 5, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
 
   // Orientation: face the enemy. Mirror rather than rotate past vertical so the
   // sprite never goes upside-down (forward is local +x).
@@ -1609,6 +1643,27 @@ function drawFighter(f) {
       const ang = (i / 3) * Math.PI * 2 + t;
       drawStar(ctx, Math.cos(ang) * 9, cy + Math.sin(ang) * 3, 4, 2.6, 1.1);
       ctx.fill();
+    }
+  }
+  // LOADED (Gambler) — a brief gold "lucky" pop the instant a low roll fires LOADED
+  // DICE (not a persistent state): a star + sparkle burst above the head, expanding
+  // and fading.
+  if (f.loadedFx > 0) {
+    const a = f.loadedFx / 0.45;
+    const cy = -(FIGHTER_SIZE + 8);
+    ctx.fillStyle = `rgba(255,210,61,${a.toFixed(3)})`;
+    drawStar(ctx, 0, cy, 4, 4 + (1 - a) * 3, 1.6);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,240,180,${a.toFixed(3)})`;
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const ang = (i / 4) * Math.PI * 2 + 0.4;
+      const r1 = 7 + (1 - a) * 8;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang) * 4, cy + Math.sin(ang) * 4);
+      ctx.lineTo(Math.cos(ang) * r1, cy + Math.sin(ang) * r1);
+      ctx.stroke();
     }
   }
 

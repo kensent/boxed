@@ -477,7 +477,7 @@ function makeFighter(t, team, x, y) {
     // the die tumbles + after it settles; gamblerShots is a queue of timed
     // coin shots (for the faces that fire over time); gamblerRefund flags a
     // low roll (1-2) that halves the next cooldown.
-    gamblerRoll: 0, gamblerShots: [], gamblerRefund: false, gamblerSpeedTimer: 0, loadedTimer: 0,
+    gamblerRoll: 0, gamblerShots: [], gamblerRefund: false, gamblerSpeedTimer: 0, loadedFx: 0,
   };
 }
 
@@ -604,62 +604,11 @@ function updateHp() {
       clock.classList.add('urgent');
     }
   }
-  updateStatuses();
 }
 
-// Collect the active status badges for a fighter. Each badge is {label, color}.
-function fighterStatuses(f) {
-  const out = [];
-  // Badges are ONLY for states with no on-fighter visual. Anything that reads on
-  // the fighter itself gets no badge (avoid double-reporting): Bloodrage (red ring),
-  // mana-shield/dodge/parry (armed rings), Witch's Mark (green sigil), Slowed
-  // (drag-trail), Stunned (orbiting stars).
-  // Gambler — LOADED DICE: a low roll has rushed the next cooldown
-  if (f.ability === 'wildcard' && f.loadedTimer > 0 && !f.dead) {
-    out.push({ label: 'LOADED', color: '#ffd23d' });
-  }
-  // Archer — VOLLEY: the next shot will fan 4 arrows (every 4th shot)
-  if (f.ability === 'arrow' && (f.shotCount % 4 === 3) && !f.dead) {
-    out.push({ label: 'VOLLEY', color: '#3dff8a' });
-  }
-  // Ronin — FOCUS: held while on a clean-hit streak (each landed iai halves the
-  // cooldown); persists until a missed iai breaks it. No on-fighter visual.
-  if (f.focused && !f.dead) {
-    out.push({ label: 'FOCUS', color: '#e8c020' });
-  }
-  // Caught in the closing-ring fog
-  if (game.elapsed > 20 && !f.dead) {
-    const dc = Math.hypot(f.x - game.w / 2, f.y - game.h / 2);
-    if (dc > (game.ringRadius || 999)) {
-      out.push({ label: 'FOG', color: '#d25aff' });
-    }
-  }
-  return out;
-}
-
-function renderStatusRow(elId, statuses) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  // Rebuild only when the set of labels changed — avoids thrashing the DOM each frame.
-  const key = statuses.map(s => s.label).join(',');
-  if (el.dataset.key === key) return;
-  el.dataset.key = key;
-  el.innerHTML = '';
-  statuses.forEach(s => {
-    const b = document.createElement('div');
-    b.className = 'status-badge';
-    b.textContent = s.label;
-    b.style.color = s.color;
-    b.style.border = '1px solid ' + s.color;
-    el.appendChild(b);
-  });
-}
-
-function updateStatuses() {
-  if (!game) return;
-  renderStatusRow('status-red', fighterStatuses(game.red));
-  renderStatusRow('status-blue', fighterStatuses(game.blue));
-}
+// (The DOM status-badge system was removed: every status now reads on the fighter
+// itself — armed/rage/focus rings, stun stars, mark sigil, slow drag-trail, the
+// loaded pop, the fog alarm ring — so a HUD badge row would just double-report.)
 
 // Fixed simulation timestep. The loop accumulates real time and advances the
 // sim in exact FIXED_DT chunks — so the fight is fully deterministic from its
@@ -956,7 +905,7 @@ function step(dt) {
 
     // Gambler: LOADED DICE — counts down the rushed-cooldown window after a
     // low roll, purely so the LOADED status badge knows when to show.
-    if (f.loadedTimer > 0) f.loadedTimer -= dt;
+    if (f.loadedFx > 0) f.loadedFx -= dt;
 
     // Ronin: iai windup + teleport-strike
     if (f.ability === 'iai') {
