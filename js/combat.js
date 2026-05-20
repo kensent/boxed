@@ -157,6 +157,8 @@ function damage(target, dmg, srcKind, src) {
     target.counterDir = Math.atan2(src.y - target.y, src.x - target.x);
     sfx('counter', null, target.x);
     damage(src, 8, 'counter');
+    // Same puncture lance as the riposte (smaller), landing on the attacker.
+    if (!src.dead) spawnImpact(src.x, src.y, 'puncture', target.counterDir, 0.4);
   }
   return dmg;
 }

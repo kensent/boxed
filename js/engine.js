@@ -1341,6 +1341,10 @@ function step(dt) {
       sk.chargeTimer -= dt;
       if (!sk.chargeHit && !target.dead && dist(sk, target) < FIGHTER_SIZE + sk.size) {
         damage(target, sk.dmg);
+        // Bone clash on the dash-attack connect + a light (chip-scaled) knockback.
+        const ha = Math.atan2(target.y - sk.y, target.x - sk.x);
+        spawnImpact(target.x, target.y, 'bone', ha, 0.35);
+        target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 26) * 13;
         sk.chargeHit = true;
         sk.attackCd = SKEL_CHARGE_CD;
         sk.chargeTimer = 0;

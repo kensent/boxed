@@ -118,6 +118,20 @@ function drawImpact(im) {
       for (let i = 0; i < 3; i++) { const g = (i / 3) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
       break;
     }
+    case 'puncture': {                              // Duelist COUNTER — same lance as the riposte, smaller
+      ctx.rotate(im.dir);
+      const x1 = 6 + prog * 8;
+      ctx.strokeStyle = `rgba(220,220,245,${a.toFixed(3)})`;
+      ctx.lineWidth = 1.6 * a + 0.4;
+      ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(x1, 0); ctx.stroke();
+      ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`;     // tip glint
+      ctx.lineWidth = 0.8;
+      const g = 3 * a + 1;
+      ctx.beginPath();
+      ctx.moveTo(x1 - g, 0); ctx.lineTo(x1 + g, 0); ctx.moveTo(x1, -g); ctx.lineTo(x1, g);
+      ctx.stroke();
+      break;
+    }
     case 'arrow': {                                 // sharp puncture along the shot + green splinters
       ctx.rotate(im.dir);
       ctx.strokeStyle = `rgba(220,255,230,${a.toFixed(3)})`;
