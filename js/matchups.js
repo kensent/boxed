@@ -10,7 +10,7 @@
 // printed MATCHUPS block here — otherwise it silently drifts from reality.
 // ============================================================================
 const MATCHUPS = {
-  'priest_berserker':85, 'priest_wizard':9, 'priest_knight':80, 'priest_sapper':77, 'priest_archer':41,
+  'priest_berserker':85, 'priest_wizard':9, 'priest_knight':80, 'priest_sapper':77, 'priest_archer':42,
   'priest_jester':33, 'priest_cannoneer':62, 'priest_duelist':44, 'priest_necromancer':52, 'priest_reaper':59,
   'priest_ronin':67, 'priest_witch':29, 'priest_hunter':23, 'priest_warlock':60, 'priest_gambler':36,
   'berserker_wizard':58, 'berserker_knight':95, 'berserker_sapper':36, 'berserker_archer':54, 'berserker_jester':87,
@@ -20,11 +20,11 @@ const MATCHUPS = {
   'wizard_necromancer':28, 'wizard_reaper':1, 'wizard_ronin':68, 'wizard_witch':74, 'wizard_hunter':49,
   'wizard_warlock':51, 'wizard_gambler':38, 'knight_sapper':14, 'knight_archer':21, 'knight_jester':79,
   'knight_cannoneer':12, 'knight_duelist':12, 'knight_necromancer':94, 'knight_reaper':92, 'knight_ronin':34,
-  'knight_witch':80, 'knight_hunter':60, 'knight_warlock':56, 'knight_gambler':90, 'sapper_archer':53,
+  'knight_witch':80, 'knight_hunter':60, 'knight_warlock':56, 'knight_gambler':90, 'sapper_archer':54,
   'sapper_jester':99, 'sapper_cannoneer':9, 'sapper_duelist':90, 'sapper_necromancer':46, 'sapper_reaper':97,
   'sapper_ronin':46, 'sapper_witch':26, 'sapper_hunter':34, 'sapper_warlock':30, 'sapper_gambler':17,
   'archer_jester':15, 'archer_cannoneer':75, 'archer_duelist':78, 'archer_necromancer':37, 'archer_reaper':93,
-  'archer_ronin':50, 'archer_witch':21, 'archer_hunter':72, 'archer_warlock':35, 'archer_gambler':36,
+  'archer_ronin':50, 'archer_witch':21, 'archer_hunter':70, 'archer_warlock':35, 'archer_gambler':36,
   'jester_cannoneer':83, 'jester_duelist':3, 'jester_necromancer':66, 'jester_reaper':18, 'jester_ronin':98,
   'jester_witch':76, 'jester_hunter':65, 'jester_warlock':0, 'jester_gambler':79, 'cannoneer_duelist':47,
   'cannoneer_necromancer':20, 'cannoneer_reaper':51, 'cannoneer_ronin':87, 'cannoneer_witch':34, 'cannoneer_hunter':34,
