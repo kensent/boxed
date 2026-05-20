@@ -1099,6 +1099,19 @@ function drawFighter(f) {
     recoilSquash = 0.22 * k;
   }
 
+  // ----- Ranged fire reaction (shared) — a sharp impulse along the firing axis at
+  // release: RECOIL (back) for weapons discharged from an implement, THRUST
+  // (forward) for casts/throws. Snaps then settles; folded into the body offset. -----
+  let fireX = 0, fireY = 0;
+  if (f.fireKick > 0) {
+    const k = f.fireKick / f.fireKickMax;            // 1 → 0
+    const recoil = (f.ability === 'cannon' || f.ability === 'lightning' || f.ability === 'arrow');
+    const mag = (f.ability === 'cannon' ? 12 : 7) * k;  // Cannoneer = the heaviest kick
+    const along = recoil ? -mag : mag;               // − = back (recoil), + = forward (thrust)
+    fireX = Math.cos(f.fireDir) * along;
+    fireY = Math.sin(f.fireDir) * along;
+  }
+
   // ----- Per-fighter body deform (stretch/squash along FORWARD = local +x) -----
   // bodyRot adds an extra spin on top of facing (used by rotor-type fighters).
   let bodyX = 1, bodyY = 1, bodyRot = 0;
@@ -1186,8 +1199,13 @@ function drawFighter(f) {
     else                hinge = 0;                       // settled
   }
 
+  // If a fire-recoil and a melee knockback overlap (a ranged fighter struck the
+  // instant it fires), take the DOMINANT one (larger magnitude) rather than summing
+  // — the body never displaces past a single reaction, no cap needed.
+  let bodyOffX = recoilX, bodyOffY = recoilY;
+  if (Math.hypot(fireX, fireY) > Math.hypot(recoilX, recoilY)) { bodyOffX = fireX; bodyOffY = fireY; }
   ctx.save();
-  ctx.translate(recoilX, recoilY);
+  ctx.translate(bodyOffX, bodyOffY);
   if (recoilSquash > 0) {
     ctx.rotate(f.recoilDir);
     ctx.scale(1 - recoilSquash, 1 + recoilSquash * 0.4);
@@ -1364,6 +1382,32 @@ function drawFighter(f) {
     ctx.beginPath();
     ctx.moveTo(-5, gap + 4); ctx.lineTo(3, gap);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== CANNONEER — muzzle blast (bespoke launch flash) ====================
+  // The biggest launch flash of the set: a forward fan of fire spikes + an
+  // expanding ring + a white-hot core at the barrel tip, fired along fireDir.
+  if (f.ability === 'cannon' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;     // 0 → 1
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 6), Math.sin(f.fireDir) * (FIGHTER_SIZE + 6));
+    ctx.rotate(f.fireDir);                            // +x = the firing direction
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = `rgba(255,140,26,${(a * 0.9).toFixed(3)})`;   // fire spikes, fanned forward
+    ctx.lineWidth = 2.5 * a + 0.5;
+    const N = 7;
+    for (let i = 0; i < N; i++) {
+      const sa = (i / (N - 1) - 0.5) * 1.6;           // ±0.8 rad forward cone
+      const len = 8 + prog * 22 + (i % 2) * 4;
+      ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(Math.cos(sa) * len, Math.sin(sa) * len); ctx.stroke();
+    }
+    ctx.strokeStyle = `rgba(255,200,80,${(a * 0.7).toFixed(3)})`;   // expanding ring
+    ctx.lineWidth = 2 * a + 0.5;
+    ctx.beginPath(); ctx.arc(0, 0, 4 + prog * 16, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = `rgba(255,255,220,${a.toFixed(3)})`;            // white-hot core
+    ctx.beginPath(); ctx.arc(0, 0, 3 * a + 1, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 

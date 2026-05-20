@@ -451,6 +451,9 @@ function makeFighter(t, team, x, y) {
     //     impact squash + each fighter's bespoke impact effect
     //   recoilTimer/recoilDir — the struck fighter's knockback
     dashStartX: 0, dashStartY: 0, meleeImpact: 0, meleeImpactMax: 0.18, recoilTimer: 0, recoilDir: 0,
+    // Ranged fire reaction (visual only): fireKick countdown + fireDir (firing
+    // angle) drive the body recoil/thrust at release and each fighter's muzzle flash.
+    fireKick: 0, fireKickMax: 0.2, fireDir: 0,
     aimTimer: 0, aimAngle: 0, aimAbility: null,
     shotCount: 0, trail: [],
     slowTimer: 0, stunTimer: 0,
@@ -1104,6 +1107,7 @@ function step(dt) {
     if (f.negateFlash > 0) f.negateFlash -= dt;
     if (f.meleeImpact > 0) f.meleeImpact -= dt;
     if (f.recoilTimer > 0) f.recoilTimer -= dt;
+    if (f.fireKick > 0) f.fireKick -= dt;
     if (f.blastTimer > 0) f.blastTimer -= dt;
     // Tick slow timer
     if (f.slowTimer > 0) f.slowTimer -= dt;

@@ -248,6 +248,7 @@ function resolveAim(f) {
     game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*340, vy:Math.sin(ang)*340, team:f.team, dmg:f.dmg, life:1.8, kind:'cannon', size:7, homing:0, angle:ang });
     sfx('cannon', null, f.x);
     shake(7); // muzzle kick
+    f.fireKick = 0.2; f.fireKickMax = 0.2; f.fireDir = ang; // visual: heavy recoil + muzzle blast
   } else if (f.aimAbility === 'wildcard') {
     // The die has settled — the face (gamblerRoll, 1-6) picks the attack
     // pattern. Every face throws spinning gold COINS; higher faces are worth
