@@ -72,6 +72,7 @@ function fireAbility(f, enemy) {
     case 'cast': {
       // Spawn 2 orb projectiles. They home toward enemy, don't despawn at edges,
       // and can be parried/reflected by Duelist. Max 4 alive per team.
+      // More orbs = stronger Mana Shield (20% reduction each, up to 80% at 4).
       const existing = game.projectiles.filter(p => p.team === f.team && p.kind === 'orb').length;
       const toSpawn = Math.min(2, 4 - existing);
       // At the 4-orb cap nothing spawns — flag it so the cooldown is refunded

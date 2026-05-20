@@ -10,15 +10,15 @@
 // printed MATCHUPS block here — otherwise it silently drifts from reality.
 // ============================================================================
 const MATCHUPS = {
-  'priest_berserker':85, 'priest_wizard':5, 'priest_knight':80, 'priest_sapper':77, 'priest_archer':37,
+  'priest_berserker':85, 'priest_wizard':9, 'priest_knight':80, 'priest_sapper':77, 'priest_archer':37,
   'priest_jester':33, 'priest_cannoneer':62, 'priest_duelist':44, 'priest_necromancer':52, 'priest_reaper':57,
   'priest_ronin':67, 'priest_witch':29, 'priest_hunter':17, 'priest_warlock':60, 'priest_gambler':28,
-  'berserker_wizard':77, 'berserker_knight':95, 'berserker_sapper':36, 'berserker_archer':52, 'berserker_jester':87,
+  'berserker_wizard':58, 'berserker_knight':95, 'berserker_sapper':36, 'berserker_archer':52, 'berserker_jester':87,
   'berserker_cannoneer':21, 'berserker_duelist':52, 'berserker_necromancer':61, 'berserker_reaper':77, 'berserker_ronin':21,
-  'berserker_witch':41, 'berserker_hunter':15, 'berserker_warlock':76, 'berserker_gambler':44, 'wizard_knight':3,
-  'wizard_sapper':96, 'wizard_archer':96, 'wizard_jester':10, 'wizard_cannoneer':77, 'wizard_duelist':14,
-  'wizard_necromancer':7, 'wizard_reaper':0, 'wizard_ronin':61, 'wizard_witch':80, 'wizard_hunter':72,
-  'wizard_warlock':43, 'wizard_gambler':88, 'knight_sapper':14, 'knight_archer':21, 'knight_jester':79,
+  'berserker_witch':41, 'berserker_hunter':15, 'berserker_warlock':76, 'berserker_gambler':44, 'wizard_knight':6,
+  'wizard_sapper':98, 'wizard_archer':63, 'wizard_jester':45, 'wizard_cannoneer':69, 'wizard_duelist':21,
+  'wizard_necromancer':28, 'wizard_reaper':1, 'wizard_ronin':68, 'wizard_witch':74, 'wizard_hunter':52,
+  'wizard_warlock':51, 'wizard_gambler':38, 'knight_sapper':14, 'knight_archer':21, 'knight_jester':79,
   'knight_cannoneer':12, 'knight_duelist':12, 'knight_necromancer':94, 'knight_reaper':91, 'knight_ronin':34,
   'knight_witch':80, 'knight_hunter':57, 'knight_warlock':56, 'knight_gambler':78, 'sapper_archer':58,
   'sapper_jester':99, 'sapper_cannoneer':9, 'sapper_duelist':90, 'sapper_necromancer':46, 'sapper_reaper':96,

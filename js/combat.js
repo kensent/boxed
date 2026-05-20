@@ -66,16 +66,16 @@ function damage(target, dmg, srcKind, src) {
   if (target.ability === 'sword') {
     dmg = Math.max(1, dmg - 2);
   }
-  // Wizard: Mana Shield — 50% reduction, powered by orbs. No cooldown: each
-  // hit consumes one of the Wizard's live orb projectiles to halve the damage.
-  // Out of orbs = no shield. Spending an orb also frees a cast slot, so the
-  // Wizard is always trading offense (orbs in flight) against defense.
+  // Wizard: Mana Shield — 20% dmg reduction per live orb (1 orb=20%, 4 orbs=80%).
+  // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,
+  // so the Wizard trades offense (orbs hitting the enemy) against defense.
   let shielded = false;
   if (target.ability === 'cast') {
-    const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team);
+    const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team && !p.spent);
     if (orbIdx !== -1) {
-      dmg = dmg * 0.5;
-      game.projectiles.splice(orbIdx, 1); // an orb is spent to power the shield
+      const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
+      dmg = dmg * (1 - orbCount * 0.2); // 20% reduction per orb (1=20%, 4=80%)
+      game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
       shielded = true;
     }
   }

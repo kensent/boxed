@@ -1129,6 +1129,7 @@ function step(dt) {
   });
 
   game.projectiles = game.projectiles.filter(p => {
+    if (p.spent) return false;
     p.life -= dt;
     if (p.life <= 0) return false;
     // A projectile must not outlive its caster — if the owning fighter is
