@@ -625,10 +625,7 @@ function fighterStatuses(f) {
   if (f.focused && !f.dead) {
     out.push({ label: 'FOCUS', color: '#e8c020' });
   }
-  // Warlock — drain beam actively channeling
-  if (f.drainTimer > 0) {
-    out.push({ label: 'DRAINING', color: '#c050ff' });
-  }
+  // Warlock — no DRAINING badge: the essence-streaming visual already reads clearly.
   // Witch's Mark — this fighter is marked, takes +50% damage
   if (f.witchMarkTimer > 0) {
     out.push({ label: 'MARKED', color: '#7dff3d' });

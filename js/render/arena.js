@@ -1,3 +1,41 @@
+// drawHunterHook(hx,hy, ex,ey) — the Hunter's steel cable + hook, always drawn from
+// the Hunter (hx,hy) outward to the far end (ex,ey): +x points Hunter→end, so a taut
+// trembling steel line, copper barbs pointing BACK toward the Hunter, and a copper
+// barbed hook biting forward at the far end. Shared by the in-flight hook and the
+// reel-in tether so they render identically — no mirroring between the two phases.
+function drawHunterHook(hx, hy, ex, ey) {
+  const d = Math.hypot(ex - hx, ey - hy);
+  const start = FIGHTER_SIZE;                          // begin at the Hunter's EDGE, not inside its circle
+  if (d <= start + 4) return;                          // far end on top of the Hunter — nothing to draw
+  const ang = Math.atan2(ey - hy, ex - hx);            // +x: Hunter → far end
+  const tremor = 0.7 + Math.sin(performance.now() / 26) * 0.3;
+  ctx.save();
+  ctx.translate(hx, hy);
+  ctx.rotate(ang);
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = `rgba(184,188,196,${tremor.toFixed(3)})`;   // taut steel, trembling
+  ctx.lineWidth = 1 + tremor * 1.3;
+  ctx.beginPath(); ctx.moveTo(start, 0); ctx.lineTo(d - 3, 0); ctx.stroke();
+  ctx.strokeStyle = `rgba(200,144,96,${(0.5 + tremor * 0.4).toFixed(3)})`; // copper barbs
+  ctx.lineWidth = 1.5;
+  const span = (d - 3) - start;                        // barbs only across the visible gap
+  const barbs = Math.max(1, Math.floor(span / 18));
+  for (let i = 1; i <= barbs; i++) {
+    const px = start + (i / (barbs + 1)) * span;
+    ctx.beginPath();
+    ctx.moveTo(px + 4, -4); ctx.lineTo(px - 1, 0); ctx.lineTo(px + 4, 4); // chevron back toward Hunter
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#c89060';                        // barbed hook biting forward at the far end
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(d - 6, 0); ctx.lineTo(d, 0); ctx.quadraticCurveTo(d + 4, 0, d + 2, -5);
+  ctx.stroke();
+  ctx.fillStyle = '#e8e0d0';
+  ctx.beginPath(); ctx.arc(d + 2, -5, 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, game.w, game.h);
 
@@ -332,40 +370,25 @@ function draw() {
       ctx.fill();
       ctx.restore();
     } else if (p.kind === 'hook') {
-      // Hunter hook in flight — small dark metal hook with rope trail
-      const sp = Math.hypot(p.vx, p.vy) || 1;
-      const ang = Math.atan2(p.vy, p.vx);
-      // Rope trail (from hook source back to projectile)
+      // Hunter hook in flight — the shared cable+hook helper (far end = the hook),
+      // identical to the reel-in so the weapon reads continuously across phases.
       if (p.hookSrc && !p.hookSrc.dead) {
+        drawHunterHook(p.hookSrc.x, p.hookSrc.y, p.x, p.y);
+      } else {
+        // source gone mid-flight — just the hook tip at the projectile
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.atan2(p.vy, p.vx));
         ctx.strokeStyle = '#c89060';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 2]);
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(p.hookSrc.x, p.hookSrc.y);
-        ctx.lineTo(p.x, p.y);
+        ctx.moveTo(-6, 0); ctx.lineTo(0, 0); ctx.quadraticCurveTo(4, 0, 2, -5);
         ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.fillStyle = '#e8e0d0';
+        ctx.beginPath(); ctx.arc(2, -5, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       }
-      // Hook tip (small curved barb) — steel grey to match the Hunter's hook
-      // sprite (brown read as wood). The rope trail above stays brown — rope
-      // is fibrous, brown reads correctly there.
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(ang);
-      ctx.strokeStyle = '#b8bcc4';
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-3, 0);
-      ctx.lineTo(3, 0);
-      ctx.quadraticCurveTo(5, 0, 4, -4);
-      ctx.stroke();
-      // Bright barb tip
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(4, -4, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
     } else if (p.kind === 'coin') {
       // Gambler — a spinning gold coin. The spin squashes its width so it
       // reads as a coin tumbling edge-over-edge in flight.
@@ -402,6 +425,52 @@ function draw() {
     }
   });
 
+  // Status visuals — two source→target connections, deliberately different in KIND
+  // so a tether never reads like a drain. Drawn behind both fighters.
+
+  // Hunter CRIPPLING HOOK — the reel-in. NOTE: the tether lives on the REELED enemy
+  // (f), and f.tetherTarget is the HUNTER (the anchor it's hauled toward). So the
+  // Hunter is f.tetherTarget — pass it as the origin and the enemy (f) as the far
+  // end, matching the in-flight call's (hunter, hooked-thing) order so the cable,
+  // studs, and hook read identically across both phases.
+  [game.red, game.blue].forEach(f => {
+    if (f.tetherTimer > 0 && f.tetherTarget && !f.tetherTarget.dead && !f.dead) {
+      drawHunterHook(f.tetherTarget.x, f.tetherTarget.y, f.x, f.y);
+    }
+  });
+
+  // Warlock DRAIN — no beam. The victim's life ESSENCE peels off and streams back
+  // into the Warlock, its colour shifting from the victim's team-colour to the
+  // Warlock's purple as it's consumed. Organic theft, not a laser.
+  [game.red, game.blue].forEach(f => {
+    if (f.drainTimer > 0 && f.drainTarget && !f.drainTarget.dead && !f.dead) {
+      const t = f.drainTarget;
+      const d = Math.hypot(t.x - f.x, t.y - f.y);
+      const ang = Math.atan2(t.y - f.y, t.x - f.x);   // +x: Warlock → victim
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.rotate(ang);
+      ctx.strokeStyle = 'rgba(192,80,255,0.16)';       // faint thread so the link reads
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(d, 0); ctx.stroke();
+      const vc = t.team === 'red' ? [255, 46, 46] : [46, 158, 255];
+      const pc = [192, 80, 255];
+      const flow = (performance.now() / 360) % 1;
+      const N = 6;
+      for (let i = 0; i < N; i++) {
+        const fr = 1 - (((i / N) + flow) % 1);          // travels victim(1) → Warlock(0)
+        const m = fr;                                   // colour: victim at 1, purple at 0
+        const r = Math.round(vc[0] * m + pc[0] * (1 - m));
+        const g = Math.round(vc[1] * m + pc[1] * (1 - m));
+        const b = Math.round(vc[2] * m + pc[2] * (1 - m));
+        const a = 0.9 * Math.min(1, fr * 2.5);          // fades as it's absorbed at the Warlock
+        const wob = Math.sin(fr * 11 + flow * 6) * 2.2; // organic wisp wobble
+        ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(fr * d, wob, 1.6 + fr * 1.2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+  });
 
   drawFighter(game.red);
   drawFighter(game.blue);
