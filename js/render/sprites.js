@@ -1411,6 +1411,24 @@ function drawFighter(f) {
     ctx.restore();
   }
 
+  // ===== WIZARD — rune flare (bespoke launch flash) =========================
+  // A spinning arcane sigil + ring flares at the cast point as the orbs release —
+  // purple ring, yellow sigil core (the spellbook's colours).
+  if (f.ability === 'cast' && f.fireKick > 0) {
+    const prog = 1 - f.fireKick / f.fireKickMax;     // 0 → 1
+    const a = 1 - prog;
+    ctx.save();
+    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 4), Math.sin(f.fireDir) * (FIGHTER_SIZE + 4));
+    ctx.rotate(prog * 1.5);                           // sigil spins as it flares
+    ctx.strokeStyle = `rgba(199,125,255,${(a * 0.8).toFixed(3)})`;  // purple rune ring
+    ctx.lineWidth = 2 * a + 0.5;
+    ctx.beginPath(); ctx.arc(0, 0, 4 + prog * 12, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = `rgba(255,232,61,${a.toFixed(3)})`;            // yellow sigil core
+    drawStar(ctx, 0, 0, 4, 6 + prog * 6, 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.restore();
 
   // Name label

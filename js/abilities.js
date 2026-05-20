@@ -90,6 +90,8 @@ function fireAbility(f, enemy) {
       }
       if (toSpawn > 0) {
         sfx('cast', null, f.x);
+        // visual: thrust the spellbook forward + a rune flare as the orbs release
+        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x);
       }
       break;
     }
