@@ -8,10 +8,9 @@
 // shake(mag): kick the screen-shake. mag is roughly "pixels of displacement".
 // Bigger hits call this with a bigger mag, so impact scales with damage.
 function shake(mag) {
-  if (headless || !game) return;
-  // Don't let a small hit cut short a big shake already in progress.
-  game.shakeMag = Math.max(game.shakeMag, mag);
-  game.shakeTime = Math.max(game.shakeTime, 0.18 + mag * 0.012);
+  // Disabled for the animation-system teardown (blank canvas). The setters are
+  // gone so the draw() shake transform stays inert. Rebuild with the new system.
+  return;
 }
 // hitStop(dur): freeze the sim for a few ms. The micro-pause makes a hit land
 // hard — it's the core trick behind "punchy" game feel. NOTE: not guarded by
@@ -108,13 +107,6 @@ function damage(target, dmg, srcKind, src) {
                    target.team === 'red' ? '#ff6b6b' : '#6bb6ff', 'spark');
   } else {
     target.flash = 0.12;
-  }
-  // Victim recoil — a melee body-contact hit (src present, no srcKind) knocks the
-  // target's body back along the hit direction. Visual only: the sim reads neither
-  // recoilTimer nor recoilDir, and the fighter's true x/y is untouched.
-  if (src && !srcKind) {
-    target.recoilDir = Math.atan2(target.y - src.y, target.x - src.x);
-    target.recoilTimer = 0.16;
   }
   // Sound: drain ticks are silent — the sustained `drain` beam drone (played
   // once when the channel starts) covers the whole leech. Other hits play a

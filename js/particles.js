@@ -10,6 +10,7 @@ function spawnFloat(x, y, text, color) { game.floatTexts.push({ x, y, vy:-40, li
 // Reads as an explosion, not a random scatter. Called when a Necromancer
 // skeleton's on-death burst hits a nearby enemy.
 function spawnBoneBurst(x, y) {
+  return; // Disabled for the blank-canvas teardown (particle rendering is removed).
   const N = 5;
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2;
@@ -31,6 +32,7 @@ function spawnBoneBurst(x, y) {
 // (saturated) damage numbers. Used by every heal float for consistency.
 function healColor(f) { return f.team === 'red' ? '#ff8888' : '#88c8ff'; }
 function spawnParticles(x, y, n, color, style) {
+  return; // Disabled for the blank-canvas teardown (particle rendering is removed).
   style = style || 'square';
   for (let i = 0; i < n; i++) {
     const a = vrng() * Math.PI * 2;
