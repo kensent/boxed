@@ -463,7 +463,7 @@ function makeFighter(t, team, x, y) {
     // Reaper
     sweepTimer: 0, sweepHit: false,
     // Ronin
-    iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focusTimer: 0,
+    iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focused: false,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
@@ -619,9 +619,10 @@ function fighterStatuses(f) {
   if (f.ability === 'arrow' && (f.shotCount % 4 === 3) && !f.dead) {
     out.push({ label: 'VOLLEY', color: '#3dff8a' });
   }
-  // Ronin — FOCUS: the passive is live (cooldown halved) after a clean iai hit.
-  // The windup itself is shown by the gold charge ring, so it gets no text badge.
-  if (f.focusTimer > 0 && !f.dead) {
+  // Ronin — FOCUS: held while on a clean-hit streak (each landed iai halves the
+  // cooldown); persists until a missed iai breaks it. The windup itself is shown by
+  // the gold charge ring, so it gets no text badge.
+  if (f.focused && !f.dead) {
     out.push({ label: 'FOCUS', color: '#e8c020' });
   }
   // Warlock — drain beam actively channeling
@@ -973,7 +974,6 @@ function step(dt) {
     // Gambler: LOADED DICE — counts down the rushed-cooldown window after a
     // low roll, purely so the LOADED status badge knows when to show.
     if (f.loadedTimer > 0) f.loadedTimer -= dt;
-    if (f.focusTimer > 0) f.focusTimer -= dt;
 
     // Ronin: iai windup + teleport-strike
     if (f.ability === 'iai') {
@@ -1033,7 +1033,7 @@ function step(dt) {
             damage(enemy, f.dmg, undefined, f);
             f.iaiHit = true;
             f.cdTimer = f.cd * 0.5;
-            f.focusTimer = f.cdTimer; // FOCUS active during the rushed cooldown
+            f.focused = true; // landed a clean hit — enter/hold FOCUS
           }
         }
       } else if (f.iaiStrike > 0) {
@@ -1042,9 +1042,10 @@ function step(dt) {
           damage(enemy, f.dmg, undefined, f);
           f.iaiHit = true;
           f.cdTimer = f.cd * 0.5; // FOCUS — clean strike halves the cooldown
-          f.focusTimer = f.cdTimer; // FOCUS active during the rushed cooldown
+          f.focused = true;
         }
-        if (f.iaiStrike <= 0) { f.iaiHit = false; f.iaiTrail = null; }
+        // Strike window over: a whiffed iai (never connected) breaks FOCUS.
+        if (f.iaiStrike <= 0) { if (!f.iaiHit) f.focused = false; f.iaiHit = false; f.iaiTrail = null; }
       }
     }
 

@@ -289,12 +289,6 @@ function draw() {
       ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
-      // Team color ring outside (subtle)
-      ctx.strokeStyle = p.team === 'red' ? 'rgba(255,46,46,0.4)' : 'rgba(46,158,255,0.4)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size + 5, 0, Math.PI * 2);
-      ctx.stroke();
     } else if (p.kind === 'hex') {
       // Witch hex bolt — sickly green spinning orb with wispy trail
       const spin = p.spin || 0;

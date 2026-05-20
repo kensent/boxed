@@ -913,6 +913,19 @@ function drawChargeRing(rgb, prog) {
   }
 }
 
+// armedRing() — defensive-passive READY indicator: a crisp pulsing rim + a faint
+// outer halo ring in the passive's colour, present while the passive is armed and
+// gone when it's spent. Line-drawn (no alpha-fill), ctx translated to centre.
+function armedRing(rgb) {
+  const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
+  ctx.strokeStyle = `rgba(${rgb},${(0.5 + pulse * 0.4).toFixed(3)})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 6, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = `rgba(${rgb},${(0.22 * pulse).toFixed(3)})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 10, 0, Math.PI * 2); ctx.stroke();
+}
+
 // drawFighter() — fresh animation system, built fighter by fighter.
 // Shared grammar (ANIMATION.md #9): the fighter IS the weapon, so melee is sold
 // by deforming the BODY (squash/stretch/lunge) plus a victim recoil, not by
@@ -1012,6 +1025,59 @@ function drawFighter(f) {
   } else if (f.iaiWindup > 0) {
     // Ronin voice: the gold ring on top of the coil + tremor it already has.
     drawChargeRing('232,192,32', 1 - f.iaiWindup / f.windupTime);
+  }
+
+  // Defensive-state indicators — armed passive (soft pulsing ring), active window
+  // (bright tight ring), or a negated hit (expanding ring). Colour = which passive.
+  if (f.ability === 'cast' && !f.dead) {
+    // Wizard MANA SHIELD — a 4-segment gauge (the shield has 4 levels: each live
+    // orb = 20% reduction, up to 80%). Lit segments = current orbs, faint = spent
+    // capacity, so you can read the shield strength and watch it deplete per hit.
+    const orbs = Math.min(4, game.projectiles.filter(p => p.kind === 'orb' && p.team === f.team).length);
+    if (orbs > 0) {
+      const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
+      const r = FIGHTER_SIZE + 7, seg = Math.PI * 2 / 4, gap = 0.28;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        const lit = i < orbs;
+        const a0 = -Math.PI / 2 + i * seg + gap / 2;
+        const a1 = -Math.PI / 2 + (i + 1) * seg - gap / 2;
+        ctx.strokeStyle = lit ? `rgba(199,125,255,${(0.55 + pulse * 0.4).toFixed(3)})`
+                              : 'rgba(199,125,255,0.12)';
+        ctx.lineWidth = lit ? 2.5 : 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, r, a0, a1); ctx.stroke();
+      }
+    }
+  }
+  if (f.ability === 'blink' && f.dodgeReady && !f.dead) {
+    armedRing('232,216,184');                          // Jester UNCANNY DODGE armed
+  }
+  if (f.ability === 'riposte' && f.parryTimer > 0) {   // Duelist PARRY window (active)
+    const pa = f.parryTimer / 0.25;
+    ctx.strokeStyle = `rgba(192,192,232,${(pa * 0.95).toFixed(3)})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 1, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${(pa * 0.5).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE - 2, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (f.ability === 'blink' && f.dodgeInvuln > 0) {    // Jester invuln window (active)
+    const ia = f.dodgeInvuln / 0.3;
+    ctx.strokeStyle = `rgba(255,255,255,${(ia * 0.9).toFixed(3)})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (f.ability === 'tackle' && f.hp < f.maxHp * 0.5 && !f.dead) { // Berserker BLOODRAGE
+    const pulse = 0.6 + Math.sin(performance.now() / 110) * 0.3;    // faster, agitated pulse
+    ctx.strokeStyle = `rgba(255,50,50,${(0.3 + pulse * 0.45).toFixed(3)})`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 6, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (f.negateFlash > 0) {                              // a hit was nullified
+    const np = 1 - f.negateFlash / 0.25;                // 0 → 1
+    ctx.strokeStyle = `rgba(255,255,255,${((1 - np) * 0.9).toFixed(3)})`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4 + np * 14, 0, Math.PI * 2); ctx.stroke();
   }
 
   // Orientation: face the enemy. Mirror rather than rotate past vertical so the
