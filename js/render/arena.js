@@ -547,5 +547,73 @@ function draw() {
 
   // End screen-shake transform before any full-screen overlay.
   if (shaken) ctx.restore();
+
+  // ===== HIT FEEDBACK — the death ceremony ==================================
+  // Death is the ceiling (ANIMATION.md #5). Three beats over the K.O. window:
+  // the loser SHATTERS in a big radial burst, a "K.O." punches in, and a white
+  // camera-snap frame caps the kill instant. Line-drawn, deterministic.
+  if (game.koTimer > 0 && game.winner) {
+    const loser = game.winner === game.red ? game.blue : game.red;
+    const prog = 1 - game.koTimer / 1.2;             // 0 → 1 over the K.O. lifetime
+
+    // Loser shatter — the biggest force-shape in the game: a white shockwave ring
+    // + radial shards in the loser's colour, bursting out in the first beat.
+    if (prog < 0.55) {
+      const bp = prog / 0.55;                          // 0 → 1 over the burst
+      const a = 1 - bp;
+      const lc = loser.team === 'red' ? '255,46,46' : '46,158,255';
+      ctx.save();
+      ctx.translate(loser.x, loser.y);
+      ctx.strokeStyle = `rgba(255,255,255,${(a * 0.9).toFixed(3)})`;
+      ctx.lineWidth = 3 * a + 1;
+      ctx.beginPath(); ctx.arc(0, 0, 6 + bp * 46, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = `rgba(${lc},${a.toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.5;
+      ctx.lineCap = 'round';
+      const N = 12;
+      for (let i = 0; i < N; i++) {
+        const ang = (i / N) * Math.PI * 2 + i * 0.6;   // deterministic spread
+        const r0 = 4 + bp * 18, r1 = r0 + 10 + bp * 24;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
+        ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // "K.O." — punches in oversized, settles, then fades. Winner-coloured glow.
+    const age = 1.2 - game.koTimer;
+    let scale;
+    if (age < 0.16) scale = 2.6 - (age / 0.16) * 1.7;            // 2.6 → 0.9
+    else if (age < 0.28) scale = 0.9 + ((age - 0.16) / 0.12) * 0.1; // settle to 1
+    else scale = 1;
+    const alpha = game.koTimer < 0.3 ? game.koTimer / 0.3 : 1;
+    const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(game.w / 2, game.h / 2);
+    ctx.scale(scale, scale);
+    ctx.font = '900 52px Bungee, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.lineJoin = 'round';
+    ctx.strokeText('K.O.', 0, 0);
+    ctx.shadowColor = wc;
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('K.O.', 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // White camera-snap frame at the kill instant — a single bright flash that fades.
+  if (game.flashFrame > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, game.flashFrame * 6).toFixed(2)})`;
+    ctx.fillRect(0, 0, game.w, game.h);
+  }
 }
 
