@@ -206,6 +206,62 @@ function drawDeath(f, prog) {
       }
       break;
     }
+    case 'cannon': {  // Cannoneer — catastrophic overload: rig pitches, muzzle blast + structural cracks
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) sprite pitches forward on the wheel — barrel swings up and over as recoil finally wins
+      if (prog < 0.38) {
+        const sp = prog / 0.38;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp * sp * sp;
+        ctx.rotate(fc);
+        ctx.rotate(sp * Math.PI * 0.9);     // barrel pitches forward ~162°
+        ctx.scale(1, 1 - sp * 0.3);         // squash slightly as it tumbles
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) muzzle blast — directional, forward-heavy, orange-white cone at barrel end
+      const mp = Math.min(1, prog / 0.35), ma = 1 - mp;
+      const muzzleX = Math.cos(fc) * 22, muzzleY = Math.sin(fc) * 22;
+      ctx.save(); ctx.translate(muzzleX, muzzleY);
+      for (let i = 0; i < 6; i++) {
+        const spread = (i / 6 - 0.5) * 1.1;          // cone ±55° around barrel axis
+        const g = fc + spread;
+        const r = 6 + mp * (28 + i * 3);
+        ctx.strokeStyle = i < 2
+          ? `rgba(255,240,180,${(ma * 0.9).toFixed(3)})`  // white-hot center rays
+          : `rgba(255,140,26,${(ma * 0.7).toFixed(3)})`; // orange outer cone
+        ctx.lineWidth = (4 - i * 0.4) * ma + 0.4;
+        ctx.beginPath(); ctx.moveTo(Math.cos(g) * 3, Math.sin(g) * 3); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke();
+      }
+      ctx.restore();
+      // 2b) structural fracture — 4 cracks radiating from breech (rear half), iron-gray
+      const cp = Math.min(1, prog / 0.5), ca = 1 - cp;
+      ctx.strokeStyle = `rgba(100,100,100,${(ca * 0.85).toFixed(3)})`;
+      ctx.lineWidth = 2 * ca + 0.4;
+      for (let i = 0; i < 4; i++) {
+        const g = fc + Math.PI + (i / 4 - 0.5) * Math.PI * 0.9;  // rear half spread
+        const r0 = 4, r1 = 4 + cp * 22;
+        ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
+      }
+      // 3) residue — wheel arc fragment + 2 barrel ring arcs, flat mechanical debris
+      const ra = a * 0.6;
+      ctx.strokeStyle = `rgba(74,74,74,${ra.toFixed(3)})`;
+      ctx.lineWidth = 2.5;
+      // wheel arc fragment rolling out below-left
+      const wx = -16 - Math.min(1, prog / 0.5) * 10, wy = 14 + Math.min(1, prog / 0.5) * 8;
+      ctx.beginPath(); ctx.arc(wx, wy, 8, Math.PI * 0.4, Math.PI * 1.3); ctx.stroke();
+      // barrel band rings — two arcs at scatter positions
+      ctx.strokeStyle = `rgba(255,140,26,${(ra * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      const b1x = Math.cos(fc + 0.6) * (14 + Math.min(1, prog / 0.5) * 16);
+      const b1y = Math.sin(fc + 0.6) * (14 + Math.min(1, prog / 0.5) * 16);
+      ctx.beginPath(); ctx.arc(b1x, b1y, 5, 0, Math.PI * 1.4); ctx.stroke();
+      const b2x = Math.cos(fc - 0.8) * (10 + Math.min(1, prog / 0.5) * 12);
+      const b2y = Math.sin(fc - 0.8) * (10 + Math.min(1, prog / 0.5) * 12);
+      ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
+      break;
+    }
     default: {  // generic shatter — fighters not yet given a bespoke death
       if (prog < 0.55) {
         const bp = prog / 0.55, da = 1 - bp;
