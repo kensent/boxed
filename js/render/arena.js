@@ -206,24 +206,36 @@ function drawDeath(f, prog) {
       }
       break;
     }
-    case 'blink': {  // Jester — mask cracks down the centre: two halves clip-split and spin apart
+    case 'blink': {  // Jester — mask cracks down the centre: two halves split and spin apart
       ctx.lineCap = 'round';
-      // 1) two halves clip + spin outward in opposite directions — gone by 0.44
+      // 1) each half drawn independently — translate + rotate per half, no clipping (gone by 0.44)
       if (prog < 0.44) {
-        const sp = prog / 0.44;
+        const sp   = prog / 0.44;
         const hinge = sp * sp * FIGHTER_SIZE * 1.8;  // accelerating split
-        const spin  = sp * Math.PI * 0.75;           // each half rotates ~135°
-        const hal = FIGHTER_SIZE * 2;
-        // Red left half — clips x≤0, slides left, spins CCW
+        const spin  = sp * Math.PI * 0.75;
+        const m    = FIGHTER_SIZE * 0.9;
+        const alp  = 1 - sp;
+        // Red left half — slides left, spins CCW
         ctx.save();
-        ctx.globalAlpha = 1 - sp;
-        ctx.save(); ctx.beginPath(); ctx.rect(-hal, -hal, hal, hal * 2); ctx.clip();
+        ctx.globalAlpha = alp;
         ctx.translate(-hinge, 0); ctx.rotate(-spin);
-        drawShape(ctx, f, 0); ctx.restore();
-        // Blue right half — clips x≥0, slides right, spins CW
-        ctx.save(); ctx.beginPath(); ctx.rect(0, -hal, hal, hal * 2); ctx.clip();
+        ctx.fillStyle = '#ff2e2e';
+        ctx.beginPath(); ctx.moveTo(0,-m); ctx.lineTo(-m,0); ctx.lineTo(0,m); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = f.color;
+        ctx.fillRect(-FIGHTER_SIZE*0.5,-FIGHTER_SIZE*0.15,FIGHTER_SIZE*0.22,2.5);
+        ctx.fillStyle = '#ff2e2e';
+        ctx.beginPath(); ctx.moveTo(-FIGHTER_SIZE*0.32,-FIGHTER_SIZE*0.62); ctx.lineTo(-FIGHTER_SIZE*0.46,-FIGHTER_SIZE*1.08); ctx.lineTo(-FIGHTER_SIZE*0.12,-FIGHTER_SIZE*0.74); ctx.closePath(); ctx.fill();
+        ctx.restore();
+        // Blue right half — slides right, spins CW
+        ctx.save();
+        ctx.globalAlpha = alp;
         ctx.translate(hinge, 0); ctx.rotate(spin);
-        drawShape(ctx, f, 0); ctx.restore();
+        ctx.fillStyle = '#2e9eff';
+        ctx.beginPath(); ctx.moveTo(0,-m); ctx.lineTo(m,0); ctx.lineTo(0,m); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = f.color;
+        ctx.fillRect(FIGHTER_SIZE*0.28,-FIGHTER_SIZE*0.15,FIGHTER_SIZE*0.22,2.5);
+        ctx.fillStyle = '#2e9eff';
+        ctx.beginPath(); ctx.moveTo(FIGHTER_SIZE*0.12,-FIGHTER_SIZE*0.74); ctx.lineTo(FIGHTER_SIZE*0.46,-FIGHTER_SIZE*1.08); ctx.lineTo(FIGHTER_SIZE*0.32,-FIGHTER_SIZE*0.62); ctx.closePath(); ctx.fill();
         ctx.restore();
       }
       // 2) crack flash — a bright vertical slash at x=0, fast (the moment of split)
@@ -347,24 +359,24 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(0, 0, 3 * a + 0.5, 0, Math.PI * 2); ctx.fill();
       break;
     }
-    case 'mine': {  // Sapper — keg swells under pressure then ruptures: casing burst + shrapnel, not flame
+    case 'mine': {  // Sapper — bomb swells then detonates: dark casing breach + red shrapnel, not flame
       ctx.lineCap = 'round';
-      // 1) keg body swells — uniform pressure build, then ruptures (gone by 0.28)
+      // 1) bomb body swells — pressure building from within, then gone (by 0.28)
       if (prog < 0.28) {
         const sp = prog / 0.28;
-        const swell = 1 + sp * 0.55;          // keg inflates before it goes
+        const swell = 1 + sp * 0.55;
         ctx.save();
         ctx.globalAlpha = sp < 0.75 ? 1 : 1 - (sp - 0.75) / 0.25;
         ctx.scale(swell, swell);
         drawShape(ctx, f);
         ctx.restore();
       }
-      // 2a) casing rupture — dark ring at the moment of breach, fast and tight
+      // 2a) casing breach — near-black ring (the bomb shell splitting), fast and tight
       const rp = Math.min(1, prog / 0.3), ra2 = 1 - rp;
-      ctx.strokeStyle = `rgba(60,30,10,${(ra2 * 0.9).toFixed(3)})`;
+      ctx.strokeStyle = `rgba(30,20,20,${(ra2 * 0.9).toFixed(3)})`;
       ctx.lineWidth = (5 - rp * 3) * ra2 + 0.5;
       ctx.beginPath(); ctx.arc(0, 0, 4 + rp * 28, 0, Math.PI * 2); ctx.stroke();
-      // 2b) shrapnel — 8 jagged red shards flying outward (casing pieces, not fire rays)
+      // 2b) shrapnel — 8 red casing fragments flying outward
       const sp2 = Math.min(1, prog / 0.55), sa = 1 - sp2;
       ctx.strokeStyle = `rgba(220,30,30,${(sa * 0.85).toFixed(3)})`;
       for (let i = 0; i < 8; i++) {
@@ -373,15 +385,21 @@ function drawDeath(f, prog) {
         ctx.lineWidth = (2.5 - i * 0.15) * sa + 0.3;
         ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
       }
-      // 3) residue — keg staves: 5 short dark-brown rectangles at radial positions
-      const staveA = (a * 0.65);
-      ctx.fillStyle = `rgba(60,38,16,${staveA.toFixed(3)})`;
+      // 3) residue — dark casing shards: angular polygons at radial positions + fuse scrap
+      const shardA = (a * 0.65);
+      ctx.fillStyle = `rgba(40,24,24,${shardA.toFixed(3)})`;
       for (let i = 0; i < 5; i++) {
         const g = (i / 5) * Math.PI * 2 + 0.3;
         const rr = 14 + Math.min(1, prog / 0.35) * 18 + (i % 2) * 5;
-        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g + Math.PI / 2);
-        ctx.fillRect(-1.5, -6, 3, 12); ctx.restore();
+        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g);
+        // angular shard — asymmetric triangle reads as broken metal, not a stave
+        ctx.beginPath(); ctx.moveTo(-4, -3); ctx.lineTo(4, -1); ctx.lineTo(2, 4); ctx.closePath(); ctx.fill();
+        ctx.restore();
       }
+      // fuse scrap — the collar and a short grey curl near top
+      ctx.strokeStyle = `rgba(160,160,160,${(a * 0.5).toFixed(3)})`;
+      ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(2, -8); ctx.quadraticCurveTo(8, -14, 4, -20); ctx.stroke();
       break;
     }
     case 'cannon': {  // Cannoneer — catastrophic overload: rig pitches, muzzle blast + structural cracks
