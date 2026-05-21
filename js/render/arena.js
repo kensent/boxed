@@ -458,6 +458,48 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'lightning': {  // Priest — divine light departs: orb expands and fades, golden motes rise
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      const orbX = Math.cos(fc) * FIGHTER_SIZE * 0.75, orbY = Math.sin(fc) * FIGHTER_SIZE * 0.75;
+      // 1) body rises and dissolves — peaceful ascent, slower than violent deaths (gone by 0.55)
+      if (prog < 0.55) {
+        const sp = prog / 0.55;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp * sp;
+        ctx.translate(0, -sp * 18);   // rises upward
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) orb expands into a gold ring — the divine power releasing outward
+      const op = Math.min(1, prog / 0.5), oa = 1 - op;
+      ctx.strokeStyle = `rgba(255,232,61,${(oa * 0.9).toFixed(3)})`;
+      ctx.lineWidth = (4 - op * 3) * oa + 0.3;
+      ctx.beginPath(); ctx.arc(orbX, orbY, FIGHTER_SIZE * 0.3 + op * 28, 0, Math.PI * 2); ctx.stroke();
+      // soft white radiance at crossguard — the holy light spreading
+      const rp = Math.min(1, prog / 0.35), ra = 1 - rp;
+      ctx.strokeStyle = `rgba(255,255,255,${(ra * 0.5).toFixed(3)})`;
+      ctx.lineWidth = (3 - rp * 2) * ra + 0.3;
+      const cxX = Math.cos(fc) * FIGHTER_SIZE * 0.3, cxY = Math.sin(fc) * FIGHTER_SIZE * 0.3;
+      ctx.beginPath(); ctx.moveTo(cxX + Math.sin(fc)*(-8-rp*10), cxY - Math.cos(fc)*(-8-rp*10));
+      ctx.lineTo(cxX - Math.sin(fc)*(-8-rp*10), cxY + Math.cos(fc)*(-8-rp*10)); ctx.stroke();
+      // 2b) golden motes rising — deterministic, each keyed on index for position variety
+      const mp = Math.min(1, prog / 0.7);
+      for (let i = 0; i < 7; i++) {
+        const phase = (i / 7);                          // 0..1 stagger across the window
+        const mt = Math.max(0, Math.min(1, (mp - phase * 0.3) / 0.7));
+        if (mt <= 0) continue;
+        const xOff = (i - 3) * 6 + Math.sin(i * 1.7) * 4;
+        const yOff = -(mt * (20 + i * 4));              // rises upward (negative y)
+        const mAlpha = mt < 0.5 ? mt * 2 : 2 - mt * 2; // fade in then out
+        ctx.fillStyle = `rgba(255,220,60,${(mAlpha * 0.8).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(orbX + xOff, orbY + yOff, 2.5 - mt * 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      // 3) residue — a faint warm glow pooled at the orb's last position, fading slowly
+      ctx.fillStyle = `rgba(255,200,40,${(a * 0.25).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(orbX, orbY, 8 + a * 6, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
     case 'wildcard': {  // Gambler — die tumbles its last then shatters: corner shards + pip residue
       ctx.lineCap = 'round';
       // 1) wild tumble — uncontrolled spin accelerating off the table edge (gone by 0.35)
