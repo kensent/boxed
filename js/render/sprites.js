@@ -591,48 +591,50 @@ function drawShape(c, f, hinge = 0) {
       // Ronin — a straight, blade-dominant katana. The blade is drawn DEAD
       // STRAIGHT (a real katana's curve is slight; straight reads fine and
       // avoids the scimitar look). Laid out left-to-right, blade ~2/3 of the
-      // total length. Cutting edge down. Forward = blade tip (+x).
+      // total length. Cutting edge down. Forward = blade tip (+x). Long and
+      // slender: it earns its presence in the team circle from REACH (the tip
+      // runs past the ring) rather than bulk, so it still reads as a katana.
       const s = FIGHTER_SIZE;
-      // --- Pommel (kashira) — small end cap ---
+      // --- Pommel (kashira) — end cap ---
       c.fillStyle = "#2a2a2a";
-      c.fillRect(-s * 0.95, -s * 0.14, s * 0.07, s * 0.28);
+      c.fillRect(-s * 1.05, -s * 0.19, s * 0.1, s * 0.38);
       // --- Grip (tsuka) — dark wrapped handle ---
       c.fillStyle = "#1a1a1a";
-      c.fillRect(-s * 0.88, -s * 0.12, s * 0.5, s * 0.24);
+      c.fillRect(-s * 0.97, -s * 0.16, s * 0.56, s * 0.32);
       // wrap (ito) — a few single diagonal bindings; sparse so the dark
       // handle still shows through (dense crosses made it look solid gold).
       c.strokeStyle = f.accent;
-      c.lineWidth = 1.6;
+      c.lineWidth = 2.0;
       for (let i = 0; i < 3; i++) {
-        const gx = -s * 0.82 + i * s * 0.15;
+        const gx = -s * 0.91 + i * s * 0.17;
         c.beginPath();
-        c.moveTo(gx, -s * 0.12);
-        c.lineTo(gx + s * 0.09, s * 0.12);
+        c.moveTo(gx, -s * 0.16);
+        c.lineTo(gx + s * 0.11, s * 0.16);
         c.stroke();
       }
-      // --- Tsuba (guard) — a thin tall guard, not a fat bead ---
+      // --- Tsuba (guard) — a tall guard, not a fat bead ---
       c.fillStyle = "#3a3a3a";
-      c.fillRect(-s * 0.4, -s * 0.26, s * 0.07, s * 0.52);
+      c.fillRect(-s * 0.43, -s * 0.34, s * 0.1, s * 0.68);
       // --- Blade — straight rectangular body that tapers to a long sharp
       // point. The SPINE (back) is the top edge and runs dead straight all
       // the way to the point; the CUTTING EDGE is the bottom and angles up
       // over a long run to meet it (a long taper reads as sharp). ---
-      const top = -s * 0.08, bot = s * 0.07;     // spine / cutting-edge lines
+      const top = -s * 0.12, bot = s * 0.11;     // spine / cutting-edge lines
       c.fillStyle = "#e4ecf4";
       c.beginPath();
-      c.moveTo(-s * 0.33, top);                  // spine, at the guard
-      c.lineTo(s * 1.0, top);                    // spine runs dead straight to the point
-      c.lineTo(s * 0.5, bot);                    // long taper: edge angles up to the point
-      c.lineTo(-s * 0.33, bot);                  // cutting edge runs straight back
+      c.moveTo(-s * 0.39, top);                  // spine, at the guard
+      c.lineTo(s * 1.22, top);                   // spine runs dead straight to the point
+      c.lineTo(s * 0.64, bot);                   // long taper: edge angles up to the point
+      c.lineTo(-s * 0.39, bot);                  // cutting edge runs straight back
       c.closePath();
       c.fill();
       // Cutting-edge highlight — bright line just inside the lower edge,
       // along the straight section only.
       c.strokeStyle = "#ffffff";
-      c.lineWidth = 1.1;
+      c.lineWidth = 1.4;
       c.beginPath();
-      c.moveTo(-s * 0.3, bot - s * 0.02);
-      c.lineTo(s * 0.46, bot - s * 0.02);
+      c.moveTo(-s * 0.36, bot - s * 0.03);
+      c.lineTo(s * 0.6, bot - s * 0.03);
       c.stroke();
       break;
     }
@@ -1099,19 +1101,10 @@ function drawFighter(f) {
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4 + np * 14, 0, Math.PI * 2); ctx.stroke();
   }
-  // FOCUS (Ronin) — steady gold aura while on a clean-hit streak. During the iai
-  // windup it persists as an outer halo (radius +16) that nests OUTSIDE the
-  // tightening gold charge ring instead of smearing into it. Hidden only during
-  // the brief strike flash, where the slash trail owns the frame.
-  if (f.ability === 'iai' && f.focused && f.iaiStrike <= 0 && !f.dead) {
-    if (f.iaiWindup > 0) {
-      const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
-      ctx.strokeStyle = `rgba(232,192,32,${(0.4 + pulse * 0.35).toFixed(3)})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 16, 0, Math.PI * 2); ctx.stroke();
-    } else {
-      armedRing('232,192,32');
-    }
+  // FOCUS (Ronin) — steady gold aura while on a clean-hit streak. Hidden during
+  // the windup/strike so it never stacks with the (filling) gold charge ring.
+  if (f.ability === 'iai' && f.focused && f.iaiWindup <= 0 && f.iaiStrike <= 0 && !f.dead) {
+    armedRing('232,192,32');
   }
   // VOLLEY (Archer) — green fan of arrowhead ticks aimed at the enemy: the next
   // shot fans 4 arrows, telegraphed.
