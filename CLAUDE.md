@@ -37,4 +37,5 @@ gives the same numbers.
 
 @DESIGN.md
 @ANIMATION.md
+@AUDIO.md
 @GOTCHAS.md
