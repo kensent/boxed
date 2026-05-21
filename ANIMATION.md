@@ -109,9 +109,43 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   **drag-trail** (ghosts lagging behind), fog **licks** (encroaching from outside).
   LOADED is a momentary **"lucky" pop** (a trigger marker, not a state).
 
-### Death ceremony (hit feedback)
-The loser **shatters** (the biggest force-shape — death is the ceiling, principle 5)
-+ a **K.O.** punch-in + a white **camera-snap** frame. Slow-mo (sim) carries the beat.
+### Death ceremony
+**Shared frame** (always): slow-mo finish (sim) + white **camera-snap** + **K.O.** punch-in.
+Death is the ceiling (principle 5) — each fighter dies in a way no other does.
+
+**Three-layer grammar** — every bespoke death has exactly these layers in order:
+1. **Sprite transform** — the body makes one last move before vanishing (convulse, tumble,
+   droop, sink, spring…). `drawFighter` skips dead fighters, so this is drawn here, keyed
+   on `game.koTimer`. Mirrors left/right via `ctx.scale(-1,1)` at the top of `drawDeath`.
+2. **Voice effect** — the energy of that fighter's identity releasing (shockwave, muzzle
+   blast, orb collapse, blood spray, slash mark…). No two fighters share the same shape,
+   color, or direction.
+3. **Settling residue** — what's left on the ground after the smoke clears (smears, shards,
+   pip dots, bone pile, blood pool, arrows lying flat…). Fades last.
+
+**Archetypes and voices:**
+- **BURST** — Berserker (bloodrage convulse → shockwave ring + 5 blunt bars → crimson
+  smears), Cannoneer (rig pitches on wheel → directional muzzle cone + fracture cracks →
+  wheel/barrel ring fragments), Sapper (bomb swells → dark casing breach + shrapnel →
+  angular casing shards + fuse scrap)
+- **SHATTER** — Knight (heavy tumble → cross fracture lines + blue boss burst → 4 kite-
+  shard parallelograms), Duelist (parry spin → blade snaps linearly, segments along axis →
+  3 thin shard lines + cup guard arc), Jester (halves drawn independently, spin apart →
+  crack flash + red/blue diamond motes → 3+3 shard diamonds), Hunter (whips backward →
+  fracture arc at bend + steel shards + copper barb flies → shank stub + barb shard),
+  Gambler (accelerating tumble → gold edge flash + 4 corner shards → pip-dot residue)
+- **DISSOLVE** — Priest (rises UP → gold ring expands + 7 motes ascend → warm glow pool;
+  only death that goes up), Wizard (flickers then implodes inward → 4 orbs wink out in
+  sequence → hexagram sigil), Witch (hat melts DOWN → toxic green cloud → puddle + brim
+  line), Warlock (void consumes itself → eye flares then snaps shut → near-black void
+  stain; darkest residue in the roster)
+- **COLLAPSE** — Necromancer (skull rattles then falls → bone fragments + eye-wisps escape
+  → bone pile + purple glow), Reaper (rotor decelerates ease-out, sinks → blood arcs in
+  crescent shape → growing blood pool ellipse; only death with a spreading ground mark)
+- **CUT** — Ronin (slow ease-in swing → single clean gold slash, held then fading →
+  blade at rest angle + gold tip)
+- **SCATTER** — Archer (bow springs then fades → bowstring snap flash + 6 arrows with
+  fletching fly 360° → 4 arrows lying flat + green bow-arc fragment)
 
 ### Two rules under all of it
 1. **Visual-only & balance-safe.** These read fields set in the sim path, but the
