@@ -206,6 +206,53 @@ function drawDeath(f, prog) {
       }
       break;
     }
+    case 'sword': {  // Knight — kite shield shatters: fractures along the cross into four quadrant shards
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) shield reels backward then tumbles — heavy plate, slow start then fast spin (gone by 0.42)
+      if (prog < 0.42) {
+        const sp = prog / 0.42;
+        const tumble = sp * sp * Math.PI * 1.4;   // slow then fast (quadratic — heavy object)
+        ctx.save();
+        ctx.globalAlpha = 1 - sp * sp;
+        ctx.rotate(fc + tumble);
+        ctx.scale(1 - sp * 0.2, 1 - sp * 0.2);
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) cross fracture — thick silver cracks erupting from center along shield axes
+      const fp = Math.min(1, prog / 0.38), fa = 1 - fp;
+      ctx.lineWidth = (4 - fp * 2.5) * fa + 0.4;
+      ctx.strokeStyle = `rgba(220,220,220,${(fa * 0.9).toFixed(3)})`;
+      for (let i = 0; i < 4; i++) {
+        const g = fc + (i / 4) * Math.PI * 2;    // four cardinal axes of the cross
+        const r0 = 3, r1 = 3 + fp * 32;
+        ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
+      }
+      // 2b) blue cross shatters — accent burst at the boss/rivet point
+      const bp = Math.min(1, prog / 0.28), ba = 1 - bp;
+      ctx.strokeStyle = `rgba(46,158,255,${(ba * 0.85).toFixed(3)})`;
+      ctx.lineWidth = (3 - bp * 2) * ba + 0.3;
+      for (let i = 0; i < 8; i++) {
+        const g = fc + (i / 8) * Math.PI * 2 + Math.PI / 8;
+        ctx.beginPath(); ctx.moveTo(Math.cos(g) * 2, Math.sin(g) * 2); ctx.lineTo(Math.cos(g) * (4 + bp * 14), Math.sin(g) * (4 + bp * 14)); ctx.stroke();
+      }
+      // 3) residue — four silver kite-quadrant shards at cardinal positions, slowly fading
+      const ra = a * 0.7;
+      ctx.fillStyle = `rgba(192,192,192,${ra.toFixed(3)})`;
+      for (let i = 0; i < 4; i++) {
+        const g = fc + (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const rr = 12 + Math.min(1, prog / 0.4) * 20;
+        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g);
+        // parallelogram shard — tapers to a point, reads as a shield fragment
+        ctx.beginPath(); ctx.moveTo(-4, -7); ctx.lineTo(4, -7); ctx.lineTo(2, 7); ctx.lineTo(-2, 7); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+      // blue rivet fragment — the boss sits near center, fading last
+      ctx.fillStyle = `rgba(46,158,255,${(a * 0.5).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 3 * a + 0.5, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
     case 'mine': {  // Sapper — keg swells under pressure then ruptures: casing burst + shrapnel, not flame
       ctx.lineCap = 'round';
       // 1) keg body swells — uniform pressure build, then ruptures (gone by 0.28)
