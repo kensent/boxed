@@ -908,8 +908,32 @@ function drawDeath(f, prog) {
   ctx.restore();
 }
 
+// Arena floor, grid, and border — drawn in-world (reference coords) so they
+// scroll and scale with the follow-camera. (Previously CSS on the canvas
+// element, which would have sat static under the moving camera.)
+function drawArenaBackdrop() {
+  ctx.fillStyle = '#060606';
+  ctx.fillRect(0, 0, game.w, game.h);
+  const lw = window.devicePixelRatio / (pxPerRef * camera.zoom);  // ~1 css px at any zoom
+  ctx.strokeStyle = 'rgba(245,245,240,0.05)';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  for (let x = 20; x < game.w; x += 20) { ctx.moveTo(x, 0); ctx.lineTo(x, game.h); }
+  for (let y = 20; y < game.h; y += 20) { ctx.moveTo(0, y); ctx.lineTo(game.w, y); }
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(245,245,240,0.85)';
+  ctx.lineWidth = lw * 2;
+  ctx.strokeRect(0, 0, game.w, game.h);
+}
+
 function draw() {
-  ctx.clearRect(0, 0, game.w, game.h);
+  // Camera: ease toward framing both fighters, then enter camera space. Clear
+  // in device space first so a zoomed-in view never leaves stale pixels.
+  updateCamera();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  applyCamera();
+  drawArenaBackdrop();
 
   // Screen-shake — offset the whole frame by a decaying random jitter.
   let shaken = false;
@@ -1456,7 +1480,9 @@ function draw() {
     // fighter without a bespoke death yet.
     drawDeath(loser, prog);
 
-    // "K.O." — punches in oversized, settles, then fades. Winner-coloured glow.
+    // "K.O." — a SCREEN-space overlay centred on the viewport, NOT the arena, so
+    // the follow-camera's pan/zoom can't shove it off-centre. Drawn in CSS-pixel
+    // space (1 unit = 1 css px) so its size is consistent at any zoom/DPR.
     const age = 1.2 - game.koTimer;
     let scale;
     if (age < 0.16) scale = 2.6 - (age / 0.16) * 1.7;            // 2.6 → 0.9
@@ -1464,9 +1490,11 @@ function draw() {
     else scale = 1;
     const alpha = game.koTimer < 0.3 ? game.koTimer / 0.3 : 1;
     const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);            // leave camera space → screen space
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.translate(game.w / 2, game.h / 2);
+    ctx.translate(canvas.width / (2 * dpr), canvas.height / (2 * dpr));
     ctx.scale(scale, scale);
     ctx.font = '900 52px Bungee, sans-serif';
     ctx.textAlign = 'center';
@@ -1484,10 +1512,12 @@ function draw() {
     ctx.globalAlpha = 1;
   }
 
-  // White camera-snap frame at the kill instant — a single bright flash that fades.
+  // White camera-snap frame at the kill instant — fills the whole viewport in
+  // screen space, independent of the camera transform.
   if (game.flashFrame > 0) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, game.flashFrame * 6).toFixed(2)})`;
-    ctx.fillRect(0, 0, game.w, game.h);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
 

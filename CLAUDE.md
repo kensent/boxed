@@ -11,7 +11,12 @@ last one alive wins. Target fight length is under 30 seconds. Mobile-targeted.
 - `js/` — all gameplay JavaScript, one concern per file:
   - `rng.js` · `fighters.js` · `matchups.js` · `audio.js`
   - `combat.js` · `particles.js` · `abilities.js` · `engine.js`
+    (`engine.js` also owns the render-only **follow-camera** that frames both
+    fighters for the Shorts format — pans/zooms in the 360×360 reference space,
+    never feeds the sim; see GOTCHAS.md)
   - `render/sprites.js` · `render/arena.js`
+    (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so they move
+    with the camera — deliberately not CSS)
   - `ui.js` (selection screen) · `main.js` (end-game lifecycle)
 - `boxedshard.js` — runs a slice of the 120-matchup balance simulation.
   `node boxedshard.js <startIdx> <endIdx> <outfile>` runs matchups in

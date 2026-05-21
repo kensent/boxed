@@ -15,13 +15,67 @@ let fightToken = 0;
 // is device-independent (and the headless hunt reproduces exactly). The
 // renderer scales this reference space to whatever the actual canvas size is.
 const ARENA = 360;
+
+// --- Follow-camera ---------------------------------------------------------
+// A dynamic camera frames both fighters for Shorts: it holds a comfortable zoom
+// (CAM_COMFORT) while they fit and only eases OUT (toward CAM_MIN) when they
+// spread too far, and it stays centred on their MIDPOINT — even when that shows
+// past the arena walls (the border just marks the edge; beyond it is the same
+// dark background). Eases toward those targets so it never jitters. Render-only
+// — it reads fighter positions, but the 360x360 sim never reads it back, so
+// balance is untouched. The grid + border are drawn in-world (see
+// drawArenaBackdrop) so they scroll/scale with the camera, not sit static.
+// CAM_COMFORT is the held zoom whenever both fighters fit; the camera only zooms
+// OUT (toward CAM_MIN) when they spread too far to frame — it never zooms in
+// past comfort, which is what made it feel swingy. CAM_PAD = breathing room.
+const CAM_MIN = 1.0, CAM_COMFORT = 1.45, CAM_PAD = 80;
+// Smoothing time constants (seconds) — smaller = snappier. Pan tracks tight;
+// zoom widens quicker than it tightens (asymmetric) to avoid clipping + pumping.
+const CAM_PAN_TAU = 0.06, CAM_ZOOM_OUT_TAU = 0.12, CAM_ZOOM_IN_TAU = 0.6;
+const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
+let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
+let _camLastT = 0;
+
 function resizeCanvas() {
   const r = canvas.getBoundingClientRect();
-  canvas.width = r.width * window.devicePixelRatio;
-  canvas.height = r.height * window.devicePixelRatio;
-  // Map 360 reference units onto the canvas's CSS pixels, then DPR on top.
-  const scale = (r.width / ARENA) * window.devicePixelRatio;
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const dpr = window.devicePixelRatio;
+  canvas.width = r.width * dpr;
+  canvas.height = r.height * dpr;
+  pxPerRef = (r.width / ARENA) * dpr;
+  // draw() sets the live (camera) transform every frame; this is a sane default.
+  ctx.setTransform(pxPerRef, 0, 0, pxPerRef, 0, 0);
+}
+
+// Ease the camera toward framing both fighters. Called once per drawn frame.
+function updateCamera() {
+  if (!game) return;
+  const r = game.red, b = game.blue;
+  const span = Math.max(Math.abs(r.x - b.x), Math.abs(r.y - b.y)) + CAM_PAD * 2;
+  // Hold comfort zoom while they fit; only ease out when they spread too far.
+  const tz = Math.max(CAM_MIN, Math.min(CAM_COMFORT, ARENA / span));
+  // Centre on the fighters' midpoint — not clamped to the arena, so the focus
+  // stays between them even when that reveals area past the walls.
+  const tx = (r.x + b.x) / 2;
+  const ty = (r.y + b.y) / 2;
+  const now = performance.now();
+  const dt = _camLastT ? Math.min(0.05, (now - _camLastT) / 1000) : 0;
+  _camLastT = now;
+  // Frame-rate independent smoothing via time constants; first frame snaps.
+  const smooth = tau => (camera.ready ? 1 - Math.exp(-dt / tau) : 1);
+  const panK = smooth(CAM_PAN_TAU);
+  const zoomK = smooth(tz < camera.zoom ? CAM_ZOOM_OUT_TAU : CAM_ZOOM_IN_TAU);
+  camera.x += (tx - camera.x) * panK;
+  camera.y += (ty - camera.y) * panK;
+  camera.zoom += (tz - camera.zoom) * zoomK;
+  camera.ready = true;
+}
+
+// Set ctx to camera space: ref units, zoomed, centred on (camera.x, camera.y).
+function applyCamera() {
+  const s = pxPerRef * camera.zoom;
+  ctx.setTransform(s, 0, 0, s,
+    canvas.width / 2 - s * camera.x,
+    canvas.height / 2 - s * camera.y);
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -492,6 +546,7 @@ function startFight() {
   document.getElementById('winner-overlay').classList.remove('show');
   document.getElementById('app-footer').classList.remove('show');
   resizeCanvas();
+  camera.ready = false; // snap the follow-cam to the opening framing, don't ease from the last fight
   const redT = FIGHTERS.find(g => g.id === pickRed);
   const blueT = FIGHTERS.find(g => g.id === pickBlue);
   // Stop any previous fight's loop dead — bump the generation token so a stale

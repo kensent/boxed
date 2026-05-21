@@ -35,3 +35,19 @@
   (headless-skipped); new effect spawners (e.g. `spawnImpact`) are headless-guarded
   for the same reason. After touching anything in the sim path, confirm
   `./balance.sh` output is bit-identical to the `MATCHUPS` block.
+- **The follow-camera (`engine.js`) is render-only — never feed it back into the
+  sim.** `draw()` applies a camera transform (`updateCamera`/`applyCamera`) that
+  pans/zooms to frame both fighters in the fixed 360×360 reference space. It READS
+  fighter positions but the sim must never read `camera.*`, so it can't affect
+  balance. Two consequences worth knowing: (1) the arena grid + border are drawn
+  in-world by `drawArenaBackdrop` (NOT CSS) so they scroll/scale with the camera —
+  don't move them back to CSS. (2) Under the camera transform, world coords ≠ screen
+  coords.
+- **Screen-space overlays must reset the transform under the camera.** Anything that
+  should sit at a fixed screen position — the "K.O." graphic, the white camera-snap
+  flash — must `ctx.setTransform(...)` out of camera space first (CSS-px space for
+  the K.O., device space for the full-viewport flash), or it renders at *world*
+  coords (e.g. the arena centre) and drifts off-screen as the camera pans. The death
+  ceremony is the opposite: it's world-anchored at the loser's position, so it stays
+  in camera space. We shipped the K.O. at world centre once and it floated off — hence
+  this note.
