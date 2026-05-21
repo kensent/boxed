@@ -17,21 +17,24 @@ let fightToken = 0;
 const ARENA = 360;
 
 // --- Follow-camera ---------------------------------------------------------
-// A dynamic camera frames both fighters for Shorts: it holds a comfortable zoom
-// (CAM_COMFORT) while they fit and only eases OUT (toward CAM_MIN) when they
-// spread too far, and it stays centred on their MIDPOINT — even when that shows
-// past the arena walls (the border just marks the edge; beyond it is the same
-// dark background). Eases toward those targets so it never jitters. Render-only
-// — it reads fighter positions, but the 360x360 sim never reads it back, so
-// balance is untouched. The grid + border are drawn in-world (see
-// drawArenaBackdrop) so they scroll/scale with the camera, not sit static.
-// CAM_COMFORT is the held zoom whenever both fighters fit; the camera only zooms
-// OUT (toward CAM_MIN) when they spread too far to frame — it never zooms in
-// past comfort, which is what made it feel swingy. CAM_PAD = breathing room.
+// A dynamic camera frames both fighters for Shorts. Zoom: holds CAM_COMFORT
+// while they fit, eases OUT (toward CAM_MIN) only when they spread too far —
+// never IN past comfort (that's what felt swingy). Pan: a DEADZONE — the camera
+// holds STILL while both fighters sit inside a central box, and only moves to
+// keep the one drifting out at the box edge (recentring on their midpoint once
+// they're too far apart to both fit the box). The deadzone is the key to feel:
+// chasing the raw midpoint of two bouncers made the frame wander constantly;
+// holding still during contained exchanges kills that. It does NOT clamp to the
+// arena, so the focus can sit past the walls (the border just marks the edge;
+// beyond is the same dark background). Render-only — it reads fighter positions,
+// but the 360x360 sim never reads it back, so balance is untouched. The grid +
+// border are drawn in-world (see drawArenaBackdrop) so they scroll/scale with
+// the camera, not sit static.
 const CAM_MIN = 1.0, CAM_COMFORT = 1.45, CAM_PAD = 80;
-// Smoothing time constants (seconds) — smaller = snappier. Pan tracks tight;
-// zoom widens quicker than it tightens (asymmetric) to avoid clipping + pumping.
-const CAM_PAN_TAU = 0.06, CAM_ZOOM_OUT_TAU = 0.12, CAM_ZOOM_IN_TAU = 0.6;
+// CAM_DEADZONE: fraction of the view's half-extent the fighters can roam before
+// the camera moves (bigger = holds still more). Smoothing time constants
+// (seconds) — smaller = snappier; one tau per channel.
+const CAM_DEADZONE = 0.55, CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25;
 const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;
@@ -53,17 +56,24 @@ function updateCamera() {
   const span = Math.max(Math.abs(r.x - b.x), Math.abs(r.y - b.y)) + CAM_PAD * 2;
   // Hold comfort zoom while they fit; only ease out when they spread too far.
   const tz = Math.max(CAM_MIN, Math.min(CAM_COMFORT, ARENA / span));
-  // Centre on the fighters' midpoint — not clamped to the arena, so the focus
-  // stays between them even when that reveals area past the walls.
-  const tx = (r.x + b.x) / 2;
-  const ty = (r.y + b.y) / 2;
+  // Pan deadzone (per axis): hold while both fighters sit inside the central box
+  // [cam-dz, cam+dz]; otherwise move just enough to pin the escaping fighter to
+  // the box edge. If they're too far apart to both fit the box, recentre on the
+  // midpoint. Not clamped to the arena — the focus may sit past the walls.
+  const dz = ((ARENA / camera.zoom) / 2) * CAM_DEADZONE;
+  const axisTarget = (p1, p2, cur) => {
+    const lo = Math.min(p1, p2), hi = Math.max(p1, p2);
+    const camLo = hi - dz, camHi = lo + dz;     // valid camera range to keep both in the box
+    return camLo > camHi ? (lo + hi) / 2 : Math.max(camLo, Math.min(camHi, cur));
+  };
+  const tx = axisTarget(r.x, b.x, camera.x);
+  const ty = axisTarget(r.y, b.y, camera.y);
   const now = performance.now();
   const dt = _camLastT ? Math.min(0.05, (now - _camLastT) / 1000) : 0;
   _camLastT = now;
   // Frame-rate independent smoothing via time constants; first frame snaps.
   const smooth = tau => (camera.ready ? 1 - Math.exp(-dt / tau) : 1);
-  const panK = smooth(CAM_PAN_TAU);
-  const zoomK = smooth(tz < camera.zoom ? CAM_ZOOM_OUT_TAU : CAM_ZOOM_IN_TAU);
+  const panK = smooth(CAM_PAN_TAU), zoomK = smooth(CAM_ZOOM_TAU);
   camera.x += (tx - camera.x) * panK;
   camera.y += (ty - camera.y) * panK;
   camera.zoom += (tz - camera.zoom) * zoomK;
