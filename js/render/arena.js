@@ -206,6 +206,50 @@ function drawDeath(f, prog) {
       }
       break;
     }
+    case 'riposte': {  // Duelist — rapier snaps: final parry spin then blade segments fly along the axis
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) final parry — body makes one sharp spin (the last defensive reflex), then gone (by 0.32)
+      if (prog < 0.32) {
+        const sp = prog / 0.32;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.rotate(fc + sp * Math.PI * 1.6);  // fast full spin+
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2) blade snap — 4 segments of the blade flying outward along the forward axis
+      const bp = Math.min(1, prog / 0.5), ba = 1 - bp;
+      ctx.strokeStyle = `rgba(192,192,232,${(ba * 0.9).toFixed(3)})`;
+      ctx.lineWidth = (2.5 - bp) * ba + 0.4;
+      const segLen = [14, 10, 8, 6];  // decreasing segment lengths (tip fragments smallest)
+      for (let i = 0; i < 4; i++) {
+        // segments fan out from the blade axis: alternating above/below the line
+        const lateral = (i % 2 === 0 ? 1 : -1) * (1 + Math.floor(i / 2)) * bp * 12;
+        const along = (i * 0.3 + bp * (8 + i * 6));
+        const px = Math.cos(fc) * along - Math.sin(fc) * lateral;
+        const py = Math.sin(fc) * along + Math.cos(fc) * lateral;
+        const ex = px + Math.cos(fc + (i % 2 === 0 ? 0.3 : -0.3)) * segLen[i];
+        const ey = py + Math.sin(fc + (i % 2 === 0 ? 0.3 : -0.3)) * segLen[i];
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(ex, ey); ctx.stroke();
+      }
+      // cup guard — breaks off and tumbles separately (a small arc, accent color)
+      const gp = Math.min(1, prog / 0.55), ga = 1 - gp;
+      const gx = Math.cos(fc + Math.PI) * (4 + gp * 18), gy = Math.sin(fc + Math.PI) * (4 + gp * 18);
+      ctx.strokeStyle = `rgba(192,192,232,${(ga * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 2 * ga + 0.3;
+      ctx.beginPath(); ctx.arc(gx, gy, 5 + gp * 3, -Math.PI * 0.8, Math.PI * 0.8); ctx.stroke();
+      // 3) residue — 3 thin silver blade-shard lines along the forward axis, slowly fading
+      ctx.strokeStyle = `rgba(160,160,200,${(a * 0.55).toFixed(3)})`;
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 3; i++) {
+        const off = (i - 1) * 6;
+        const base = 16 + i * 8;
+        const px = Math.cos(fc) * base + Math.sin(fc) * off, py = Math.sin(fc) * base - Math.cos(fc) * off;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(fc) * 8, py + Math.sin(fc) * 8); ctx.stroke();
+      }
+      break;
+    }
     case 'sword': {  // Knight — kite shield shatters: fractures along the cross into four quadrant shards
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
