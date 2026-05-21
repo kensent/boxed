@@ -116,6 +116,7 @@ const Audio = (() => {
   // Rebuilt from scratch per AUDIO.md: every fighter's sounds draw from one
   // material identity, and abilities follow the windup -> crack -> tail grammar.
   let _lastContactT = -1;
+  let _lastWallT = -1;
   const SOUNDS = {
     // ===== Ability casts / releases — "the fighter IS the sound" ===========
 
@@ -356,7 +357,11 @@ const Audio = (() => {
     // ===== Arena ============================================================
 
     // Wall bounce — a universal stone thud. Short, recedes under everything.
+    // Self-throttled so corner jitter (rapid x/y re-bounces) can't stutter it.
     wall() {
+      const c = ac(); if (!c) return;
+      if (c.currentTime - _lastWallT < 0.08) return;
+      _lastWallT = c.currentTime;
       noise(0.13, 0.24, 'lowpass', 500, { filterGlideTo: 90 });
       tone(90, 0.12, 'square', 0.15, { glideTo: 44 });
     },
