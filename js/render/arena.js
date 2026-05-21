@@ -458,6 +458,51 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'iai': {  // Ronin — one final deliberate swing, single clean gold slash, blade comes to rest
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) final overhead swing — slow, deliberate arc (not a chaotic tumble); (gone by 0.46)
+      if (prog < 0.46) {
+        const sp = prog / 0.46;
+        const eIn = sp * sp;  // ease-in: starts slow, finishes with conviction
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.rotate(fc + eIn * Math.PI * 0.85);  // overhead arc ~153°, disciplined
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2) the cut — a single gold bisecting slash, drawn fast then held and faded
+      // Slash appears early (prog 0→0.12) and fades slowly (the mark of the strike)
+      const cp = Math.min(1, prog / 0.12);        // draw-in speed
+      const ca = Math.max(0, 1 - (prog - 0.08) / 0.55); // hold then fade
+      if (ca > 0) {
+        const slashLen = FIGHTER_SIZE * 2.2;
+        const perpX = Math.sin(fc), perpY = -Math.cos(fc);  // perpendicular to facing
+        // slash cuts ACROSS the body, perpendicular to the blade's forward direction
+        const sx = -perpX * slashLen * cp, sy = -perpY * slashLen * cp;
+        const ex =  perpX * slashLen,      ey =  perpY * slashLen;
+        ctx.strokeStyle = `rgba(232,192,32,${(ca * 0.9).toFixed(3)})`;
+        ctx.lineWidth = (3 - prog * 2) * ca + 0.4;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+        // thin afterglow — the brightness of a clean edge
+        ctx.strokeStyle = `rgba(255,240,180,${(ca * 0.4).toFixed(3)})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+      }
+      // 3) residue — blade lying at rest angle, gold tip last to fade
+      const bladeFc = fc + Math.PI * 0.85;  // final resting angle after the swing
+      ctx.strokeStyle = `rgba(228,236,244,${(a * 0.55).toFixed(3)})`;
+      ctx.lineWidth = 2.5 * a + 0.3;
+      const blen = FIGHTER_SIZE * 1.35;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(bladeFc + Math.PI) * FIGHTER_SIZE * 0.4, Math.sin(bladeFc + Math.PI) * FIGHTER_SIZE * 0.4);
+      ctx.lineTo(Math.cos(bladeFc) * blen, Math.sin(bladeFc) * blen);
+      ctx.stroke();
+      // gold tip glints last
+      ctx.fillStyle = `rgba(232,192,32,${(a * 0.7).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(Math.cos(bladeFc)*blen, Math.sin(bladeFc)*blen, 2.5*a+0.3, 0, Math.PI*2); ctx.fill();
+      break;
+    }
     case 'sweep': {  // Reaper — rotor decelerates and sinks, blood pool spreads beneath
       ctx.lineCap = 'round';
       // 1) rotor decelerates (ease-out) and sinks — power leaving the blade (gone by 0.44)
