@@ -163,9 +163,10 @@ function drawDeath(f, prog) {
   const lc = f.team === 'red' ? '255,46,46' : '46,158,255';
   ctx.save();
   ctx.translate(f.x, f.y);
+  if (Math.cos(f.lastFacing || 0) < 0) ctx.scale(-1, 1);  // mirror for left-facing
+  const fc = 0;  // always draw right-facing; scale above handles left
   switch (f.ability) {
     case 'tackle': {  // Berserker — final BLOODRAGE: convulse, shred, concussive shockwave
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) sprite convulses (bloodrage peaks) then shreds along facing axis — gone by 0.4
       if (prog < 0.4) {
@@ -269,7 +270,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'riposte': {  // Duelist — rapier snaps: final parry spin then blade segments fly along the axis
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) final parry — body makes one sharp spin (the last defensive reflex), then gone (by 0.32)
       if (prog < 0.32) {
@@ -313,7 +313,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'sword': {  // Knight — kite shield shatters: fractures along the cross into four quadrant shards
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) shield reels backward then tumbles — heavy plate, slow start then fast spin (gone by 0.42)
       if (prog < 0.42) {
@@ -403,7 +402,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'cannon': {  // Cannoneer — catastrophic overload: rig pitches, muzzle blast + structural cracks
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) sprite pitches forward on the wheel — barrel swings up and over as recoil finally wins
       if (prog < 0.38) {
@@ -459,7 +457,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'arrow': {  // Archer — bow snaps, arrows scatter in all directions (quiver spills)
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) bow springs outward — bent wood releasing tension, then fades (gone by 0.38)
       if (prog < 0.38) {
@@ -517,7 +514,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'iai': {  // Ronin — one final deliberate swing, single clean gold slash, blade comes to rest
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) final overhead swing — slow, deliberate arc (not a chaotic tumble); (gone by 0.46)
       if (prog < 0.46) {
@@ -640,7 +636,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'drain': {  // Warlock — void consumes itself: eye flares then snaps shut, cowl implodes
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       const eyeX = Math.cos(fc) * FIGHTER_SIZE * 0.42, eyeY = Math.sin(fc) * FIGHTER_SIZE * 0.42;
       // 1) cowl implodes toward the eye — pulled into the void (gone by 0.45)
@@ -765,7 +760,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'lightning': {  // Priest — divine light departs: orb expands and fades, golden motes rise
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       const orbX = Math.cos(fc) * FIGHTER_SIZE * 0.75, orbY = Math.sin(fc) * FIGHTER_SIZE * 0.75;
       // 1) body rises and dissolves — peaceful ascent, slower than violent deaths (gone by 0.55)
@@ -846,7 +840,6 @@ function drawDeath(f, prog) {
       break;
     }
     case 'grapple': {  // Hunter — steel hook snaps: whips back, fractures at the bend, barb flies forward
-      const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
       // 1) hook whips backward — fast spin as if the line snapped (gone by 0.36)
       if (prog < 0.36) {
