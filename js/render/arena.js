@@ -206,6 +206,43 @@ function drawDeath(f, prog) {
       }
       break;
     }
+    case 'mine': {  // Sapper — keg swells under pressure then ruptures: casing burst + shrapnel, not flame
+      ctx.lineCap = 'round';
+      // 1) keg body swells — uniform pressure build, then ruptures (gone by 0.28)
+      if (prog < 0.28) {
+        const sp = prog / 0.28;
+        const swell = 1 + sp * 0.55;          // keg inflates before it goes
+        ctx.save();
+        ctx.globalAlpha = sp < 0.75 ? 1 : 1 - (sp - 0.75) / 0.25;
+        ctx.scale(swell, swell);
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) casing rupture — dark ring at the moment of breach, fast and tight
+      const rp = Math.min(1, prog / 0.3), ra2 = 1 - rp;
+      ctx.strokeStyle = `rgba(60,30,10,${(ra2 * 0.9).toFixed(3)})`;
+      ctx.lineWidth = (5 - rp * 3) * ra2 + 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, 4 + rp * 28, 0, Math.PI * 2); ctx.stroke();
+      // 2b) shrapnel — 8 jagged red shards flying outward (casing pieces, not fire rays)
+      const sp2 = Math.min(1, prog / 0.55), sa = 1 - sp2;
+      ctx.strokeStyle = `rgba(220,30,30,${(sa * 0.85).toFixed(3)})`;
+      for (let i = 0; i < 8; i++) {
+        const g = (i / 8) * Math.PI * 2 + i * 0.4;
+        const r0 = 6 + sp2 * 10, r1 = r0 + 8 + sp2 * (18 + (i % 3) * 6);
+        ctx.lineWidth = (2.5 - i * 0.15) * sa + 0.3;
+        ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
+      }
+      // 3) residue — keg staves: 5 short dark-brown rectangles at radial positions
+      const staveA = (a * 0.65);
+      ctx.fillStyle = `rgba(60,38,16,${staveA.toFixed(3)})`;
+      for (let i = 0; i < 5; i++) {
+        const g = (i / 5) * Math.PI * 2 + 0.3;
+        const rr = 14 + Math.min(1, prog / 0.35) * 18 + (i % 2) * 5;
+        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g + Math.PI / 2);
+        ctx.fillRect(-1.5, -6, 3, 12); ctx.restore();
+      }
+      break;
+    }
     case 'cannon': {  // Cannoneer — catastrophic overload: rig pitches, muzzle blast + structural cracks
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
