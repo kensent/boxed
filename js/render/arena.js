@@ -164,36 +164,45 @@ function drawDeath(f, prog) {
   ctx.save();
   ctx.translate(f.x, f.y);
   switch (f.ability) {
-    case 'tackle': {  // Berserker — BURST: blown apart in a concussive blast
-      // 1) the sprite scales up and fades (blown outward)
-      if (prog < 0.45) {
+    case 'tackle': {  // Berserker — final BLOODRAGE: convulse, shred, concussive shockwave
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) sprite convulses (bloodrage peaks) then shreds along facing axis — gone by 0.4
+      if (prog < 0.4) {
+        const sp = prog / 0.4;
+        // convulse: squash perpendicular, stretch along facing, rapid oscillation
+        const osc = Math.sin(sp * Math.PI * 5) * (1 - sp);
+        const sx = 1 + osc * 0.35 + sp * 0.5;   // stretch along facing peaks then tears
+        const sy = 1 - osc * 0.25 - sp * 0.3;   // squash perpendicular
         ctx.save();
-        ctx.globalAlpha = 1 - prog / 0.45;
-        const s = 1 + prog * 1.6;
-        ctx.scale(s, s);
-        const fc = f.lastFacing || 0;
-        if (Math.cos(fc) < 0) { ctx.scale(-1, 1); ctx.rotate(Math.PI - fc); } else { ctx.rotate(fc); }
+        ctx.globalAlpha = 1 - sp * sp;
+        ctx.rotate(fc);
+        ctx.scale(sx, sy);
         drawShape(ctx, f);
         ctx.restore();
       }
-      // 2) concussive blast — crimson radial spikes + ring + white-hot core
-      const bp = Math.min(1, prog / 0.6), ba = 1 - bp, r = 8 + bp * 52;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgba(255,60,30,${(ba * 0.9).toFixed(3)})`;
-      ctx.lineWidth = 4 * ba + 1;
-      for (let i = 0; i < 12; i++) { const g = (i / 12) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 6, Math.sin(g) * 6); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
-      ctx.strokeStyle = `rgba(255,120,60,${(ba * 0.8).toFixed(3)})`;
-      ctx.lineWidth = 3 * ba + 1;
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = `rgba(255,240,200,${ba.toFixed(3)})`;
-      ctx.beginPath(); ctx.arc(0, 0, 5 * ba + 1, 0, Math.PI * 2); ctx.fill();
-      // 3) residue — scattered crimson shards settling, fading over the window
-      ctx.fillStyle = `rgba(170,0,0,${(a * 0.6).toFixed(3)})`;
-      for (let i = 0; i < 7; i++) {
-        const g = (i / 7) * Math.PI * 2 + i * 0.7;
-        const rr = 16 + Math.min(1, prog / 0.5) * 22 + (i % 3) * 6;
+      // 2) concussive shockwave — one thick fast ring + 5 blunt radial bars (punch pressure wave)
+      const wp = Math.min(1, prog / 0.45), wa = 1 - wp;
+      const wr = 6 + wp * 58;
+      ctx.lineWidth = (6 - wp * 4) * wa + 0.5;
+      ctx.strokeStyle = `rgba(220,20,20,${(wa * 0.95).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, wr, 0, Math.PI * 2); ctx.stroke();
+      // blunt bars — thick, short relative to ring radius (shockwave bars, not spikes)
+      ctx.lineWidth = (5 - wp * 3) * wa + 0.5;
+      ctx.strokeStyle = `rgba(255,80,40,${(wa * 0.7).toFixed(3)})`;
+      for (let i = 0; i < 5; i++) {
+        const g = (i / 5) * Math.PI * 2 + Math.PI / 10;
+        const r0 = wr * 0.55, r1 = wr * 0.88;
+        ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
+      }
+      // 3) residue — 4 crimson smear marks at cardinal points, stretched along impact axis
+      const ra = (a * 0.55);
+      ctx.fillStyle = `rgba(160,0,0,${ra.toFixed(3)})`;
+      for (let i = 0; i < 4; i++) {
+        const g = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const rr = 18 + Math.min(1, prog / 0.4) * 20;
         ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g);
-        ctx.fillRect(-2.5, -1, 5, 2); ctx.restore();
+        ctx.fillRect(-8, -1.5, 16, 3); ctx.restore();
       }
       break;
     }
