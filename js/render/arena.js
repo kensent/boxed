@@ -458,6 +458,55 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'cast': {  // Wizard — arcane collapse: orbs wink out, book flickers then implodes
+      ctx.lineCap = 'round';
+      // 1) book flickers like a guttering flame then implodes (scale to zero) — gone by 0.48
+      if (prog < 0.48) {
+        const sp = prog / 0.48;
+        const flicker = 1 - Math.abs(Math.sin(sp * Math.PI * 7)) * 0.35 * (1 - sp);
+        ctx.save();
+        ctx.globalAlpha = (1 - sp * sp) * flicker;
+        const s2 = 1 - sp * 0.7;
+        ctx.scale(s2, s2);
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) 4 mana orbs wink out — each orb pops and collapses with a staggered offset
+      for (let i = 0; i < 4; i++) {
+        const g    = (i / 4) * Math.PI * 2;
+        const delay = i * 0.12;
+        const op   = Math.max(0, Math.min(1, (prog - delay) / 0.3));
+        if (op <= 0) continue;
+        const oa   = op < 0.5 ? op * 2 : 2 - op * 2;   // pop in, collapse out
+        const r    = FIGHTER_SIZE * 0.55;
+        const ox   = Math.cos(g) * r, oy = Math.sin(g) * r;
+        const sz   = (3 + op * (op < 0.5 ? 4 : -3)) * oa;
+        ctx.fillStyle = `rgba(157,78,221,${(oa * 0.85).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(ox, oy, Math.max(0.3, sz), 0, Math.PI * 2); ctx.fill();
+        // brief gold spark at each pop peak
+        if (op > 0.4 && op < 0.6) {
+          const spark = 1 - Math.abs(op - 0.5) * 10;
+          ctx.fillStyle = `rgba(255,232,61,${(spark * 0.7).toFixed(3)})`;
+          ctx.beginPath(); ctx.arc(ox, oy, 2 * spark, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      // 2b) arcane implosion flash — gold burst at the book center as the last sigil releases
+      const ip = Math.min(1, prog / 0.22), ia = 1 - ip;
+      ctx.strokeStyle = `rgba(200,100,255,${(ia * 0.85).toFixed(3)})`;
+      ctx.lineWidth = (3 - ip * 2) * ia + 0.3;
+      ctx.beginPath(); ctx.arc(0, 0, 4 + ip * 20, 0, Math.PI * 2); ctx.stroke();
+      // 3) residue — faint hexagram sigil at origin (the arcane mark, slowly dimming)
+      ctx.strokeStyle = `rgba(120,50,180,${(a * 0.35).toFixed(3)})`;
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 6; i++) {
+        const g1 = (i / 6) * Math.PI * 2, g2 = g1 + Math.PI * 2 / 3;
+        const r2 = 12 * a + 4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(g1)*r2, Math.sin(g1)*r2);
+        ctx.lineTo(Math.cos(g2)*r2, Math.sin(g2)*r2); ctx.stroke();
+      }
+      break;
+    }
     case 'lightning': {  // Priest — divine light departs: orb expands and fades, golden motes rise
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
