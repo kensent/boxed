@@ -458,6 +458,50 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'raise': {  // Necromancer — skull rattles then collapses: bone burst + eye-glow wisps escape
+      const s = FIGHTER_SIZE;
+      ctx.lineCap = 'round';
+      // 1) skull rattles (jitter) then falls forward and sinks (gone by 0.44)
+      if (prog < 0.44) {
+        const sp = prog / 0.44;
+        const rattle = sp < 0.35 ? Math.sin(sp * Math.PI * 14) * (1 - sp / 0.35) * 5 : 0;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.translate(rattle, sp * sp * 20);   // jitter then falls
+        ctx.rotate(sp * 0.5);                  // tips forward
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) bone burst — pale cranium fragments radiating outward
+      const bp = Math.min(1, prog / 0.5), ba = 1 - bp;
+      ctx.strokeStyle = `rgba(232,224,208,${(ba * 0.85).toFixed(3)})`;
+      ctx.lineWidth = (2.5 - bp) * ba + 0.4;
+      for (let i = 0; i < 8; i++) {
+        const g = (i / 8) * Math.PI * 2 + i * 0.3;
+        const r0 = 4 + bp * 8, r1 = r0 + 6 + bp * (14 + (i % 3) * 4);
+        ctx.beginPath(); ctx.moveTo(Math.cos(g)*r0, Math.sin(g)*r0); ctx.lineTo(Math.cos(g)*r1, Math.sin(g)*r1); ctx.stroke();
+      }
+      // 2b) eye-glow wisps — purple escape from the two eye-socket positions as the skull cracks
+      const ep = Math.min(1, prog / 0.6), ea = 1 - ep;
+      const eyes = [{x: -s*0.22, y: -s*0.14}, {x: s*0.22, y: -s*0.14}];
+      eyes.forEach(eye => {
+        ctx.fillStyle = `rgba(199,125,255,${(ea * 0.7).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(eye.x, eye.y - ep * 16, (3 - ep * 2) * ea + 0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(157,78,221,${(ea * 0.45).toFixed(3)})`;
+        ctx.lineWidth = 1.2 * ea;
+        ctx.beginPath(); ctx.moveTo(eye.x, eye.y); ctx.lineTo(eye.x + (eye.x > 0 ? 4 : -4), eye.y - ep * 22); ctx.stroke();
+      });
+      // 3) residue — bone pile: 6 small pale rectangles at base, scattered loosely
+      ctx.fillStyle = `rgba(200,190,168,${(a * 0.6).toFixed(3)})`;
+      const bones = [[-10,8,14,3,0.3],[5,12,10,3,-0.5],[-4,16,8,2.5,0.8],[12,10,6,2.5,-0.2],[-14,14,8,3,-0.9],[2,20,12,2,0.4]];
+      bones.forEach(([bx,by,bw,bh,br]) => {
+        ctx.save(); ctx.translate(bx,by); ctx.rotate(br); ctx.fillRect(-bw/2,-bh/2,bw,bh); ctx.restore();
+      });
+      // faint purple glow where the eyes were
+      ctx.fillStyle = `rgba(120,40,180,${(a * 0.2).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, -s*0.14, 8 * a + 2, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
     case 'drain': {  // Warlock — void consumes itself: eye flares then snaps shut, cowl implodes
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
