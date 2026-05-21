@@ -36,4 +36,5 @@ so sharded results are bit-identical to a single monolithic run. Re-running
 gives the same numbers.
 
 @DESIGN.md
+@ANIMATION.md
 @GOTCHAS.md
