@@ -458,6 +458,40 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'sweep': {  // Reaper — rotor decelerates and sinks, blood pool spreads beneath
+      ctx.lineCap = 'round';
+      // 1) rotor decelerates (ease-out) and sinks — power leaving the blade (gone by 0.44)
+      if (prog < 0.44) {
+        const sp  = prog / 0.44;
+        const eOut = 1 - (1 - sp) * (1 - sp);     // quadratic ease-out: fast then slows
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.translate(0, sp * sp * 18);            // sinks as it slows
+        ctx.rotate(eOut * Math.PI * 3.5);          // ~1¾ rotations, decelerating
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2) blood spray — 5 dark-red arcs flung centrifugally at death moment
+      const sp2 = Math.min(1, prog / 0.45), sa = 1 - sp2;
+      ctx.strokeStyle = `rgba(160,0,0,${(sa * 0.8).toFixed(3)})`;
+      ctx.lineWidth = (3 - sp2 * 2) * sa + 0.4;
+      for (let i = 0; i < 5; i++) {
+        const g = (i / 5) * Math.PI * 2 + i * 0.6;
+        const r = 8 + sp2 * (20 + i * 6);
+        // arc — follows the curve of the spinning blade (the crescent, his force-shape)
+        ctx.beginPath(); ctx.arc(Math.cos(g)*r, Math.sin(g)*r, r * 0.35, g - 0.7, g + 0.7); ctx.stroke();
+      }
+      // 3) blood pool — grows outward from nothing, fades as it spreads
+      const poolR = 6 + prog * 32;
+      const poolA = a * 0.65;
+      ctx.fillStyle = `rgba(90,0,0,${poolA.toFixed(3)})`;
+      ctx.beginPath(); ctx.ellipse(0, 8, poolR, poolR * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+      // pool rim — slightly brighter edge so the pool reads against dark arena floor
+      ctx.strokeStyle = `rgba(140,0,0,${(poolA * 0.6).toFixed(3)})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(0, 8, poolR, poolR * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+      break;
+    }
     case 'raise': {  // Necromancer — skull rattles then collapses: bone burst + eye-glow wisps escape
       const s = FIGHTER_SIZE;
       ctx.lineCap = 'round';
