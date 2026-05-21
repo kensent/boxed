@@ -899,10 +899,10 @@ function step(dt) {
           // Reaper: Blood Harvest — heal f.harvestRate of the damage dealt.
           // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
           if (f.ability === 'sweep' && !f.dead) {
-            const healAmt = Math.round((dealtDmg || 0) * f.harvestRate);
+            const healAmt = (dealtDmg || 0) * f.harvestRate;   // fractional — applied raw
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
-            spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
+            spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + Math.ceil(healAmt), healColor(f));
           }
           f.dashHit = true;
           f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
