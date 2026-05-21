@@ -458,6 +458,64 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'arrow': {  // Archer — bow snaps, arrows scatter in all directions (quiver spills)
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) bow springs outward — bent wood releasing tension, then fades (gone by 0.38)
+      if (prog < 0.38) {
+        const sp = prog / 0.38;
+        const spring = 1 + Math.sin(sp * Math.PI) * 0.35;   // pop out then settle
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.scale(spring, spring);
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) bowstring snap — cream flash along the string path, very fast
+      const ssp = Math.min(1, prog / 0.18), ssa = 1 - ssp;
+      if (ssa > 0) {
+        ctx.strokeStyle = `rgba(224,208,160,${(ssa * 0.9).toFixed(3)})`;
+        ctx.lineWidth = (2.5 - ssp) * ssa + 0.3;
+        const topX = Math.cos(-Math.PI*0.45)*FIGHTER_SIZE*0.85, topY = Math.sin(-Math.PI*0.45)*FIGHTER_SIZE*0.85;
+        const botX = Math.cos( Math.PI*0.45)*FIGHTER_SIZE*0.85, botY = Math.sin( Math.PI*0.45)*FIGHTER_SIZE*0.85;
+        ctx.save(); ctx.rotate(fc);
+        ctx.beginPath(); ctx.moveTo(topX,topY); ctx.lineTo(-FIGHTER_SIZE*0.6,0); ctx.lineTo(botX,botY); ctx.stroke();
+        ctx.restore();
+      }
+      // 2b) arrows scatter — 6 arrow silhouettes flying outward at varied angles
+      const asp = Math.min(1, prog / 0.6), asa = 1 - asp;
+      ctx.strokeStyle = `rgba(90,74,42,${(asa * 0.85).toFixed(3)})`;
+      for (let i = 0; i < 6; i++) {
+        const g    = fc + (i / 6) * Math.PI * 2 + i * 0.4;  // spread 360°
+        const dist = 8 + asp * (16 + i * 5);
+        const shaftLen = 14 + (i % 3) * 2;
+        const tipX = Math.cos(g) * (dist + shaftLen), tipY = Math.sin(g) * (dist + shaftLen);
+        const nockX = Math.cos(g) * dist,              nockY = Math.sin(g) * dist;
+        ctx.lineWidth = (1.8 - i * 0.1) * asa + 0.3;
+        ctx.beginPath(); ctx.moveTo(nockX, nockY); ctx.lineTo(tipX, tipY); ctx.stroke();
+        // fletching — two small angled lines at nock end
+        const perp = g + Math.PI / 2;
+        ctx.lineWidth = 1 * asa + 0.2;
+        ctx.beginPath(); ctx.moveTo(nockX, nockY); ctx.lineTo(nockX + Math.cos(perp)*3 + Math.cos(g+Math.PI)*4, nockY + Math.sin(perp)*3 + Math.sin(g+Math.PI)*4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(nockX, nockY); ctx.lineTo(nockX - Math.cos(perp)*3 + Math.cos(g+Math.PI)*4, nockY - Math.sin(perp)*3 + Math.sin(g+Math.PI)*4); ctx.stroke();
+      }
+      // 3) residue — 4 arrows lying flat at scattered positions + green bow-arc fragment
+      const ra = a * 0.6;
+      ctx.strokeStyle = `rgba(70,60,32,${ra.toFixed(3)})`;
+      ctx.lineWidth = 1.5;
+      const restArrows = [[14,6,0.4],[-8,16,-0.3],[20,-4,0.8],[-16,8,-0.6]];
+      restArrows.forEach(([rx, ry, rg]) => {
+        ctx.save(); ctx.translate(rx, ry); ctx.rotate(rg);
+        ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-11,-2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-11, 2); ctx.stroke();
+        ctx.restore();
+      });
+      ctx.strokeStyle = `rgba(61,255,138,${(ra * 0.45).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(10, 10, FIGHTER_SIZE * 0.6, fc - 0.8, fc + 0.8); ctx.stroke();
+      break;
+    }
     case 'iai': {  // Ronin — one final deliberate swing, single clean gold slash, blade comes to rest
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
