@@ -24,6 +24,13 @@ function fireAbility(f, enemy) {
       f.aimTimer = f.windupTime;
       f.aimAbility = 'lightning';
       sfx('chargeUp', null, f.x);
+      // DIVINE GRACE — heal on each cast (at wind-up start). Lands ~once per cd
+      // (1.4s), mirroring the old continuous regen rate.
+      const healed = Math.min(f.maxHp, f.hp + f.healOnCast) - f.hp;
+      if (healed > 0) {
+        f.hp += healed;
+        spawnFloat(f.x, f.y - FIGHTER_SIZE, '+' + healed, healColor(f));
+      }
       // slow the priest during wind-up
       f.vx *= 0.3; f.vy *= 0.3;
       break;

@@ -3,7 +3,7 @@
 // Roster definitions. Each fighter has stats, visual identity, ability id,
 // and card metadata. Edit here to tune balance numbers.
 //
-// Ability parameters (windupTime, healRate, etc.) are defined as named
+// Ability parameters (windupTime, healOnCast, etc.) are defined as named
 // properties on the fighter object — the single source of truth. Description
 // strings are getters that read those properties, so they can never drift.
 // Ability code reads f.propertyName instead of hardcoded literals.
@@ -14,9 +14,9 @@ const FIGHTER_SIZE = 16;
 const FIGHTERS = [
   { id:'priest',  name:'PRIEST',    hp:800,  speed:110, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
     ability:'lightning', cd:1.4, dmg:180,
-    windupTime: 0.45, healRate: 10,
+    windupTime: 0.45, healOnCast: 14,
     get active() { return `LIGHTNING BOLT — homing zap, ${this.windupTime}s windup`; },
-    get passive() { return `DIVINE GRACE — heal ${this.healRate} hp/s`; },
+    get passive() { return `DIVINE GRACE — heal ${this.healOnCast} hp on each cast`; },
   },
   { id:'berserker',name:'BERSERKER', hp:1050, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
     ability:'tackle', cd:1.7, dmg:180,

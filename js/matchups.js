@@ -10,9 +10,9 @@
 // printed MATCHUPS block here — otherwise it silently drifts from reality.
 // ============================================================================
 const MATCHUPS = {
-  'priest_berserker':84, 'priest_wizard':9, 'priest_knight':80, 'priest_sapper':77, 'priest_archer':42,
-  'priest_jester':23, 'priest_cannoneer':64, 'priest_duelist':44, 'priest_necromancer':52, 'priest_reaper':59,
-  'priest_ronin':67, 'priest_witch':29, 'priest_hunter':23, 'priest_warlock':57, 'priest_gambler':36,
+  'priest_berserker':80, 'priest_wizard':8, 'priest_knight':80, 'priest_sapper':77, 'priest_archer':42,
+  'priest_jester':23, 'priest_cannoneer':64, 'priest_duelist':44, 'priest_necromancer':51, 'priest_reaper':59,
+  'priest_ronin':67, 'priest_witch':29, 'priest_hunter':22, 'priest_warlock':56, 'priest_gambler':35,
   'berserker_wizard':61, 'berserker_knight':97, 'berserker_sapper':36, 'berserker_archer':56, 'berserker_jester':61,
   'berserker_cannoneer':25, 'berserker_duelist':53, 'berserker_necromancer':63, 'berserker_reaper':80, 'berserker_ronin':21,
   'berserker_witch':42, 'berserker_hunter':14, 'berserker_warlock':71, 'berserker_gambler':45, 'wizard_knight':6,

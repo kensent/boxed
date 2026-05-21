@@ -822,20 +822,8 @@ function step(dt) {
     }
 
     // ---- PASSIVES ----
-    // Priest: Divine Grace — regen f.healRate hp/s
-    if (f.ability === 'lightning' && f.hp < f.maxHp) {
-      const before = f.hp;
-      f.hp = Math.min(f.maxHp, f.hp + f.healRate * dt);
-      // Continuous regen — accumulate and pop a "+N" heal float once a second, so
-      // it reads as the card's "{healRate} hp/s" (one float = the per-second heal).
-      // Visual only (regenAccum/regenFloatT unread by sim).
-      f.regenAccum = (f.regenAccum || 0) + (f.hp - before);
-      f.regenFloatT = (f.regenFloatT || 0) + dt;
-      if (f.regenFloatT >= 1.0 && f.regenAccum >= 1) {
-        spawnFloat(f.x, f.y - FIGHTER_SIZE, '+' + Math.round(f.regenAccum), healColor(f));
-        f.regenAccum = 0; f.regenFloatT = 0;
-      }
-    }
+    // Priest: Divine Grace — heals on each cast now (see fireAbility 'lightning'),
+    // not a continuous regen.
     // Berserker: Bloodrage — +rageBoost% speed when below 50% hp.
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
     if (f.ability === 'tackle') {
