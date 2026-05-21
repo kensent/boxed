@@ -113,7 +113,272 @@ const Audio = (() => {
   }
 
   // --- sound definitions ----------------------------------------------------
-  const SOUNDS = {};
+  // Rebuilt from scratch per AUDIO.md: every fighter's sounds draw from one
+  // material identity, and abilities follow the windup -> crack -> tail grammar.
+  let _lastContactT = -1;
+  const SOUNDS = {
+    // ===== Ability casts / releases — "the fighter IS the sound" ===========
+
+    // Berserker — raw flesh + blood. Launch whoosh: meaty lean + low body grunt.
+    tackle() {
+      noise(0.18, 0.22, 'lowpass', 520, { filterGlideTo: 150 });
+      tone(125, 0.18, 'sawtooth', 0.16, { glideTo: 64 });
+    },
+    // Knight — heavy plate steel. Deep clang with a resonant ring-down tail.
+    sword() {
+      noise(0.05, 0.20, 'bandpass', 1800);
+      tone(330, 0.30, 'triangle', 0.18, { glideTo: 235 });
+      tone(660, 0.42, 'sine', 0.07);
+    },
+    // Duelist — sharp drawn steel. Thin, bright, precise ring.
+    riposte() {
+      noise(0.04, 0.14, 'bandpass', 4200);
+      tone(2200, 0.18, 'triangle', 0.13, { glideTo: 1500 });
+      tone(3000, 0.20, 'sine', 0.05);
+    },
+    // Reaper — hollow bone scythe. Crescent hiss sweep + a dry bone crack.
+    sweep() {
+      noise(0.24, 0.18, 'bandpass', 1300, { filterGlideTo: 700 });
+      tone(280, 0.16, 'triangle', 0.12, { glideTo: 150 });
+    },
+    // Jester — ceramic mask. Hollow brittle pop on a dissonant interval.
+    blink() {
+      tone(900, 0.11, 'sine', 0.11, { glideTo: 1400 });
+      tone(1320, 0.11, 'sine', 0.07, { glideTo: 620 });
+      noise(0.04, 0.10, 'bandpass', 3000);
+    },
+    // Necromancer — dried bone. Hollow rattle + a dead, ring-less thunk.
+    raise() {
+      noise(0.16, 0.16, 'bandpass', 1600, { filterGlideTo: 600 });
+      tone(180, 0.18, 'triangle', 0.11, { glideTo: 88 });
+    },
+    // Witch — toxic organic. Wet dissonant hiss with an unstable rising pitch.
+    hex() {
+      noise(0.20, 0.13, 'bandpass', 900, { filterGlideTo: 1700 });
+      tone(420, 0.24, 'sawtooth', 0.10, { glideTo: 360 });
+      tone(610, 0.24, 'sawtooth', 0.06, { glideTo: 690 });
+    },
+    // Archer — wood + taut string. Bowstring snap + a thin rising whistle.
+    arrow() {
+      noise(0.05, 0.16, 'bandpass', 2800);
+      tone(1200, 0.12, 'triangle', 0.08, { glideTo: 2000 });
+    },
+    // Hunter — steel cable. Coiled whir + rising metallic tension on the throw.
+    grapple() {
+      noise(0.10, 0.14, 'bandpass', 1600);
+      tone(260, 0.14, 'square', 0.10, { glideTo: 520 });
+    },
+    // Wizard — arcane crystal. Glassy ascending shimmer + a crystalline tick.
+    cast() {
+      tone(660, 0.24, 'sine', 0.12, { glideTo: 1320 });
+      tone(990, 0.24, 'sine', 0.07, { glideTo: 1980 });
+      noise(0.03, 0.05, 'highpass', 6000);
+    },
+    // Sapper — dark metal casing. The set-down: a small mechanical arming click.
+    mine() {
+      noise(0.05, 0.10, 'bandpass', 2000);
+      tone(400, 0.06, 'square', 0.08, { glideTo: 300 });
+    },
+    // Gambler — ivory dice. The roll starts: a bright tumbling clatter.
+    wildcard() {
+      tone(520, 0.10, 'square', 0.10, { glideTo: 820 });
+      noise(0.06, 0.10, 'bandpass', 2500);
+    },
+
+    // ----- windup textures (charged abilities) -----------------------------
+
+    // Priest — holy resonance. Warm rising charge toward the bell release.
+    chargeUp() {
+      tone(440, 0.42, 'sine', 0.09, { glideTo: 1320, attack: 0.25 });
+      tone(880, 0.42, 'sine', 0.04, { glideTo: 2640, attack: 0.25 });
+    },
+    // Cannoneer — iron + gunpowder. Low rising rumble that tightens to the boom.
+    chargeBig() {
+      tone(60, 0.90, 'sawtooth', 0.10, { glideTo: 200, attack: 0.5 });
+      noise(0.90, 0.05, 'lowpass', 200, { filterGlideTo: 520 });
+    },
+    // Ronin — fine drawn steel. A single rising tension hum, clean and quiet.
+    iai() {
+      tone(1200, 0.50, 'sine', 0.08, { glideTo: 2400, attack: 0.30 });
+    },
+
+    // ----- release / strike beats for charged + channel abilities ----------
+
+    // Priest lightning bolt — a warm golden bell with a bright leading crack.
+    lightning() {
+      noise(0.07, 0.12, 'highpass', 3000);
+      tone(1320, 0.30, 'sine', 0.14, { glideTo: 660 });
+      tone(1980, 0.30, 'sine', 0.06, { glideTo: 990 });
+    },
+    // Cannoneer shot — a massive concussive boom: hard crack + deep sub.
+    cannon() {
+      noise(0.05, 0.32, 'highpass', 2000);
+      noise(0.40, 0.50, 'lowpass', 800, { filterGlideTo: 70 });
+      tone(90, 0.45, 'square', 0.35, { glideTo: 36 });
+    },
+    // Ronin iai cut — a thin whisper-crack and a single clean note.
+    iaiStrike() {
+      noise(0.06, 0.22, 'highpass', 5000, { filterGlideTo: 2000 });
+      tone(2600, 0.14, 'sine', 0.11, { glideTo: 1800 });
+    },
+    // Warlock drain beam — void absorption: low sub-bass, no bright content.
+    // Sustained across the 1.2s channel (the one held sound, by design).
+    drain() {
+      tone(70, 1.2, 'sine', 0.10, { glideTo: 110, attack: 0.10 });
+      tone(160, 1.2, 'sawtooth', 0.05, { glideTo: 130 });
+      noise(1.2, 0.03, 'lowpass', 400);
+    },
+
+    // ----- Gambler sub-sounds ----------------------------------------------
+
+    // Die settles on its face — a hard ivory clack.
+    diceLand() {
+      noise(0.06, 0.16, 'bandpass', 2200);
+      tone(200, 0.07, 'square', 0.14, { glideTo: 110 });
+    },
+    // High roll (5-6) — the clack plus a bright rising sparkle (lucky).
+    diceLandBig() {
+      noise(0.06, 0.16, 'bandpass', 2400);
+      tone(200, 0.08, 'square', 0.16, { glideTo: 110 });
+      tone(900, 0.22, 'triangle', 0.12, { glideTo: 1800 });
+    },
+    // A thrown coin — bright metallic ting with a quick upward flip.
+    coinThrow() {
+      tone(1600, 0.10, 'triangle', 0.09, { glideTo: 2200 });
+      tone(2400, 0.06, 'sine', 0.04);
+    },
+
+    // ----- Hunter reel ------------------------------------------------------
+
+    // The hook lands and reels — a hard cable clink with a low pulling tug.
+    yank() {
+      tone(200, 0.16, 'square', 0.16, { glideTo: 480 });
+      noise(0.08, 0.16, 'bandpass', 2400);
+    },
+
+    // ===== Reactions ========================================================
+
+    // Duelist parry — the brightest, cleanest steel deflection in the game.
+    parry() {
+      tone(2800, 0.16, 'triangle', 0.20, { glideTo: 1700 });
+      tone(3600, 0.10, 'sine', 0.10);
+    },
+    // Duelist counter-thrust — a sharp steel reply, smaller than the parry.
+    counter() {
+      tone(2000, 0.10, 'triangle', 0.14, { glideTo: 1200 });
+      noise(0.06, 0.10, 'bandpass', 3000);
+    },
+    // Jester dodge — a hollow ceramic whiff as the hit phases through.
+    negate() {
+      noise(0.14, 0.14, 'highpass', 2000, { filterGlideTo: 5000 });
+      tone(1400, 0.08, 'sine', 0.05, { glideTo: 2200 });
+    },
+    // Reaper Blood Harvest — a warm, faintly wet restorative pulse.
+    heal() {
+      tone(440, 0.20, 'sine', 0.10, { glideTo: 660 });
+      noise(0.10, 0.05, 'lowpass', 800);
+    },
+
+    // ===== Impacts ==========================================================
+
+    // Generic body-contact crack — damage-scaled: a chip barely registers, a
+    // heavy hit lands lower and harder. (Per-source material cracks: phase 2.)
+    hit(mag) {
+      const big = Math.min(1, (mag || 10) / 26);
+      noise(0.07 + big * 0.05, 0.16 + big * 0.18, 'lowpass', 1700 - big * 1100);
+      tone(120 - big * 45, 0.12 + big * 0.06, 'triangle', 0.12 + big * 0.12, { glideTo: 48 });
+    },
+
+    // ===== Arena ============================================================
+
+    // Wall bounce — a universal stone thud. Short, recedes under everything.
+    wall() {
+      noise(0.13, 0.24, 'lowpass', 500, { filterGlideTo: 90 });
+      tone(90, 0.12, 'square', 0.15, { glideTo: 44 });
+    },
+    // Fighter collision — a nearly inaudible dry click. Self-throttled so an
+    // overlap that spans several frames can't machine-gun into a buzz.
+    contact() {
+      const c = ac(); if (!c) return;
+      if (c.currentTime - _lastContactT < 0.08) return;
+      _lastContactT = c.currentTime;
+      noise(0.05, 0.06, 'lowpass', 420);
+    },
+
+    // ===== Lifecycle ========================================================
+
+    // Skeleton death burst — dry Necromancer bone shatter.
+    boneBurst() {
+      noise(0.18, 0.36, 'bandpass', 2000, { filterGlideTo: 280 });
+      tone(130, 0.22, 'sawtooth', 0.14, { glideTo: 48 });
+    },
+
+    // Per-fighter death voice — routed by archetype (AUDIO.md). Death is the
+    // ceiling: the archetype voice is bigger than the fighter's own material.
+    death(ability) {
+      if (ability === 'tackle' || ability === 'cannon' || ability === 'mine') {
+        // BURST — low concussive boom + shockwave sub-bass pressure release.
+        noise(0.50, 0.40, 'lowpass', 1400, { filterGlideTo: 70 });
+        tone(120, 0.50, 'sawtooth', 0.28, { glideTo: 40 });
+        tone(55, 0.55, 'sine', 0.22, { glideTo: 30 });
+      } else if (ability === 'sword' || ability === 'riposte' || ability === 'blink'
+              || ability === 'grapple' || ability === 'wildcard') {
+        // SHATTER — high crack into cascading bright fragments.
+        noise(0.06, 0.30, 'bandpass', 4000);
+        noise(0.40, 0.20, 'bandpass', 3000, { filterGlideTo: 600 });
+        [1600, 2100, 1300].forEach((fr, i) =>
+          setTimeout(() => tone(fr, 0.12, 'triangle', 0.08, { glideTo: fr * 0.7 }), i * 55));
+      } else if (ability === 'lightning' || ability === 'cast' || ability === 'hex'
+              || ability === 'drain') {
+        if (ability === 'drain') {
+          // DISSOLVE (Warlock) — void implodes inward, descending into sub-bass.
+          tone(200, 0.70, 'sine', 0.18, { glideTo: 40, attack: 0.20 });
+          tone(120, 0.70, 'sawtooth', 0.08, { glideTo: 30, attack: 0.20 });
+        } else {
+          // DISSOLVE — soft ascending swell, no hard transient.
+          tone(440, 0.60, 'sine', 0.16, { glideTo: 1320, attack: 0.30 });
+          tone(660, 0.60, 'sine', 0.10, { glideTo: 1980, attack: 0.30 });
+        }
+      } else if (ability === 'raise' || ability === 'sweep') {
+        // COLLAPSE — heavy thud + hollow settling. Reaper adds a wet resonance.
+        noise(0.30, 0.32, 'lowpass', 900, { filterGlideTo: 100 });
+        tone(150, 0.40, 'triangle', 0.18, { glideTo: 50 });
+        noise(0.30, 0.12, 'bandpass', 1400, { filterGlideTo: 500 });
+        if (ability === 'sweep') tone(300, 0.40, 'sine', 0.08, { glideTo: 120 });
+      } else if (ability === 'iai') {
+        // CUT — a single clean whisper-crack, held then fading to silence.
+        noise(0.50, 0.20, 'highpass', 4000, { filterGlideTo: 2500 });
+        tone(2400, 0.50, 'sine', 0.10, { glideTo: 1600 });
+      } else if (ability === 'arrow') {
+        // SCATTER — bowstring snap + 6 staggered light impacts raining down.
+        noise(0.06, 0.26, 'bandpass', 3000);
+        [1400, 1100, 1600, 900, 1300, 1000].forEach((fr, i) =>
+          setTimeout(() => { tone(fr, 0.10, 'triangle', 0.08); noise(0.05, 0.07, 'bandpass', 2500); }, i * 70));
+      } else {
+        // Fallback — generic heavy death.
+        noise(0.50, 0.40, 'lowpass', 1200, { filterGlideTo: 80 });
+        tone(300, 0.50, 'sawtooth', 0.20, { glideTo: 50 });
+      }
+    },
+
+    // K.O. boom — the ceiling. The single loudest, deepest sound in the mix.
+    koHit() {
+      noise(0.40, 0.55, 'lowpass', 1600, { filterGlideTo: 55 });
+      tone(140, 0.50, 'square', 0.40, { glideTo: 34 });
+      tone(65, 0.55, 'sine', 0.30, { glideTo: 28 });
+    },
+
+    // ===== UI ===============================================================
+    select() { tone(700, 0.08, 'sine', 0.16, { glideTo: 1000 }); },
+    start() {
+      tone(440, 0.14, 'square', 0.16, { glideTo: 660, exact: true });
+      setTimeout(() => tone(880, 0.18, 'square', 0.16, { exact: true }), 130);
+    },
+    win() {
+      [523, 659, 784, 1046].forEach((f, i) =>
+        setTimeout(() => tone(f, 0.30, 'triangle', 0.20, { exact: true }), i * 110));
+    },
+  };
 
   return {
     // play(name, arg, x) — optional x is an arena x-coordinate (0..arenaW);

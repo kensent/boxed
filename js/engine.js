@@ -990,6 +990,7 @@ function step(dt) {
         f.vy = Math.sin(ang) * f.speed;
         enemy.vx = -Math.cos(ang) * enemy.speed;
         enemy.vy = -Math.sin(ang) * enemy.speed;
+        sfx('contact', null, f.x); // near-inaudible click; self-throttled in audio
         // Contact damage removed — bodies bounce apart but deal no chip.
         // All damage now comes from abilities and the closing ring.
       }

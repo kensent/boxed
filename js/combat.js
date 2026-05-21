@@ -32,7 +32,7 @@ function damage(target, dmg, srcKind, src) {
     if (target.hp <= 0) {
       target.hp = 0;
       target.dead = true;
-      sfx('death', null, target.x);
+      sfx('death', target.ability, target.x);
       endGame();
     }
     return;
@@ -148,7 +148,7 @@ function damage(target, dmg, srcKind, src) {
   }
   if (target.hp <= 0) {
     target.dead = true;
-    sfx('death', null, target.x);
+    sfx('death', target.ability, target.x);
     endGame();
   }
   // Duelist: COUNTER — melee hits trigger an automatic counter-thrust back at the attacker.

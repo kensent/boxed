@@ -6,12 +6,13 @@
 // ============================================================================
 
 function fireAbility(f, enemy) {
-  // Cast sound — keyed off ability id. Windup abilities (lightning, cannon, iai)
-  // are handled at their resolution point instead, so the sound lands on the
-  // actual shot/strike rather than the start of the charge.
+  // Cast sound — keyed off ability id. Abilities that own their sound elsewhere
+  // are excluded here: windup abilities (lightning, cannon, iai) play at their
+  // resolution point so the sound lands on the actual shot/strike; cast/drain
+  // play inside their switch cases; wildcard plays when the die starts tumbling.
   if (f.ability !== 'lightning' && f.ability !== 'cannon' && f.ability !== 'iai'
-      && f.ability !== 'drain' && f.ability !== 'cast') {
-    sfx(f.ability === 'raise' ? 'scythe' : f.ability, null, f.x);
+      && f.ability !== 'drain' && f.ability !== 'cast' && f.ability !== 'wildcard') {
+    sfx(f.ability, null, f.x);
   } else if (f.ability === 'iai') {
     sfx('iai', null, f.x); // rising tension hum during the windup
   }
