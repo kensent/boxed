@@ -104,8 +104,8 @@ const Audio = (() => {
       limiter.threshold.setValueAtTime(-3, c.currentTime);
       limiter.knee.setValueAtTime(0, c.currentTime);
       limiter.ratio.setValueAtTime(20, c.currentTime);
-      limiter.attack.setValueAtTime(0.003, c.currentTime);
-      limiter.release.setValueAtTime(0.12, c.currentTime);
+      limiter.attack.setValueAtTime(0.001, c.currentTime);
+      limiter.release.setValueAtTime(0.08, c.currentTime);
       _master.connect(limiter);
       limiter.connect(c.destination);
     }
@@ -468,11 +468,13 @@ const Audio = (() => {
       }
     },
 
-    // K.O. boom — the ceiling. The single loudest, deepest sound in the mix.
+    // K.O. boom — the ceiling. Still the loudest single sound, but trimmed so it
+    // doesn't pin the limiter when it stacks with the killing blow + death voice
+    // (every KO fires all three on one frame). See the mix analysis.
     koHit() {
-      noise(0.40, 0.55, 'lowpass', 1600, { filterGlideTo: 55 });
-      tone(140, 0.50, 'square', 0.40, { glideTo: 34 });
-      tone(65, 0.55, 'sine', 0.30, { glideTo: 28 });
+      noise(0.40, 0.40, 'lowpass', 1600, { filterGlideTo: 55 });
+      tone(140, 0.50, 'square', 0.30, { glideTo: 34 });
+      tone(65, 0.55, 'sine', 0.24, { glideTo: 28 });
     },
 
     // ===== UI ===============================================================
