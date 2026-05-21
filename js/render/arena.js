@@ -458,6 +458,39 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'hex': {  // Witch — hat melts downward, toxic hex cloud spreads at the base
+      ctx.lineCap = 'round';
+      // 1) hat droops and sinks — tip extends back-down, body squashes, fades (gone by 0.48)
+      if (prog < 0.48) {
+        const sp = prog / 0.48;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp * sp;
+        ctx.translate(0, sp * 16);          // sinks down
+        ctx.transform(1, 0, -sp * 0.3, 1 - sp * 0.25, 0, 0);  // tip droops further back, body flattens
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) hex cloud — neon-green ring expanding from the brim (the curse dispersing outward)
+      const hp = Math.min(1, prog / 0.55), ha = 1 - hp;
+      ctx.strokeStyle = `rgba(125,255,61,${(ha * 0.75).toFixed(3)})`;
+      ctx.lineWidth = (3 - hp * 2) * ha + 0.3;
+      ctx.beginPath(); ctx.arc(0, 0, 6 + hp * 38, 0, Math.PI * 2); ctx.stroke();
+      // 2b) hex motes — 6 small curse-mark dots scattering from the ring as it expands
+      const mp = Math.min(1, prog / 0.6), ma = 1 - mp;
+      ctx.fillStyle = `rgba(80,220,30,${(ma * 0.7).toFixed(3)})`;
+      for (let i = 0; i < 6; i++) {
+        const g = (i / 6) * Math.PI * 2 + i * 0.5;
+        const r = 8 + mp * (22 + (i % 3) * 6);
+        ctx.beginPath(); ctx.arc(Math.cos(g) * r, Math.sin(g) * r, (2.5 - mp * 1.5) * ma + 0.3, 0, Math.PI * 2); ctx.fill();
+      }
+      // 3) residue — neon-green toxic puddle at base + faint brim line lying flat
+      ctx.fillStyle = `rgba(100,210,40,${(a * 0.22).toFixed(3)})`;
+      ctx.beginPath(); ctx.ellipse(0, 8, 18 * a + 4, 6 * a + 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(45,74,42,${(a * 0.45).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-FIGHTER_SIZE * 0.9, 10 + a * 4); ctx.lineTo(FIGHTER_SIZE * 0.9, 10 + a * 4); ctx.stroke();
+      break;
+    }
     case 'cast': {  // Wizard — arcane collapse: orbs wink out, book flickers then implodes
       ctx.lineCap = 'round';
       // 1) book flickers like a guttering flame then implodes (scale to zero) — gone by 0.48
