@@ -372,6 +372,13 @@ const Audio = (() => {
           break;
       }
     },
+    // Cannoneer INCENDIARY burn tick — a soft fire crackle each 0.2s tick. Low
+    // and short on purpose: the ~5-tick burst should read as a sizzle, never a
+    // sharp crack machine-gunning (that's why DoT ticks normally stay quiet).
+    burn() {
+      noise(0.08, 0.09, 'highpass', 2400, { filterGlideTo: 3600 });
+      noise(0.05, 0.05, 'bandpass', 1200);
+    },
 
     // ===== Arena ============================================================
 

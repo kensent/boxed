@@ -1243,6 +1243,7 @@ function step(dt) {
       const target = h.team === 'red' ? blue : red;
       if (!target.dead && dist(h, target) < h.radius) {
         damage(target, 1, 'hazard');
+        sfx('burn', null, h.x); // soft fire crackle per tick
       }
     }
     return true;

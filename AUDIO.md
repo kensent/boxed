@@ -127,9 +127,11 @@ hit's magnitude (`big`, 0..1):
   splat · coin ding · orb rune-pop · lightning zap · hook clink · bone clack ·
   mine casing-crack + pressure. Each plays at its `spawnImpact` site so kind is known.
 
-Continuous damage (fog, drain, hazard/incendiary ticks) stays crack-less by design —
-a DoT ticking a discrete crack would machine-gun. The drain beam drone covers its
-own channel; fog/hazard are carried by their visuals.
+Continuous damage never ticks a *sharp* crack — that would machine-gun. Fog and
+drain stay crack-less (the drain beam drone covers its own channel; fog rides its
+visual). The incendiary burn is the one exception: each 0.2s tick plays a soft, low
+fire crackle (`burn`) tuned to read as a sizzle, not an impact — the sustained
+hiss of standing in fire, not five little explosions.
 
 ### Arena sounds
 Arena interactions are universal (not fighter-specific) and stay in the
