@@ -458,6 +458,45 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'wildcard': {  // Gambler — die tumbles its last then shatters: corner shards + pip residue
+      ctx.lineCap = 'round';
+      // 1) wild tumble — uncontrolled spin accelerating off the table edge (gone by 0.35)
+      if (prog < 0.35) {
+        const sp = prog / 0.35;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.rotate(sp * sp * Math.PI * 2.2);   // accelerates (sp² = slow then fast)
+        ctx.scale(1 - sp * 0.25, 1 - sp * 0.25);
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) gold leading-edge flash — the face that cracked first
+      const gp = Math.min(1, prog / 0.25), ga = 1 - gp;
+      const s = FIGHTER_SIZE * 0.82;
+      ctx.strokeStyle = `rgba(255,210,61,${(ga * 0.95).toFixed(3)})`;
+      ctx.lineWidth = (4 - gp * 3) * ga + 0.4;
+      ctx.beginPath(); ctx.moveTo(s*0.6, -s); ctx.lineTo(s, s*0.7); ctx.stroke();
+      // 2b) corner shards — 4 cream fragments from the die's vertices
+      const cp = Math.min(1, prog / 0.5), ca = 1 - cp;
+      const corners = [{x:-s,y:-s*0.7},{x:s*0.6,y:-s},{x:s,y:s*0.7},{x:-s*0.6,y:s}];
+      ctx.fillStyle = `rgba(245,240,224,${(ca * 0.85).toFixed(3)})`;
+      corners.forEach((c2, i) => {
+        const fly = 1 + cp * (0.6 + i * 0.15);
+        ctx.save(); ctx.translate(c2.x * fly, c2.y * fly); ctx.rotate(cp * Math.PI * (i % 2 === 0 ? 0.8 : -0.6));
+        ctx.beginPath(); ctx.moveTo(-3,-2); ctx.lineTo(3,-2); ctx.lineTo(0,4); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      });
+      // 3) residue — 5 pip dots in a loose 5-face layout, slowly fading (the luck, scattered)
+      ctx.fillStyle = `rgba(200,190,160,${(a * 0.6).toFixed(3)})`;
+      const pipPos = [[-12,-8],[12,-8],[0,0],[-12,8],[12,8]];
+      pipPos.forEach(([px,py]) => {
+        ctx.beginPath(); ctx.arc(px, py, 2.5 * a + 0.3, 0, Math.PI * 2); ctx.fill();
+      });
+      // lone gold pip — the winning face pip that didn't save him
+      ctx.fillStyle = `rgba(255,210,61,${(a * 0.4).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 2 * a + 0.3, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
     case 'grapple': {  // Hunter — steel hook snaps: whips back, fractures at the bend, barb flies forward
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
