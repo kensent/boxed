@@ -826,11 +826,12 @@ function step(dt) {
     if (f.ability === 'lightning' && f.hp < f.maxHp) {
       const before = f.hp;
       f.hp = Math.min(f.maxHp, f.hp + f.healRate * dt);
-      // Continuous regen — accumulate and pop a periodic "+N" heal float (a float
-      // per frame would be 60/s). Visual only (regenAccum/regenFloatT unread by sim).
+      // Continuous regen — accumulate and pop a "+N" heal float once a second, so
+      // it reads as the card's "{healRate} hp/s" (one float = the per-second heal).
+      // Visual only (regenAccum/regenFloatT unread by sim).
       f.regenAccum = (f.regenAccum || 0) + (f.hp - before);
       f.regenFloatT = (f.regenFloatT || 0) + dt;
-      if (f.regenFloatT >= 0.8 && f.regenAccum >= 1) {
+      if (f.regenFloatT >= 1.0 && f.regenAccum >= 1) {
         spawnFloat(f.x, f.y - FIGHTER_SIZE, '+' + Math.round(f.regenAccum), healColor(f));
         f.regenAccum = 0; f.regenFloatT = 0;
       }
