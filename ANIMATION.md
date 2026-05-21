@@ -110,13 +110,13 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   LOADED is a momentary **"lucky" pop** (a trigger marker, not a state).
 
 ### Death ceremony
-**Shared frame** (always), as a sequence: on the kill a white **camera-snap** fires
-and the body **freezes** intact while the follow-camera pushes in on it (kill-cam);
-once the camera arrives the body **shatters** (the per-fighter undoing below) as the
-**K.O.** punches in and the death voice + boom land — so the hit reads as one beat
-instead of the audio/animation leading during the push-in. Slow-mo (sim `timeScale`)
-runs under all of it. Death is the ceiling (principle 5) — each fighter dies in a way
-no other does.
+**Shared frame** (always), as a sequence: on the kill the body **freezes** intact
+while the follow-camera pushes in on it (kill-cam); once the camera arrives the body
+**shatters** (the per-fighter undoing below, over a fixed beat) as the white
+**camera-snap**, the **K.O.** punch-in, the death voice and the boom all land
+together — so the hit reads as one beat instead of leading the visual during the
+push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
+(principle 5) — each fighter dies in a way no other does.
 
 **Three-layer grammar** — every bespoke death has exactly these layers in order:
 1. **Sprite transform** — the body makes one last move before vanishing (convulse, tumble,

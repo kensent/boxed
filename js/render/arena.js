@@ -1483,14 +1483,18 @@ function draw() {
     if (game.koArriveAt == null) {
       const centered = Math.hypot(camera.x - loser.x, camera.y - loser.y) < 12
                     && (CAM_KILL - camera.zoom) < 0.07;
-      if (centered || game.koTimer < 0.6) {
+      const elapsed = FINISH_WINDOW - game.koTimer;   // real time since the kill
+      if (centered || elapsed > KILLCAM_MAX_PUSH) {
         game.koArriveAt = game.koTimer;
-        sfx('death', loser.ability, loser.x);  // death voice, synced to the shatter
-        sfx('koHit');                           // K.O. boom lands with the graphic
+        game.flashFrame = 0.12;                 // camera-snap flash, on the shatter
+        sfx('death', loser.ability, loser.x);   // death voice, synced to the shatter
+        sfx('koHit');                            // K.O. boom lands with the graphic
       }
     }
     const started = game.koArriveAt != null;
-    const prog = started ? Math.min(1, 1 - game.koTimer / game.koArriveAt) : 0;
+    // Death plays over a fixed DEATH_DUR measured from arrival — full beat every
+    // kill, not compressed into whatever's left of the window.
+    const prog = started ? Math.min(1, (game.koArriveAt - game.koTimer) / DEATH_DUR) : 0;
 
     drawDeath(loser, prog);   // prog 0 = the body frozen at the kill instant
 
@@ -1503,7 +1507,7 @@ function draw() {
       if (age < 0.16) scale = 2.6 - (age / 0.16) * 1.7;            // 2.6 → 0.9
       else if (age < 0.28) scale = 0.9 + ((age - 0.16) / 0.12) * 0.1; // settle to 1
       else scale = 1;
-      const alpha = game.koTimer < 0.3 ? game.koTimer / 0.3 : 1;
+      const alpha = game.finishTimer < 0.3 ? game.finishTimer / 0.3 : 1;
       const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // leave camera space → screen space

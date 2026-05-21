@@ -37,6 +37,11 @@ const CAM_MIN = 1.0, CAM_COMFORT = 1.45, CAM_PAD = 80;
 // the camera moves (bigger = holds still more). CAM_KILL: kill-cam zoom on the
 // finish. Smoothing time constants (seconds) — smaller = snappier; one per channel.
 const CAM_DEADZONE = 0.55, CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
+// Finish/kill-cam timing (real seconds): the body holds frozen until the kill-cam
+// arrives (or KILLCAM_MAX_PUSH elapses, a fallback), then the death plays over a
+// fixed DEATH_DUR — so every kill, melee or ranged, gets its full beat instead of
+// racing the clock. FINISH_WINDOW is the total before the winner overlay.
+const FINISH_WINDOW = 2.0, DEATH_DUR = 1.2, KILLCAM_MAX_PUSH = 0.8;
 const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;

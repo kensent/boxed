@@ -16,7 +16,7 @@ function endGame() {
   // so it punches and floats off normally instead of freezing mid-burst.
   // Resolve open floats and clamp life so they expire before the loop stops.
   // floatTexts use sim time; with timeScale=0.18 a 0.8s float needs ~4.4s real
-  // time to expire, but finishTimer is 1.6s — so clamp to 0.25 sim-seconds
+  // time to expire, but the finish window is ~2s — so clamp to 0.25 sim-seconds
   // (~1.4s real at 0.18x), comfortably within the finish window.
   game.floatTexts.forEach(ft => {
     if (ft.open) { ft.open = false; ft.age = 0; }
@@ -28,15 +28,16 @@ function endGame() {
     f.iaiStrike = 0; f.iaiWindup = 0;
     f.tetherTimer = 0; f.tetherTarget = null;
   });
-  // Cinematic finish: slow-mo ramp + a "K.O." punch, then the overlay.
-  game.finishTimer = 1.6;     // longer window so the slow-mo beat can breathe
-  game.timeScale = 0.18;      // drops to near-frozen, ramps back up over the window
-  game.flashFrame = 0.12;     // white camera-snap frame at the kill
-  shake(14);                  // the heaviest shake in the game — it's the K.O.
-  game.koTimer = 1.2;         // "K.O." graphic lifetime
-  // The death sound + the koHit boom fire when the kill-cam arrives and the body
-  // shatters (see the finish block in draw()), not here at the kill instant — so
-  // the audio lands with the visual instead of leading it during the push-in.
+  // Cinematic finish: slow-mo ramp, kill-cam push-in, then the shatter. The body
+  // holds frozen until the kill-cam arrives; then the death + "K.O." + camera-snap
+  // flash + sound all fire together (see the finish block in draw()) — nothing
+  // leads the visual.
+  game.finishTimer = FINISH_WINDOW;
+  game.timeScale = 0.18;        // drops to near-frozen, ramps back up over the window
+  shake(14);                    // the heaviest shake in the game — it's the K.O.
+  game.koTimer = FINISH_WINDOW; // death-block lifetime; finishTimer ends the finish
+  // (flashFrame, the koHit boom, and the death voice are all triggered at the
+  //  shatter in draw(), not here at the kill instant.)
 }
 
 function showWinnerOverlay() {

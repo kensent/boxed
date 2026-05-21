@@ -54,8 +54,10 @@
 - **The finish is a sequence, and the death voice + K.O. boom fire from `draw()`, not
   the sim path.** On the kill the body holds frozen (death at frame 0) until the
   kill-cam has pushed in on the loser (`game.koArriveAt` captured at arrival); only
-  then does it shatter, and the `death`/`koHit` sfx are triggered *there* (in the
-  finish block of `draw()`) so the audio lands with the shatter instead of leading it
-  during the push-in. Don't "tidy" those sfx back into `combat.js`/`endGame` — that
-  reintroduces the desync. Safe because `draw()` never runs headless and `sfx` is
-  headless-guarded regardless.
+  then does it shatter, and the camera-snap `flashFrame` + the `death`/`koHit` sfx are
+  all triggered *there* (in the finish block of `draw()`) so the snap/audio land with
+  the shatter instead of leading it during the push-in. Don't "tidy" the flash or
+  those sfx back into `combat.js`/`endGame` — that reintroduces the desync. Safe
+  because `draw()` never runs headless and `sfx` is headless-guarded regardless.
+  Death progress is a fixed `DEATH_DUR` measured from arrival (not the leftover
+  window), so every kill gets its full beat; `FINISH_WINDOW` is the total.
