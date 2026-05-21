@@ -130,8 +130,9 @@ function damage(target, dmg, srcKind, src) {
       // is still on screen, spawn ABOVE it so successive bursts stack into a
       // readable column instead of overlapping.
       let spawnY = target.y - FIGHTER_SIZE;
-      if (target.dmgFloat && target.dmgFloat.life > 0) {
-        spawnY = Math.min(spawnY, target.dmgFloat.y - 16);
+      const prevFloat = target.dmgFloat;
+      if (prevFloat && prevFloat.life > 0 && prevFloat.y > target.y - FIGHTER_SIZE - 52) {
+        spawnY = Math.min(spawnY, prevFloat.y - 16);
       }
       const f = { x: target.x, y: spawnY, vy: -40, life: 0.8,
                   text: '-' + Math.ceil(dmg), color: target.team === 'red' ? '#ff2e2e' : '#2e9eff',

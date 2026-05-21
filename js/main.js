@@ -14,7 +14,14 @@ function endGame() {
   game.skeletons = [];
   // Resolve any still-"open" debounced damage float (e.g. the killing blow's)
   // so it punches and floats off normally instead of freezing mid-burst.
-  game.floatTexts.forEach(ft => { if (ft.open) { ft.open = false; ft.age = 0; } });
+  // Resolve open floats and clamp life so they expire before the loop stops.
+  // floatTexts use sim time; with timeScale=0.18 a 0.8s float needs ~4.4s real
+  // time to expire, but finishTimer is 1.6s — so clamp to 0.25 sim-seconds
+  // (~1.4s real at 0.18x), comfortably within the finish window.
+  game.floatTexts.forEach(ft => {
+    if (ft.open) { ft.open = false; ft.age = 0; }
+    ft.life = Math.min(ft.life, 0.25);
+  });
   // Cancel any in-progress channel/strike on either fighter for the same reason.
   [game.red, game.blue].forEach(f => {
     f.drainTimer = 0; f.drainTarget = null;
