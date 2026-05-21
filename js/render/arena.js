@@ -206,6 +206,56 @@ function drawDeath(f, prog) {
       }
       break;
     }
+    case 'blink': {  // Jester — mask cracks down the centre: two halves clip-split and spin apart
+      ctx.lineCap = 'round';
+      // 1) two halves clip + spin outward in opposite directions — gone by 0.44
+      if (prog < 0.44) {
+        const sp = prog / 0.44;
+        const hinge = sp * sp * FIGHTER_SIZE * 1.8;  // accelerating split
+        const spin  = sp * Math.PI * 0.75;           // each half rotates ~135°
+        const hal = FIGHTER_SIZE * 2;
+        // Red left half — clips x≤0, slides left, spins CCW
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.save(); ctx.beginPath(); ctx.rect(-hal, -hal, hal, hal * 2); ctx.clip();
+        ctx.translate(-hinge, 0); ctx.rotate(-spin);
+        drawShape(ctx, f, 0); ctx.restore();
+        // Blue right half — clips x≥0, slides right, spins CW
+        ctx.save(); ctx.beginPath(); ctx.rect(0, -hal, hal, hal * 2); ctx.clip();
+        ctx.translate(hinge, 0); ctx.rotate(spin);
+        drawShape(ctx, f, 0); ctx.restore();
+        ctx.restore();
+      }
+      // 2) crack flash — a bright vertical slash at x=0, fast (the moment of split)
+      const cp = Math.min(1, prog / 0.22), ca = 1 - cp;
+      ctx.strokeStyle = `rgba(240,220,180,${(ca * 0.95).toFixed(3)})`;
+      ctx.lineWidth = (3 - cp * 2) * ca + 0.3;
+      ctx.beginPath(); ctx.moveTo(0, -FIGHTER_SIZE); ctx.lineTo(0, FIGHTER_SIZE); ctx.stroke();
+      // diamond motes — red left, blue right, flying off from the split
+      const dp = Math.min(1, prog / 0.5), da = 1 - dp;
+      for (let i = 0; i < 4; i++) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const yOff = ((i >> 1) - 0.5) * 14;
+        const xPos = side * (6 + dp * (12 + i * 5));
+        const yPos = yOff * (1 + dp * 0.6);
+        const sz = (2.5 - i * 0.3) * da;
+        ctx.fillStyle = side < 0 ? `rgba(255,46,46,${da.toFixed(3)})` : `rgba(46,158,255,${da.toFixed(3)})`;
+        ctx.save(); ctx.translate(xPos, yPos); ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-sz, -sz, sz * 2, sz * 2); ctx.restore();
+      }
+      // 3) residue — 3 red shards left, 3 blue shards right, slow fade
+      for (let i = 0; i < 6; i++) {
+        const side = i < 3 ? -1 : 1;
+        const ii   = i % 3;
+        const rr   = 12 + Math.min(1, prog / 0.4) * 14 + ii * 5;
+        const g    = side < 0 ? (Math.PI * 0.6 + ii * 0.55) : (Math.PI * 2.4 - ii * 0.55);
+        const sz   = (2 - ii * 0.3) * a * 0.7;
+        ctx.fillStyle = side < 0 ? `rgba(255,46,46,${(a * 0.5).toFixed(3)})` : `rgba(46,158,255,${(a * 0.5).toFixed(3)})`;
+        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-sz, -sz, sz * 2, sz * 2); ctx.restore();
+      }
+      break;
+    }
     case 'riposte': {  // Duelist — rapier snaps: final parry spin then blade segments fly along the axis
       const fc = f.lastFacing || 0;
       ctx.lineCap = 'round';
