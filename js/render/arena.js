@@ -458,6 +458,53 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'grapple': {  // Hunter — steel hook snaps: whips back, fractures at the bend, barb flies forward
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      // 1) hook whips backward — fast spin as if the line snapped (gone by 0.36)
+      if (prog < 0.36) {
+        const sp = prog / 0.36;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.rotate(fc - sp * Math.PI * 1.8);   // whips back ~324°
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) fracture flash — bright silver arc at the bend point (where a curved hook breaks)
+      const fp = Math.min(1, prog / 0.28), fa = 1 - fp;
+      const bendX = Math.cos(fc) * 8, bendY = Math.sin(fc) * 8;
+      ctx.strokeStyle = `rgba(220,224,232,${(fa * 0.95).toFixed(3)})`;
+      ctx.lineWidth = (4 - fp * 3) * fa + 0.4;
+      // arc sweep at the bend — follows the curve of the hook geometry
+      ctx.beginPath(); ctx.arc(bendX, bendY, 6 + fp * 10, fc - Math.PI * 0.6, fc + Math.PI * 0.4); ctx.stroke();
+      // 2b) steel shards — 4 fragments flying outward from the fracture point
+      const sp2 = Math.min(1, prog / 0.5), sa = 1 - sp2;
+      ctx.strokeStyle = `rgba(184,188,196,${(sa * 0.8).toFixed(3)})`;
+      ctx.lineWidth = (2 - sp2) * sa + 0.3;
+      for (let i = 0; i < 4; i++) {
+        const g = fc + (i / 4) * Math.PI * 1.6 - Math.PI * 0.8;  // forward arc spread
+        const r0 = 4 + sp2 * 6, r1 = r0 + 6 + sp2 * (10 + i * 4);
+        ctx.beginPath(); ctx.moveTo(bendX + Math.cos(g)*r0, bendY + Math.sin(g)*r0);
+        ctx.lineTo(bendX + Math.cos(g)*r1, bendY + Math.sin(g)*r1); ctx.stroke();
+      }
+      // 2c) copper barb tip snaps off forward — flies past the fracture point
+      const bp = Math.min(1, prog / 0.55), ba = 1 - bp;
+      const tipX = Math.cos(fc) * (14 + bp * 22), tipY = Math.sin(fc) * (14 + bp * 22);
+      ctx.strokeStyle = `rgba(200,144,96,${(ba * 0.85).toFixed(3)})`;
+      ctx.lineWidth = 2.5 * ba + 0.3;
+      ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(tipX + Math.cos(fc)*8, tipY + Math.sin(fc)*8); ctx.stroke();
+      // 3) residue — shank stub at origin + copper barb shard forward
+      ctx.strokeStyle = `rgba(90,90,96,${(a * 0.6).toFixed(3)})`;
+      ctx.lineWidth = 3.5 * a + 0.3;
+      ctx.beginPath(); ctx.moveTo(Math.cos(fc+Math.PI)*4, Math.sin(fc+Math.PI)*4);
+      ctx.lineTo(Math.cos(fc+Math.PI)*16, Math.sin(fc+Math.PI)*16); ctx.stroke();
+      ctx.fillStyle = `rgba(200,144,96,${(a * 0.5).toFixed(3)})`;
+      const rx = Math.cos(fc)*28, ry = Math.sin(fc)*28;
+      ctx.save(); ctx.translate(rx, ry); ctx.rotate(fc);
+      ctx.beginPath(); ctx.moveTo(-3,-2); ctx.lineTo(4,0); ctx.lineTo(-3,2); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      break;
+    }
     default: {  // generic shatter — fighters not yet given a bespoke death
       if (prog < 0.55) {
         const bp = prog / 0.55, da = 1 - bp;
