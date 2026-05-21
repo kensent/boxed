@@ -104,15 +104,38 @@ windup character; the crack and tail are universal.
 - **Impact crack** — the moment of contact. This is the loudest, shortest element:
   a sharp transient whose character matches the material. Steel cracks bright;
   bone cracks hollow; flesh cracks wet and low; void makes no crack — it absorbs
-  (a reverse-envelope silence-notch).
+  (a reverse-envelope silence-notch). For melee, the windup (swing) and the crack
+  (contact) are *two triggers* a beat apart: the dashers (Berserker/Knight/Duelist/
+  Reaper) swing at launch and crack on connect — so a whiff sounds the swing with
+  no crack. Jester (teleport) and Ronin (iai) fold the crack into their single
+  strike sound, so they don't double up. See the force-shape mirror below.
 - **Resonance tail** — what the material does after impact. Steel rings down with
   a decaying harmonic. Bone settles with a short rattle. Arcane energy shimmers
   up then fades. Void closes with a sub-bass thud. The tail is where material
   identity is most audible — a hit that cuts off instantly has no identity.
 
+### Impact cracks — the force-shape mirror
+The crack is the audio twin of the visual force-shape (ANIMATION.md). Melee cracks
+(`hit`, routed by the attacker's ability) carry the fighter's material; projectile,
+trap, and minion impacts route through one `impact({kind, big})` dispatcher — one
+primitive per kind, mirroring `spawnImpact`/`drawImpact`. Volume scales with the
+hit's magnitude (`big`, 0..1):
+
+- **Melee** — flesh thud (Berserker) · flat steel bash (Knight) · thin puncture
+  (Duelist) · dry bone arc (Reaper). Jester/Ronin: no separate crack (see above).
+- **Projectile / trap / minion** — arrow puncture · cannon concussion · hex wet
+  splat · coin ding · orb rune-pop · lightning zap · hook clink · bone clack ·
+  mine casing-crack + pressure. Each plays at its `spawnImpact` site so kind is known.
+
+Continuous damage (fog, drain, hazard/incendiary ticks) stays crack-less by design —
+a DoT ticking a discrete crack would machine-gun. The drain beam drone covers its
+own channel; fog/hazard are carried by their visuals.
+
 ### Arena sounds
 Arena interactions are universal (not fighter-specific) and stay in the
-background:
+background. Both are **self-throttled inside `audio.js`** (an ~80 ms gate keyed on
+`AudioContext.currentTime`, never sim state) so corner jitter or a multi-frame body
+overlap can't stutter them into a buzz:
 
 - **Wall bounce** — a stone thud: short lowpass noise + heavy sub-fundamental tone,
   fast decay (~120–140 ms). Quiet enough to never override ability sounds.
@@ -146,6 +169,26 @@ own material, because death is bigger than the fighter:
 - **SCATTER** (Archer) — a bowstring snap (bandpass crack) followed by 6 small
   staggered impact tones, simulating arrows raining down. Light, bright, many-
   bodied. The only death sound with a distinct multi-event tail.
+
+### Defensive responses & state cues
+The audio twin of the on-fighter state indicators (ANIMATION.md). An *active
+defensive response* — the moment a hit is mitigated — always sounds, in the
+defender's material; a *passive ongoing state* generally doesn't (its visual
+carries it), with key transitions getting a one-shot cue:
+
+- **Defensive responses (audible).** Jester dodge = hollow ceramic whiff (`negate`)
+  · Duelist parry = bright steel deflect (`parry`) · Knight Plate Armor = dull
+  steel deflect clank (`armor`) · Wizard Mana Shield = glassy arcane absorb as an
+  orb spends out (`shield`). Armor/shield are gated off drain/hazard DoT so a
+  continuous tick can't machine-gun them.
+- **State transitions (one-shot cue).** Berserker Bloodrage = a rising primal growl
+  the instant HP crosses below 50% (`bloodrage`, fires once on activation) · the
+  closing ring beginning = a single low ominous swell at `RING_START` (`ringClose`,
+  one-shot). Skeleton dying alone = a soft bone crumble (`boneCrumble`); when its
+  death-burst catches an enemy it escalates to `boneBurst`.
+- **Silent states.** Stun, Witch's-mark, slow, FOCUS, LOADED — their visual forms
+  carry them; no standing audio. The one-shot flags driving the cues above
+  (`game.ringWarned`, `f.rageWasActive`) are audio-only — gameplay never reads them.
 
 ### Two rules under all of it
 1. **Balance-safe.** `sfx()` is headless-guarded — it returns immediately when
