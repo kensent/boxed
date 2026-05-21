@@ -13,6 +13,12 @@
 6. Sprites: faceted/straight-line shapes read crisp at 64px. Judge them
    in-fight, not just in the gallery. Lead with the shape that says the
    fighter's identity instantly.
+7. Frame for the vertical Shorts format. A static full-arena view leaves the
+   fighters too small to read on a fast scroll, so a follow-camera tracks the
+   fighters' midpoint at a comfortable zoom, only widening when they spread far
+   apart. It's purely a render concern — the camera reads positions but never
+   feeds the simulation, so framing changes can't affect balance. (Mechanics in
+   GOTCHAS.md; tunables in `engine.js`.)
 
 ## Roster
 
