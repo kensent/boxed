@@ -668,8 +668,8 @@ function stopGame() { if (game) game.over = true; }
 function updateHp() {
   document.getElementById('hp-red').style.width = Math.max(0, (game.red.hp/game.red.maxHp)*100) + '%';
   document.getElementById('hp-blue').style.width = Math.max(0, (game.blue.hp/game.blue.maxHp)*100) + '%';
-  document.getElementById('hp-text-red').textContent = `${Math.max(0,Math.ceil(game.red.hp))} / ${game.red.maxHp}`;
-  document.getElementById('hp-text-blue').textContent = `${Math.max(0,Math.ceil(game.blue.hp))} / ${game.blue.maxHp}`;
+  document.getElementById('hp-text-red').textContent = `${Math.max(0,Math.round(game.red.hp))} / ${game.red.maxHp}`;
+  document.getElementById('hp-text-blue').textContent = `${Math.max(0,Math.round(game.blue.hp))} / ${game.blue.maxHp}`;
   // Fight clock — counts down to the closing ring (0:20), then shows FOG while
   // the ring is active. Turns red and pulses once the fog is closing in.
   const clock = document.getElementById('fight-clock');
@@ -899,10 +899,10 @@ function step(dt) {
           // Reaper: Blood Harvest — heal f.harvestRate of the damage dealt.
           // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
           if (f.ability === 'sweep' && !f.dead) {
-            const healAmt = (dealtDmg || 0) * f.harvestRate;   // fractional — applied raw
+            const healAmt = Math.round((dealtDmg || 0) * f.harvestRate);   // honest integer
             f.hp = Math.min(f.maxHp, f.hp + healAmt);
             sfx('heal', null, f.x);
-            spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + Math.ceil(healAmt), healColor(f));
+            spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
           }
           f.dashHit = true;
           f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
@@ -977,7 +977,7 @@ function step(dt) {
           if (f.drainTickTimer <= 0) {
             f.drainTickTimer = 0.2;
             damage(t, f.dmg, 'drain');
-            f.hp = Math.min(f.maxHp, f.hp + f.dmg * f.drainHealRate);
+            f.hp = Math.min(f.maxHp, f.hp + Math.round(f.dmg * f.drainHealRate));
           }
         }
       } else {
@@ -1335,10 +1335,11 @@ function step(dt) {
   // damageSkeleton(): the ONE path all damage to a skeleton goes through. Real
   // damage numbers, a damage float, death + Bone Ward. Returns true if killed.
   function damageSkeleton(sk, dmg, forceBurst) {
+    dmg = Math.round(dmg);   // honest integer — display == actual
     sk.hp -= dmg;
     sk.flash = 0.12;
     // Damage float over the skeleton, same style as fighter hits.
-    spawnFloat(sk.x, sk.y - sk.size - 4, '-' + Math.ceil(dmg),
+    spawnFloat(sk.x, sk.y - sk.size - 4, '-' + dmg,
                sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
     if (sk.hp <= 0) {
       // Bone Burst: shards erupt on death — any enemy within 55px takes dmg.

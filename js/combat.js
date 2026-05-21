@@ -57,7 +57,7 @@ function damage(target, dmg, srcKind, src) {
     sfx('parry', null, target.x);
     return;
   }
-  // Knight: Plate Armor — flat −armorFlat dmg per hit (min 1).
+  // Knight: Plate Armor — flat −armorFlat dmg per hit (min 10).
   if (target.ability === 'sword') {
     dmg = Math.max(10, dmg - target.armorFlat);
     // Deflect clank — discrete hits only (a drain/hazard DoT would machine-gun it).
@@ -76,6 +76,10 @@ function damage(target, dmg, srcKind, src) {
       if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('shield', null, target.x);
     }
   }
+  // Round to an honest integer before applying — what hits HP is exactly what
+  // the floating number shows (after all reductions). Fog uses the early-return
+  // path above and stays fractional (per-frame DoT would round to 0).
+  dmg = Math.round(dmg);
   target.hp -= dmg;
   // Cumulative damage for feedback: a multi-hit burst (e.g. the Archer's
   // 4-arrow volley = four 7-dmg calls) should FEEL like its total, not like
@@ -126,9 +130,10 @@ function damage(target, dmg, srcKind, src) {
   // passes with no new hit, at which point it punches once and floats off.
   {
     if (burstMerge) {
-      // Still in the burst — fold this hit into the open float.
-      target.dmgFloat.total += Math.ceil(dmg);
-      target.dmgFloat.rawTotal += dmg;       // raw running sum for sim feedback
+      // Still in the burst — fold this hit into the open float (dmg is already
+      // the rounded integer that hit HP, so display == actual).
+      target.dmgFloat.total += dmg;
+      target.dmgFloat.rawTotal += dmg;       // running sum for sim feedback
       target.dmgFloat.text = '-' + target.dmgFloat.total;
       target.dmgFloat.lastHit = nowT;        // reset the debounce timer
       target.dmgFloat.big = (srcKind === 'drain') ? 0.15 : big;
@@ -144,8 +149,8 @@ function damage(target, dmg, srcKind, src) {
         spawnY = Math.min(spawnY, prevFloat.y - 16);
       }
       const f = { x: target.x, y: spawnY, vy: -40, life: 0.8,
-                  text: '-' + Math.ceil(dmg), color: target.team === 'red' ? '#ff2e2e' : '#2e9eff',
-                  total: Math.ceil(dmg), rawTotal: dmg, big: (srcKind === 'drain') ? 0.15 : big,
+                  text: '-' + dmg, color: target.team === 'red' ? '#ff2e2e' : '#2e9eff',
+                  total: dmg, rawTotal: dmg, big: (srcKind === 'drain') ? 0.15 : big,
                   age: 0, open: true, lastHit: nowT, gap: gap,
                   // Drain floats live for the whole channel (~1.2s) — long
                   // enough for the target to wander away from a fixed number.

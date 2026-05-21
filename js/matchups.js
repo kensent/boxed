@@ -17,7 +17,7 @@ const MATCHUPS = {
   'berserker_cannoneer':25, 'berserker_duelist':53, 'berserker_necromancer':63, 'berserker_reaper':80, 'berserker_ronin':21,
   'berserker_witch':42, 'berserker_hunter':14, 'berserker_warlock':71, 'berserker_gambler':45, 'wizard_knight':6,
   'wizard_sapper':98, 'wizard_archer':66, 'wizard_jester':43, 'wizard_cannoneer':70, 'wizard_duelist':21,
-  'wizard_necromancer':28, 'wizard_reaper':1, 'wizard_ronin':68, 'wizard_witch':74, 'wizard_hunter':49,
+  'wizard_necromancer':28, 'wizard_reaper':1, 'wizard_ronin':65, 'wizard_witch':74, 'wizard_hunter':49,
   'wizard_warlock':50, 'wizard_gambler':38, 'knight_sapper':14, 'knight_archer':21, 'knight_jester':78,
   'knight_cannoneer':12, 'knight_duelist':12, 'knight_necromancer':94, 'knight_reaper':92, 'knight_ronin':34,
   'knight_witch':80, 'knight_hunter':60, 'knight_warlock':55, 'knight_gambler':90, 'sapper_archer':54,
