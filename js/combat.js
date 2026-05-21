@@ -59,7 +59,7 @@ function damage(target, dmg, srcKind, src) {
   }
   // Knight: Plate Armor — flat −armorFlat dmg per hit (min 1).
   if (target.ability === 'sword') {
-    dmg = Math.max(1, dmg - target.armorFlat);
+    dmg = Math.max(10, dmg - target.armorFlat);
     // Deflect clank — discrete hits only (a drain/hazard DoT would machine-gun it).
     if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('armor', null, target.x);
   }
@@ -92,15 +92,18 @@ function damage(target, dmg, srcKind, src) {
   const gap = (srcKind === 'drain' || srcKind === 'hazard') ? 1100 : BATCH_GAP;
   const burstMerge = target.dmgFloat && target.dmgFloat.open
     && (nowT - target.dmgFloat.lastHit) < gap;
-  const feedbackDmg = burstMerge ? (target.dmgFloat.total + Math.ceil(dmg)) : dmg;
+  // RAW running total (not the ceil'd display total) drives the balance-relevant
+  // feedback (big + hitStop), so the display rounding never leaks into the sim —
+  // and an HP/damage rescale stays a clean linear transform of this value.
+  const feedbackDmg = burstMerge ? (target.dmgFloat.rawTotal + dmg) : dmg;
   // Impact feedback scales with damage magnitude — a chip barely registers,
   // a big hit rocks the screen, flashes hard, and briefly freezes the sim.
   // Fog/drain are environmental/continuous — they skip the punchy feedback.
-  const big = Math.min(1, feedbackDmg / 26); // 0..1, ~1 at the heaviest hits
+  const big = Math.min(1, feedbackDmg / 260); // 0..1, ~1 at the heaviest hits
   if (srcKind !== 'fog' && srcKind !== 'drain') {
     target.flash = 0.14 + big * 0.20;
     shake(2 + big * 9);
-    if (feedbackDmg >= 12) hitStop(0.03 + big * 0.05);
+    if (feedbackDmg >= 120) hitStop(0.03 + big * 0.05);
   } else {
     target.flash = 0.12;
   }
@@ -125,6 +128,7 @@ function damage(target, dmg, srcKind, src) {
     if (burstMerge) {
       // Still in the burst — fold this hit into the open float.
       target.dmgFloat.total += Math.ceil(dmg);
+      target.dmgFloat.rawTotal += dmg;       // raw running sum for sim feedback
       target.dmgFloat.text = '-' + target.dmgFloat.total;
       target.dmgFloat.lastHit = nowT;        // reset the debounce timer
       target.dmgFloat.big = (srcKind === 'drain') ? 0.15 : big;
@@ -141,7 +145,7 @@ function damage(target, dmg, srcKind, src) {
       }
       const f = { x: target.x, y: spawnY, vy: -40, life: 0.8,
                   text: '-' + Math.ceil(dmg), color: target.team === 'red' ? '#ff2e2e' : '#2e9eff',
-                  total: Math.ceil(dmg), big: (srcKind === 'drain') ? 0.15 : big,
+                  total: Math.ceil(dmg), rawTotal: dmg, big: (srcKind === 'drain') ? 0.15 : big,
                   age: 0, open: true, lastHit: nowT, gap: gap,
                   // Drain floats live for the whole channel (~1.2s) — long
                   // enough for the target to wander away from a fixed number.
@@ -161,7 +165,7 @@ function damage(target, dmg, srcKind, src) {
     target.counterAnim = 0.16;
     target.counterDir = Math.atan2(src.y - target.y, src.x - target.x);
     sfx('counter', null, target.x);
-    damage(src, 8, 'counter');
+    damage(src, 80, 'counter');
     // Same puncture lance as the riposte (smaller), landing on the attacker.
     if (!src.dead) spawnImpact(src.x, src.y, 'puncture', target.counterDir, 0.4);
   }

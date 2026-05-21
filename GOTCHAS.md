@@ -7,10 +7,19 @@
 - **Card STATS (HP/SPD/DMG/CD) render live from the roster object** so they
   can't drift. But hand-typed DESCRIPTION strings and code comments CAN go
   stale when a mechanic changes — check them whenever you retune something.
-- **HP is the gentle balance lever** — roughly 0.5–1 win-rate point per ~4 HP,
-  predictable and linear, no resonance risk. Damage and cooldowns are sharper.
-  HP does NOT need to be a multiple of 5; tune to whatever integer the sim
-  says (the Duelist's 92 is a deliberately tuned value).
+- **HP/damage run at a 10× display scale** (HP ~570–1110, DMG ~40–350). It's a
+  pure linear rescale of the float sim — win rates are dimensionless, so the scale
+  is balance-neutral; it just keeps the on-screen numbers honest to the sim. Two
+  things this requires: (1) any NEW hardcoded damage literal must be in 10× units
+  (e.g. the bone burst is `170`, counter `80`); `f.dmg`-driven damage scales for
+  free. (2) The hitStop feedback (`feedbackDmg`/`big` in combat.js) must read the
+  RAW damage (`dmgFloat.rawTotal`), never the `Math.ceil`'d display total — `ceil`
+  is display-only. Putting `ceil` back in that path reintroduces a rounding
+  non-linearity that would make any rescale drift.
+- **HP is the gentle balance lever** — roughly 0.5–1 win-rate point per ~40 HP
+  (at the 10× scale), predictable and linear, no resonance risk. Damage and
+  cooldowns are sharper. HP does NOT need to be a round number; tune to whatever
+  integer the sim says (the Duelist's 950 is a deliberately tuned value).
 - **Watch for cooldown resonance**: if a defensive recharge timer exactly
   matches an attacker's ability cadence, it creates a lockstep (e.g. a shield
   that's always up against one specific enemy). Keep defensive timers off

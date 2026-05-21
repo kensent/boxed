@@ -701,7 +701,7 @@ const FIXED_DT = 1 / 60;
 // meaningful pool. SKEL_HP is the balance lever. MELEE_SKEL_IFRAME: after a
 // melee strike hits a skeleton it can't be hit again for this long (longer than
 // any 0.3s strike window), so one strike lands once, not once per frame.
-const SKEL_HP = 18;
+const SKEL_HP = 180;
 const MELEE_SKEL_IFRAME = 0.35;
 
 // Hunter CRIPPLING HOOK: when a hook connects, the wounded enemy is STUNNED
@@ -797,8 +797,8 @@ function step(dt) {
       if (!game.ringWarned) { game.ringWarned = true; sfx('ringClose'); } // one-shot fog-onset warning
       const prog = Math.min(1, (game.elapsed - RING_START) / (RING_FULL - RING_START));
       game.ringRadius = arenaR * (1 - prog);
-      let fogDps = 3 + prog * 9;
-      if (game.elapsed > RING_FULL) fogDps += (game.elapsed - RING_FULL) * 20;
+      let fogDps = 30 + prog * 90;
+      if (game.elapsed > RING_FULL) fogDps += (game.elapsed - RING_FULL) * 200;
       [red, blue].forEach(f => {
         if (f.dead) return;
         const dc = Math.hypot(f.x - w / 2, f.y - h / 2);
@@ -1273,7 +1273,7 @@ function step(dt) {
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
       // at the contact point + a damage-scaled victim knockback along the shot.
       if (!target.dead) {
-        const big = Math.min(1, dmgOut / 26);
+        const big = Math.min(1, dmgOut / 260);
         const hitAng = Math.atan2(p.vy, p.vx);
         spawnImpact(p.x, p.y, p.kind, hitAng, big);
         sfx('impact', { kind: p.kind, big: big }, p.x);
@@ -1322,7 +1322,7 @@ function step(dt) {
       h.tickCd = 0.2;
       const target = h.team === 'red' ? blue : red;
       if (!target.dead && dist(h, target) < h.radius) {
-        damage(target, 1, 'hazard');
+        damage(target, 10, 'hazard');
         sfx('burn', null, h.x); // soft fire crackle per tick
       }
     }
@@ -1345,7 +1345,7 @@ function step(dt) {
       // Punishes melee fighters rushing in to kill skeletons; ranged killers are safe.
       const enemy = sk.team === 'red' ? blue : red;
       if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
-        damage(enemy, 17, 'bone');
+        damage(enemy, 170, 'bone');
         sfx('boneBurst', null, sk.x);
       } else {
         sfx('boneCrumble', null, sk.x); // dies with no one in burst range
@@ -1372,7 +1372,7 @@ function step(dt) {
         const ha = Math.atan2(target.y - sk.y, target.x - sk.x);
         spawnImpact(target.x, target.y, 'bone', ha, 0.35);
         sfx('impact', { kind: 'bone', big: 0.35 }, target.x);
-        target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 26) * 13;
+        target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 260) * 13;
         sk.chargeHit = true;
         sk.attackCd = SKEL_CHARGE_CD;
         sk.chargeTimer = 0;
