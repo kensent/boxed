@@ -1099,10 +1099,19 @@ function drawFighter(f) {
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4 + np * 14, 0, Math.PI * 2); ctx.stroke();
   }
-  // FOCUS (Ronin) — steady gold aura while on a clean-hit streak. Hidden during the
-  // windup/strike so it never stacks with the (filling) charge ring.
-  if (f.ability === 'iai' && f.focused && f.iaiWindup <= 0 && f.iaiStrike <= 0 && !f.dead) {
-    armedRing('232,192,32');
+  // FOCUS (Ronin) — steady gold aura while on a clean-hit streak. During the iai
+  // windup it persists as an outer halo (radius +16) that nests OUTSIDE the
+  // tightening gold charge ring instead of smearing into it. Hidden only during
+  // the brief strike flash, where the slash trail owns the frame.
+  if (f.ability === 'iai' && f.focused && f.iaiStrike <= 0 && !f.dead) {
+    if (f.iaiWindup > 0) {
+      const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
+      ctx.strokeStyle = `rgba(232,192,32,${(0.4 + pulse * 0.35).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 16, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      armedRing('232,192,32');
+    }
   }
   // VOLLEY (Archer) — green fan of arrowhead ticks aimed at the enemy: the next
   // shot fans 4 arrows, telegraphed.
