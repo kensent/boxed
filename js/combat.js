@@ -32,8 +32,7 @@ function damage(target, dmg, srcKind, src) {
     if (target.hp <= 0) {
       target.hp = 0;
       target.dead = true;
-      sfx('death', target.ability, target.x);
-      endGame();
+      endGame();  // death sound fires when the kill-cam arrives + body shatters (draw)
     }
     return;
   }
@@ -154,8 +153,7 @@ function damage(target, dmg, srcKind, src) {
   }
   if (target.hp <= 0) {
     target.dead = true;
-    sfx('death', target.ability, target.x);
-    endGame();
+    endGame();  // death sound fires when the kill-cam arrives + body shatters (draw)
   }
   // Duelist: COUNTER — melee hits trigger an automatic counter-thrust back at the attacker.
   // srcKind='counter' on the reply prevents infinite loops (Duelist vs Duelist).

@@ -34,7 +34,9 @@ function endGame() {
   game.flashFrame = 0.12;     // white camera-snap frame at the kill
   shake(14);                  // the heaviest shake in the game — it's the K.O.
   game.koTimer = 1.2;         // "K.O." graphic lifetime
-  sfx('koHit');
+  // The death sound + the koHit boom fire when the kill-cam arrives and the body
+  // shatters (see the finish block in draw()), not here at the kill instant — so
+  // the audio lands with the visual instead of leading it during the push-in.
 }
 
 function showWinnerOverlay() {

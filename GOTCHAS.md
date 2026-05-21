@@ -51,3 +51,11 @@
   ceremony is the opposite: it's world-anchored at the loser's position, so it stays
   in camera space. We shipped the K.O. at world centre once and it floated off — hence
   this note.
+- **The finish is a sequence, and the death voice + K.O. boom fire from `draw()`, not
+  the sim path.** On the kill the body holds frozen (death at frame 0) until the
+  kill-cam has pushed in on the loser (`game.koArriveAt` captured at arrival); only
+  then does it shatter, and the `death`/`koHit` sfx are triggered *there* (in the
+  finish block of `draw()`) so the audio lands with the shatter instead of leading it
+  during the push-in. Don't "tidy" those sfx back into `combat.js`/`endGame` — that
+  reintroduces the desync. Safe because `draw()` never runs headless and `sfx` is
+  headless-guarded regardless.

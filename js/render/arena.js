@@ -1474,42 +1474,58 @@ function draw() {
   // camera-snap frame caps the kill instant. Line-drawn, deterministic.
   if (game.koTimer > 0 && game.winner) {
     const loser = game.winner === game.red ? game.blue : game.red;
-    const prog = 1 - game.koTimer / 1.2;             // 0 → 1 over the K.O. lifetime
+    // Hold the body FROZEN (death at frame 0) until the kill-cam has arrived on
+    // it — then the death "undoing" + K.O. play over the remaining window. So
+    // every kill reads: flash → push-in on the frozen body → it shatters. The
+    // `koTimer < 0.6` clause is a safety net so the death always plays even if the
+    // camera somehow never registers as arrived. `koArriveAt` = the koTimer value
+    // captured at arrival (fresh each fight; undefined on a new game object).
+    if (game.koArriveAt == null) {
+      const centered = Math.hypot(camera.x - loser.x, camera.y - loser.y) < 12
+                    && (CAM_KILL - camera.zoom) < 0.07;
+      if (centered || game.koTimer < 0.6) {
+        game.koArriveAt = game.koTimer;
+        sfx('death', loser.ability, loser.x);  // death voice, synced to the shatter
+        sfx('koHit');                           // K.O. boom lands with the graphic
+      }
+    }
+    const started = game.koArriveAt != null;
+    const prog = started ? Math.min(1, 1 - game.koTimer / game.koArriveAt) : 0;
 
-    // The loser's death "undoing" — per-fighter (drawDeath); generic shatter for any
-    // fighter without a bespoke death yet.
-    drawDeath(loser, prog);
+    drawDeath(loser, prog);   // prog 0 = the body frozen at the kill instant
 
-    // "K.O." — a SCREEN-space overlay centred on the viewport, NOT the arena, so
-    // the follow-camera's pan/zoom can't shove it off-centre. Drawn in CSS-pixel
-    // space (1 unit = 1 css px) so its size is consistent at any zoom/DPR.
-    const age = 1.2 - game.koTimer;
-    let scale;
-    if (age < 0.16) scale = 2.6 - (age / 0.16) * 1.7;            // 2.6 → 0.9
-    else if (age < 0.28) scale = 0.9 + ((age - 0.16) / 0.12) * 0.1; // settle to 1
-    else scale = 1;
-    const alpha = game.koTimer < 0.3 ? game.koTimer / 0.3 : 1;
-    const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);            // leave camera space → screen space
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(canvas.width / (2 * dpr), canvas.height / (2 * dpr));
-    ctx.scale(scale, scale);
-    ctx.font = '900 52px Bungee, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-    ctx.lineJoin = 'round';
-    ctx.strokeText('K.O.', 0, 0);
-    ctx.shadowColor = wc;
-    ctx.shadowBlur = 20;
-    ctx.fillStyle = '#fff';
-    ctx.fillText('K.O.', 0, 0);
-    ctx.shadowBlur = 0;
-    ctx.restore();
-    ctx.globalAlpha = 1;
+    // "K.O." — punches in once the death STARTS (on arrival), not at the kill, so
+    // it accompanies the shatter. Screen-space upper-banner (CSS-px), kept clear
+    // of the kill-cam-centred death below it.
+    if (started) {
+      const age = game.koArriveAt - game.koTimer;     // 0 at arrival, grows
+      let scale;
+      if (age < 0.16) scale = 2.6 - (age / 0.16) * 1.7;            // 2.6 → 0.9
+      else if (age < 0.28) scale = 0.9 + ((age - 0.16) / 0.12) * 0.1; // settle to 1
+      else scale = 1;
+      const alpha = game.koTimer < 0.3 ? game.koTimer / 0.3 : 1;
+      const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
+      const dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // leave camera space → screen space
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(canvas.width / (2 * dpr), canvas.height * 0.22 / dpr);
+      ctx.scale(scale, scale);
+      ctx.font = '900 52px Bungee, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.lineJoin = 'round';
+      ctx.strokeText('K.O.', 0, 0);
+      ctx.shadowColor = wc;
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = '#fff';
+      ctx.fillText('K.O.', 0, 0);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
   }
 
   // White camera-snap frame at the kill instant — fills the whole viewport in

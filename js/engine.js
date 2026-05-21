@@ -24,17 +24,19 @@ const ARENA = 360;
 // keep the one drifting out at the box edge (recentring on their midpoint once
 // they're too far apart to both fit the box). The deadzone is the key to feel:
 // chasing the raw midpoint of two bouncers made the frame wander constantly;
-// holding still during contained exchanges kills that. It does NOT clamp to the
-// arena, so the focus can sit past the walls (the border just marks the edge;
-// beyond is the same dark background). Render-only — it reads fighter positions,
-// but the 360x360 sim never reads it back, so balance is untouched. The grid +
-// border are drawn in-world (see drawArenaBackdrop) so they scroll/scale with
-// the camera, not sit static.
+// holding still during contained exchanges kills that. On the kill it becomes a
+// KILL-CAM — pushing in on the loser's death position (CAM_KILL, tighter than
+// comfort) so the "K.O." frames the actual kill, melee or ranged. It does NOT
+// clamp to the arena, so the focus can sit past the walls (the border just marks
+// the edge; beyond is the same dark background). Render-only — it reads fighter
+// positions, but the 360x360 sim never reads it back, so balance is untouched.
+// The grid + border are drawn in-world (see drawArenaBackdrop) so they
+// scroll/scale with the camera, not sit static.
 const CAM_MIN = 1.0, CAM_COMFORT = 1.45, CAM_PAD = 80;
 // CAM_DEADZONE: fraction of the view's half-extent the fighters can roam before
-// the camera moves (bigger = holds still more). Smoothing time constants
-// (seconds) — smaller = snappier; one tau per channel.
-const CAM_DEADZONE = 0.55, CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25;
+// the camera moves (bigger = holds still more). CAM_KILL: kill-cam zoom on the
+// finish. Smoothing time constants (seconds) — smaller = snappier; one per channel.
+const CAM_DEADZONE = 0.55, CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
 const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;
@@ -53,21 +55,29 @@ function resizeCanvas() {
 function updateCamera() {
   if (!game) return;
   const r = game.red, b = game.blue;
-  const span = Math.max(Math.abs(r.x - b.x), Math.abs(r.y - b.y)) + CAM_PAD * 2;
-  // Hold comfort zoom while they fit; only ease out when they spread too far.
-  const tz = Math.max(CAM_MIN, Math.min(CAM_COMFORT, ARENA / span));
-  // Pan deadzone (per axis): hold while both fighters sit inside the central box
-  // [cam-dz, cam+dz]; otherwise move just enough to pin the escaping fighter to
-  // the box edge. If they're too far apart to both fit the box, recentre on the
-  // midpoint. Not clamped to the arena — the focus may sit past the walls.
-  const dz = ((ARENA / camera.zoom) / 2) * CAM_DEADZONE;
-  const axisTarget = (p1, p2, cur) => {
-    const lo = Math.min(p1, p2), hi = Math.max(p1, p2);
-    const camLo = hi - dz, camHi = lo + dz;     // valid camera range to keep both in the box
-    return camLo > camHi ? (lo + hi) / 2 : Math.max(camLo, Math.min(camHi, cur));
-  };
-  const tx = axisTarget(r.x, b.x, camera.x);
-  const ty = axisTarget(r.y, b.y, camera.y);
+  let tx, ty, tz;
+  if (game.winner) {
+    // Kill-cam: push in on the loser's (frozen) death position so the K.O. frames
+    // the actual kill regardless of where the winner ended up.
+    const loser = game.winner === r ? b : r;
+    tx = loser.x; ty = loser.y; tz = CAM_KILL;
+  } else {
+    // Hold comfort zoom while they fit; only ease out when they spread too far.
+    const span = Math.max(Math.abs(r.x - b.x), Math.abs(r.y - b.y)) + CAM_PAD * 2;
+    tz = Math.max(CAM_MIN, Math.min(CAM_COMFORT, ARENA / span));
+    // Pan deadzone (per axis): hold while both fighters sit inside the central box
+    // [cam-dz, cam+dz]; otherwise move just enough to pin the escaping fighter to
+    // the box edge. If they're too far apart to both fit the box, recentre on the
+    // midpoint. Not clamped to the arena — the focus may sit past the walls.
+    const dz = ((ARENA / camera.zoom) / 2) * CAM_DEADZONE;
+    const axisTarget = (p1, p2, cur) => {
+      const lo = Math.min(p1, p2), hi = Math.max(p1, p2);
+      const camLo = hi - dz, camHi = lo + dz;     // valid camera range to keep both in the box
+      return camLo > camHi ? (lo + hi) / 2 : Math.max(camLo, Math.min(camHi, cur));
+    };
+    tx = axisTarget(r.x, b.x, camera.x);
+    ty = axisTarget(r.y, b.y, camera.y);
+  }
   const now = performance.now();
   const dt = _camLastT ? Math.min(0.05, (now - _camLastT) / 1000) : 0;
   _camLastT = now;
