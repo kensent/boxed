@@ -458,6 +458,49 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(b2x, b2y, 3.5, 0, Math.PI); ctx.stroke();
       break;
     }
+    case 'drain': {  // Warlock — void consumes itself: eye flares then snaps shut, cowl implodes
+      const fc = f.lastFacing || 0;
+      ctx.lineCap = 'round';
+      const eyeX = Math.cos(fc) * FIGHTER_SIZE * 0.42, eyeY = Math.sin(fc) * FIGHTER_SIZE * 0.42;
+      // 1) cowl implodes toward the eye — pulled into the void (gone by 0.45)
+      if (prog < 0.45) {
+        const sp = prog / 0.45;
+        ctx.save();
+        ctx.globalAlpha = 1 - sp;
+        ctx.translate(eyeX * sp * 0.5, eyeY * sp * 0.5);  // drifts toward eye
+        ctx.scale(1 - sp * 0.8, 1 - sp * 0.8);
+        drawShape(ctx, f);
+        ctx.restore();
+      }
+      // 2a) void eye flare-then-snap: expands briefly, then contracts and vanishes
+      const vp = prog / 0.5;
+      const vPhase = vp < 0.3 ? vp / 0.3 : 1 - (vp - 0.3) / 0.7;  // 0→1 fast, 1→0 slow
+      const vAlpha = Math.max(0, vPhase);
+      if (vAlpha > 0) {
+        const vr = 2 + vPhase * 22;
+        ctx.fillStyle = `rgba(192,80,255,${(vAlpha * 0.7).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(eyeX, eyeY, vr, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,255,255,${(vAlpha * 0.5).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(eyeX, eyeY, vr * 0.35, 0, Math.PI * 2); ctx.fill();
+      }
+      // 2b) tendrils retract inward — 3 purple arcs shrinking back toward the cowl (inverse of drain reach)
+      const tp = Math.min(1, prog / 0.4), ta = 1 - tp;
+      ctx.strokeStyle = `rgba(192,80,255,${(ta * 0.65).toFixed(3)})`;
+      ctx.lineWidth = (2 - tp) * ta + 0.3;
+      for (let i = 0; i < 3; i++) {
+        const g = Math.PI * 0.9 + i * 0.42;
+        const bx = Math.cos(g) * FIGHTER_SIZE * 0.7 * (1 - tp);
+        const by = Math.sin(g) * FIGHTER_SIZE * 0.7 * (1 - tp);
+        ctx.beginPath(); ctx.arc(bx, by, FIGHTER_SIZE * 0.3 * (1 - tp), g - 0.4, g + 1.0); ctx.stroke();
+      }
+      // 3) residue — dark void stain at the eye's last position; darker than everything else
+      ctx.fillStyle = `rgba(10,0,16,${(a * 0.55).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(eyeX, eyeY, (6 + a * 4) * a + 1, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(130,40,180,${(a * 0.3).toFixed(3)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(eyeX, eyeY, (10 + a * 6) * a + 1, 0, Math.PI * 2); ctx.stroke();
+      break;
+    }
     case 'hex': {  // Witch — hat melts downward, toxic hex cloud spreads at the base
       ctx.lineCap = 'round';
       // 1) hat droops and sinks — tip extends back-down, body squashes, fades (gone by 0.48)
