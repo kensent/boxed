@@ -61,6 +61,8 @@ function damage(target, dmg, srcKind, src) {
   // Knight: Plate Armor — flat −armorFlat dmg per hit (min 1).
   if (target.ability === 'sword') {
     dmg = Math.max(1, dmg - target.armorFlat);
+    // Deflect clank — discrete hits only (a drain/hazard DoT would machine-gun it).
+    if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('armor', null, target.x);
   }
   // Wizard: Mana Shield — shieldReduction dmg reduction per live orb, up to orbCap*shieldReduction.
   // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,
@@ -71,6 +73,8 @@ function damage(target, dmg, srcKind, src) {
       const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
       dmg = dmg * (1 - orbCount * target.shieldReduction);
       game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
+      // Absorb shimmer — discrete hits only (a drain/hazard DoT would stutter it).
+      if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('shield', null, target.x);
     }
   }
   target.hp -= dmg;

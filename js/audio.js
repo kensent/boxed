@@ -279,6 +279,25 @@ const Audio = (() => {
       tone(440, 0.20, 'sine', 0.10, { glideTo: 660 });
       noise(0.10, 0.05, 'lowpass', 800);
     },
+    // Knight Plate Armor — a dull heavy steel deflect as plate eats the blow.
+    // Ring-less (a clank, not a clean tone); sits under the attacker's crack.
+    armor() {
+      noise(0.05, 0.16, 'bandpass', 1200);
+      tone(220, 0.12, 'triangle', 0.12, { glideTo: 150 });
+    },
+    // Wizard Mana Shield — a glassy arcane absorb as an orb spends itself out.
+    shield() {
+      tone(1400, 0.16, 'sine', 0.12, { glideTo: 700 });
+      tone(2100, 0.16, 'sine', 0.06, { glideTo: 1000 });
+      noise(0.03, 0.05, 'highpass', 5000);
+    },
+    // Berserker Bloodrage kicking in (drops below 50% hp) — a rising primal
+    // growl. Fires once on the inactive->active transition, not per frame.
+    bloodrage() {
+      tone(80, 0.50, 'sawtooth', 0.16, { glideTo: 165, attack: 0.15 });
+      tone(120, 0.50, 'square', 0.08, { glideTo: 90 });
+      noise(0.40, 0.10, 'lowpass', 400, { filterGlideTo: 900 });
+    },
 
     // ===== Impacts ==========================================================
 
@@ -376,10 +395,22 @@ const Audio = (() => {
 
     // ===== Lifecycle ========================================================
 
-    // Skeleton death burst — dry Necromancer bone shatter.
+    // Skeleton death burst — dry Necromancer bone shatter (caught an enemy).
     boneBurst() {
       noise(0.18, 0.36, 'bandpass', 2000, { filterGlideTo: 280 });
       tone(130, 0.22, 'sawtooth', 0.14, { glideTo: 48 });
+    },
+    // Skeleton dying with no one nearby — a softer, dry bone collapse.
+    boneCrumble() {
+      noise(0.14, 0.18, 'bandpass', 1500, { filterGlideTo: 400 });
+      tone(150, 0.16, 'triangle', 0.08, { glideTo: 60 });
+    },
+    // The closing ring begins — a single low ominous swell as the fog moves in.
+    // One-shot event marker (fires once at RING_START), not an ambient bed.
+    ringClose() {
+      tone(120, 0.70, 'sawtooth', 0.16, { glideTo: 90, attack: 0.25 });
+      tone(60, 0.70, 'sine', 0.10, { glideTo: 50 });
+      noise(0.70, 0.05, 'lowpass', 300, { filterGlideTo: 650 });
     },
 
     // Per-fighter death voice — routed by archetype (AUDIO.md). Death is the

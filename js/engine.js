@@ -360,7 +360,7 @@ function buildGame(redT, blueT) {
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
     projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
-    over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, lastT: performance.now(),
+    over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, ringWarned: false, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
     introPlaying: true,
@@ -714,6 +714,7 @@ function step(dt) {
     const RING_START = 20, RING_FULL = 28;
     const arenaR = Math.hypot(w, h) / 2;
     if (game.elapsed > RING_START) {
+      if (!game.ringWarned) { game.ringWarned = true; sfx('ringClose'); } // one-shot fog-onset warning
       const prog = Math.min(1, (game.elapsed - RING_START) / (RING_FULL - RING_START));
       game.ringRadius = arenaR * (1 - prog);
       let fogDps = 3 + prog * 9;
@@ -749,6 +750,8 @@ function step(dt) {
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
     if (f.ability === 'tackle') {
       const rageActive = f.hp < f.maxHp * 0.5;
+      if (rageActive && !f.rageWasActive) sfx('bloodrage', null, f.x); // fires once on activation
+      f.rageWasActive = rageActive;
       const targetSpeed = rageActive ? f.baseSpeed * (1 + f.rageBoost) : f.baseSpeed;
       // Renormalize current velocity to new speed when not dashing
       if (f.dashTimer <= 0) {
@@ -1261,6 +1264,8 @@ function step(dt) {
       if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
         damage(enemy, 17, 'bone');
         sfx('boneBurst', null, sk.x);
+      } else {
+        sfx('boneCrumble', null, sk.x); // dies with no one in burst range
       }
       spawnImpact(sk.x, sk.y, 'bone', 0, 0.7); // bone shards erupt on death
       return true;
