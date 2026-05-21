@@ -55,7 +55,7 @@ const FIGHTERS = [
     get passive() { return `UNCANNY DODGE — phases through next hit, ${this.dodgeCd}s cd`; },
   },
   { id:'cannoneer',name:'CANNONEER',hp:103, speed:85,  color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
-    ability:'cannon', cd:3.0, dmg:30,
+    ability:'cannon', cd:3.0, dmg:29,
     windupTime: 1.0,
     get active() { return `CANNON SHOT — ${this.windupTime}s windup, fast straight shot`; },
     passive: 'INCENDIARY ROUND — cannon hits leave a brief burning impact zone',

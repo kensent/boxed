@@ -1200,8 +1200,9 @@ function step(dt) {
         target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
       }
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
+      // tickCd 0.5 = a 0.5s ignition delay before the first burn tick.
       if (p.kind === 'cannon') {
-        game.hazards.push({ x: p.x, y: p.y, radius: 40, timer: 1.5, maxTimer: 1.5, tickCd: 0, team: p.team, dps: 2 });
+        game.hazards.push({ x: p.x, y: p.y, radius: 65, timer: 1.5, maxTimer: 1.5, tickCd: 0.5, team: p.team });
       }
       return false;
     }
@@ -1234,13 +1235,14 @@ function step(dt) {
   game.hazards = game.hazards.filter(h => {
     h.timer -= dt;
     if (h.timer <= 0) return false;
-    // Tick every 0.5s rather than every frame — keeps damage() call count low in the sim.
+    // After the 0.5s ignition delay, burn 1 hp every 0.2s for the zone's
+    // remaining ~1.0s (≈5 ticks if the target stays in the 40px zone).
     h.tickCd -= dt;
     if (h.tickCd <= 0) {
-      h.tickCd = 0.5;
+      h.tickCd = 0.2;
       const target = h.team === 'red' ? blue : red;
       if (!target.dead && dist(h, target) < h.radius) {
-        damage(target, h.dps * 0.5, 'hazard'); // 0.5s × 4 dps = 2.0 dmg per tick
+        damage(target, 1, 'hazard');
       }
     }
     return true;
