@@ -112,7 +112,9 @@ function damage(target, dmg, srcKind, src) {
   // Sound: drain ticks are silent — the sustained `drain` beam drone (played
   // once when the channel starts) covers the whole leech. Other hits play a
   // punchier sound, pitch-scaled to damage magnitude.
-  if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('hit', dmg, target.x);
+  // Melee body-contact crack only (src present, no srcKind). Projectiles, mines,
+  // hooks, and bone bursts sound their own per-kind impact at their spawn sites.
+  if (src && !srcKind) sfx('hit', { mag: dmg, mat: src.ability }, target.x);
   // Damage float — debounced (see BATCH_GAP above). An "open" float sits frozen
   // in place accumulating hits; the float update loop resolves it once a gap
   // passes with no new hit, at which point it punches once and floats off.

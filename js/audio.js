@@ -281,12 +281,76 @@ const Audio = (() => {
 
     // ===== Impacts ==========================================================
 
-    // Generic body-contact crack — damage-scaled: a chip barely registers, a
-    // heavy hit lands lower and harder. (Per-source material cracks: phase 2.)
-    hit(mag) {
-      const big = Math.min(1, (mag || 10) / 26);
-      noise(0.07 + big * 0.05, 0.16 + big * 0.18, 'lowpass', 1700 - big * 1100);
-      tone(120 - big * 45, 0.12 + big * 0.06, 'triangle', 0.12 + big * 0.12, { glideTo: 48 });
+    // Melee body-contact crack — routed by the attacker's material. Only the
+    // dashers (Berserker/Knight/Duelist/Reaper) land a crack here: they swing
+    // at launch and connect a beat later, so the crack is the second beat.
+    // Jester (mask-snap) and Ronin (iai cut) already sound their own contact,
+    // so they no-op here. The crack is the short, loud beat; volume tracks dmg.
+    hit(arg) {
+      const obj = (arg && typeof arg === 'object');
+      const mag = obj ? arg.mag : arg;
+      const mat = obj ? arg.mat : null;
+      const v = 0.18 + Math.min(1, (mag || 10) / 26) * 0.18;
+      if (mat === 'tackle') {            // Berserker — wet flesh thud
+        noise(0.06, v, 'lowpass', 520);
+        tone(95, 0.10, 'triangle', v, { glideTo: 46 });
+      } else if (mat === 'sword') {      // Knight — flat heavy steel bash
+        noise(0.05, v, 'bandpass', 1400);
+        tone(280, 0.13, 'triangle', v * 0.9, { glideTo: 200 });
+      } else if (mat === 'riposte') {    // Duelist — thin sharp puncture
+        noise(0.04, v, 'bandpass', 3800);
+        tone(1800, 0.08, 'triangle', v * 0.8, { glideTo: 1100 });
+      } else if (mat === 'sweep') {      // Reaper — dry bone arc crack
+        noise(0.08, v, 'bandpass', 1200, { filterGlideTo: 600 });
+        tone(240, 0.10, 'triangle', v * 0.85, { glideTo: 120 });
+      }
+    },
+    // Projectile / trap / minion impact crack — the audio mirror of the visual
+    // force-shape (spawnImpact). One primitive per kind; volume scales with the
+    // `big` (0..1 magnitude) the impact was spawned with.
+    impact(arg) {
+      const kind = arg && arg.kind;
+      const big = arg ? (arg.big == null ? 0.5 : arg.big) : 0.5;
+      const v = 0.14 + big * 0.22;
+      switch (kind) {
+        case 'arrow':       // wood puncture — thin sharp thunk
+          noise(0.05, v, 'bandpass', 2600);
+          tone(700, 0.08, 'triangle', v * 0.7, { glideTo: 400 });
+          break;
+        case 'cannon':      // iron cannonball — heavy concussion
+          noise(0.12, v, 'lowpass', 900, { filterGlideTo: 120 });
+          tone(110, 0.16, 'square', v, { glideTo: 45 });
+          break;
+        case 'hex':         // toxic splat — wet dissonant
+          noise(0.10, v, 'lowpass', 1200);
+          tone(380, 0.12, 'sawtooth', v * 0.8, { glideTo: 220 });
+          break;
+        case 'coin':        // gold ding — bright and tiny
+          tone(2000, 0.10, 'sine', v, { glideTo: 1300 });
+          noise(0.03, v * 0.5, 'bandpass', 3500);
+          break;
+        case 'orb':         // arcane rune-pop — glassy
+          tone(1100, 0.10, 'sine', v, { glideTo: 1800 });
+          noise(0.03, v * 0.4, 'highpass', 5000);
+          break;
+        case 'lightning':   // holy zap — electric crackle
+          noise(0.06, v, 'highpass', 4000);
+          tone(900, 0.10, 'sawtooth', v * 0.8, { glideTo: 300 });
+          break;
+        case 'hook':        // steel cable — metallic bite clink
+          noise(0.05, v, 'bandpass', 2200);
+          tone(320, 0.08, 'square', v, { glideTo: 180 });
+          break;
+        case 'bone':        // bone shards — dry clack
+          noise(0.08, v, 'bandpass', 1800, { filterGlideTo: 400 });
+          tone(200, 0.10, 'triangle', v * 0.85, { glideTo: 90 });
+          break;
+        case 'mine':        // dark metal casing — sharp crack + pressure
+          noise(0.30, v, 'lowpass', 1200, { filterGlideTo: 90 });
+          tone(110, 0.30, 'square', v, { glideTo: 40 });
+          noise(0.08, v * 0.8, 'bandpass', 3500);
+          break;
+      }
     },
 
     // ===== Arena ============================================================

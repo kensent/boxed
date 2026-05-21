@@ -958,6 +958,7 @@ function step(dt) {
             if (segDist(m.x, m.y) < FIGHTER_SIZE + m.size + 6) {
               damage(f, m.dmg);
               spawnImpact(m.x, m.y, 'mine', 0, 1); // the mine still explodes
+              sfx('impact', { kind: 'mine', big: 1 }, m.x);
               return false;
             }
             return true;
@@ -1170,7 +1171,10 @@ function step(dt) {
         target.tetherStartX = target.x;
         target.tetherStartY = target.y;
         damage(target, p.dmg, 'projectile');
-        if (!target.dead) spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5); // bite clink (no recoil — it reels IN)
+        if (!target.dead) {
+          spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5); // bite clink (no recoil — it reels IN)
+          sfx('impact', { kind: 'hook', big: 0.5 }, p.x);
+        }
         target.stunTimer = Math.max(target.stunTimer, CRIPPLE_STUN);
         return false;
       }
@@ -1189,6 +1193,7 @@ function step(dt) {
         const big = Math.min(1, dmgOut / 26);
         const hitAng = Math.atan2(p.vy, p.vx);
         spawnImpact(p.x, p.y, p.kind, hitAng, big);
+        sfx('impact', { kind: p.kind, big: big }, p.x);
         target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
       }
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
@@ -1210,6 +1215,7 @@ function step(dt) {
       if (!target.dead && dist(m, target) < FIGHTER_SIZE + m.size + 6) {
         damage(target, m.dmg);
         spawnImpact(m.x, m.y, 'mine', 0, 1); // big explosion burst
+        sfx('impact', { kind: 'mine', big: 1 }, m.x);
         // Blast RADIUS passive: knock the target away from the mine
         const bx = target.x - m.x, by = target.y - m.y;
         const bd = Math.hypot(bx, by) || 1;
@@ -1277,6 +1283,7 @@ function step(dt) {
         // Bone clash on the dash-attack connect + a light (chip-scaled) knockback.
         const ha = Math.atan2(target.y - sk.y, target.x - sk.x);
         spawnImpact(target.x, target.y, 'bone', ha, 0.35);
+        sfx('impact', { kind: 'bone', big: 0.35 }, target.x);
         target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 26) * 13;
         sk.chargeHit = true;
         sk.attackCd = SKEL_CHARGE_CD;
