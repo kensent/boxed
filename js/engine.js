@@ -824,7 +824,16 @@ function step(dt) {
     // ---- PASSIVES ----
     // Priest: Divine Grace — regen f.healRate hp/s
     if (f.ability === 'lightning' && f.hp < f.maxHp) {
+      const before = f.hp;
       f.hp = Math.min(f.maxHp, f.hp + f.healRate * dt);
+      // Continuous regen — accumulate and pop a periodic "+N" heal float (a float
+      // per frame would be 60/s). Visual only (regenAccum/regenFloatT unread by sim).
+      f.regenAccum = (f.regenAccum || 0) + (f.hp - before);
+      f.regenFloatT = (f.regenFloatT || 0) + dt;
+      if (f.regenFloatT >= 0.8 && f.regenAccum >= 1) {
+        spawnFloat(f.x, f.y - FIGHTER_SIZE, '+' + Math.round(f.regenAccum), healColor(f));
+        f.regenAccum = 0; f.regenFloatT = 0;
+      }
     }
     // Berserker: Bloodrage — +rageBoost% speed when below 50% hp.
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
@@ -977,7 +986,26 @@ function step(dt) {
           if (f.drainTickTimer <= 0) {
             f.drainTickTimer = 0.2;
             damage(t, f.dmg, 'drain');
+            const before = f.hp;
             f.hp = Math.min(f.maxHp, f.hp + Math.round(f.dmg * f.drainHealRate));
+            const gained = f.hp - before;
+            // Debounced, accumulating heal float on the Warlock — ticks up over the
+            // channel and follows him, mirroring his drain DAMAGE float. Visual only.
+            if (gained > 0) {
+              const nowT = performance.now();
+              if (f.healFloat && f.healFloat.open && (nowT - f.healFloat.lastHit) < 1100) {
+                f.healFloat.total += gained;
+                f.healFloat.text = '+' + Math.round(f.healFloat.total);
+                f.healFloat.lastHit = nowT;
+                f.healFloat.age = 0;
+              } else {
+                const hf = { x: f.x, y: f.y - FIGHTER_SIZE, vy: -40, life: 0.8,
+                             text: '+' + gained, total: gained, color: healColor(f),
+                             age: 0, open: true, lastHit: nowT, gap: 1100, follow: f };
+                game.floatTexts.push(hf);
+                f.healFloat = hf;
+              }
+            }
           }
         }
       } else {
