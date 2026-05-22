@@ -172,16 +172,25 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'sweep': {
-      // Reaper: dash + 360° scythe spin. Damage applied during sweep window (see step()).
+      // Reaper CRESCENT THROW — hurl a returning crescent (boomerang). One in flight
+      // at a time: while one is out, flag a quick retry instead of throwing a second.
+      // Outbound homes mildly to the enemy (a thrown blade); it turns at max travel
+      // and homes back to Reaper, getting "caught". Hits once per leg, execute-scaled
+      // (see the crescent handler in step()).
       const enemy = f === game.red ? game.blue : game.red;
+      if (f.crescentOut) { f.sweepWhiff = true; break; }
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
-      f.vx = Math.cos(ang) * f.speed * 1.8;
-      f.vy = Math.sin(ang) * f.speed * 1.8;
-      f.dashTimer = 0.25;
-      f.sweepTimer = 0.3;
-      f.sweepHit = false;
-      f.dashHit = false;
-      f.dashStartX = f.x; f.dashStartY = f.y; // visual anchor for the wind-up hold
+      game.projectiles.push({
+        x: f.x, y: f.y,
+        vx: Math.cos(ang) * f.crescentSpeed, vy: Math.sin(ang) * f.crescentSpeed,
+        team: f.team, dmg: f.dmg, life: 4,
+        kind: 'crescent', size: 7, homing: f.crescentHoming, cruise: f.crescentSpeed,
+        phase: 'out', traveled: 0, maxTravel: f.crescentMaxTravel,
+        hitCd: 0, spin: 0, angle: ang,
+      });
+      f.crescentOut = true;
+      f.sweepWhiff = false;
+      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw gesture (thrust)
       break;
     }
     case 'iai': {

@@ -543,7 +543,7 @@ function makeFighter(t, team, x, y) {
     lastX: x, lastY: y,
     parryTimer: 0, counterAnim: 0, counterDir: 0,
     // Reaper
-    sweepTimer: 0, sweepHit: false,
+    sweepTimer: 0, sweepHit: false, crescentOut: false,
     // Ronin
     iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focused: false,
     // Witch mark target timer (any fighter can carry the mark)
@@ -910,15 +910,7 @@ function step(dt) {
         // LIVE for the whole dash — the first frame the enemy is within this
         // fighter's strike range, the single hit lands (once per dash).
         if (!f.dashHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach) {
-          const dealtDmg = damage(enemy, f.dmg, undefined, f);
-          // Reaper: Blood Harvest — heal f.harvestRate of the damage dealt.
-          // Guard !f.dead: the counter inside damage() can kill the Reaper before we get here.
-          if (f.ability === 'sweep' && !f.dead) {
-            const healAmt = Math.round((dealtDmg || 0) * f.harvestRate);   // honest integer
-            f.hp = Math.min(f.maxHp, f.hp + healAmt);
-            sfx('heal', null, f.x);
-            spawnFloat(f.x, f.y - FIGHTER_SIZE - 12, '+' + healAmt, healColor(f));
-          }
+          damage(enemy, f.dmg, undefined, f);
           f.dashHit = true;
           f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
           f.dashTimer = 0;
@@ -936,8 +928,8 @@ function step(dt) {
       if (f.swingTimer <= 0) f.swingHit = false;
     }
 
-    // Reaper: scythe sweep — visual spin only; damage + Blood Harvest happen on
-    // the single in-range hit landed during the dash.
+    // Reaper: scythe sweep — visual spin only; the execute-scaled hit lands on the
+    // single in-range frame during the dash (see the dash branch above).
     if (f.ability === 'sweep' && f.sweepTimer > 0) {
       f.sweepTimer -= dt;
       if (f.sweepTimer <= 0) f.sweepHit = false;
@@ -1132,6 +1124,8 @@ function step(dt) {
       // ~1s after fire, so cdTimer is adjusted there once the face is known).
       if (f.ability === 'drain' && f.drainWhiffed) f.cdTimer = 0.25;
       else if (f.ability === 'cast' && f.castCapped) f.cdTimer = 0.4;
+      // Reaper: a crescent is still in flight — retry soon instead of throwing a second.
+      else if (f.ability === 'sweep' && f.sweepWhiff) f.cdTimer = 0.1;
       else f.cdTimer = f.cd;
     }
     if (f.aimTimer > 0) {
@@ -1190,6 +1184,59 @@ function step(dt) {
 
   game.projectiles = game.projectiles.filter(p => {
     if (p.spent) return false;
+    if (p.kind === 'crescent') {
+      // Reaper CRESCENT THROW — returning boomerang. Outbound homes MILDLY at the
+      // enemy (a thrown blade); at max travel it turns and homes STRONGLY back to
+      // Reaper, despawning when caught (clears the in-flight flag + sets recovery cd).
+      // Turns back on HITTING the enemy (or at max travel if it whiffs), then homes
+      // home. Can clip the enemy again on the return — a short hitCd prevents an
+      // instant double at the turn. Execute-scaled. Bypasses the generic logic below.
+      const owner = p.team === 'red' ? red : blue;
+      const target = p.team === 'red' ? blue : red;
+      p.life -= dt;
+      if (owner.dead || p.life <= 0) { owner.crescentOut = false; return false; }
+      if (p.hitCd > 0) p.hitCd -= dt;
+      const steer = (tx, ty, k) => {
+        const ang = Math.atan2(ty - p.y, tx - p.x), sp = Math.hypot(p.vx, p.vy);
+        p.vx += (Math.cos(ang) * sp - p.vx) * Math.min(1, k * dt / 100);
+        p.vy += (Math.sin(ang) * sp - p.vy) * Math.min(1, k * dt / 100);
+      };
+      if (p.phase === 'out') { if (!target.dead) steer(target.x, target.y, p.homing); }
+      else {
+        // Return = retrieval: beeline straight at Reaper so it always gets caught
+        // (a lerp-homing turn radius is too wide at this speed — it would orbit).
+        const ang = Math.atan2(owner.y - p.y, owner.x - p.x);
+        p.vx = Math.cos(ang) * p.cruise; p.vy = Math.sin(ang) * p.cruise;
+      }
+      const sp2 = Math.hypot(p.vx, p.vy) || 0.001;          // hold constant cruise speed
+      p.vx = p.vx / sp2 * p.cruise; p.vy = p.vy / sp2 * p.cruise;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.spin = (p.spin || 0) + dt * 14;
+      p.angle = Math.atan2(p.vy, p.vx);
+      // hit (gated by hitCd so it can't double-hit at the turn); execute-scaled.
+      let hitNow = false;
+      if (!target.dead && p.hitCd <= 0 && dist(p, target) < FIGHTER_SIZE + p.size) {
+        const dmg = p.dmg * (1 + owner.executeK * (1 - target.hp / target.maxHp));
+        damage(target, dmg, 'projectile');
+        if (!target.dead) {
+          const big = Math.min(1, dmg / 260), ha = Math.atan2(p.vy, p.vx);
+          spawnImpact(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
+          sfx('impact', { kind: 'bone', big: big }, p.x);
+          target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = big * 13;
+        }
+        p.hitCd = 0.2;
+        hitNow = true;
+      }
+      if (p.phase === 'out') {
+        p.traveled += p.cruise * dt;
+        if (hitNow || p.traveled >= p.maxTravel) p.phase = 'back';   // return ON HIT (or apex if it whiffed)
+      } else if (dist(p, owner) < FIGHTER_SIZE + p.size) {
+        owner.crescentOut = false;
+        owner.cdTimer = owner.cd;                            // post-catch recovery before the next throw
+        return false;                                        // caught
+      }
+      return true;
+    }
     p.life -= dt;
     if (p.life <= 0) return false;
     // A projectile must not outlive its caster — if the owning fighter is

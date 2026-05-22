@@ -56,7 +56,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Priest** | redesign | `JUDGMENT` — predictive light pillar; landing it heals |
 | **Berserker** | redesign | `RAMPAGE` — becomes a wall-ricocheting charge |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
-| **Reaper** | redesign | `REAP` — orbiting scythe field + EXECUTE: hits scale up as the enemy weakens |
+| **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + EXECUTE: hits scale up as the enemy weakens |
 | **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
 | **Ronin** | redesign | `IAI` — committed line-dash *through* the enemy + recovery |
 | **Cannoneer** | redesign | `BOMBARD` — lobbed area shell: splash + lingering fire pool |
@@ -219,8 +219,36 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 
 ---
 
-## REAPER → `REAP`
+## REAPER → `CRESCENT THROW` *(shipped — semi-ranged, not the orbiting field)*
 *Material: hollow bone scythe, dry crack + crescent hiss (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Reaper went **semi-ranged** with a
+> returning crescent, **not** the orbiting field sketched below. Why the pivot:
+> - A body-attached field on a *non-pursuing* Reaper hits the same **DVD
+>   slow-connection trap** that sank Knight — under autonomous RNG, a proximity
+>   effect only connects when the enemy randomly drifts close, which paces slowly.
+>   This confirmed a structural truth: **melee delivery under DVD is a tight design
+>   space** (reliable damage wants a projectile or a dash), so distinct *melee* verbs
+>   are scarce. A thrown projectile reaches reliably → fast fights. Reaper isn't a
+>   tank, so going semi-ranged is fine (unlike Knight).
+> - **CRESCENT THROW:** one crescent in flight at a time — it homes *mildly* at the
+>   enemy (a thrown blade, so a juke/wall-bounce can make it miss — that's the
+>   counterplay), **turns back on hit** (or at max travel if it whiffs), beelines home
+>   to Reaper, and is "caught"; a short recovery cd, then re-throw. Hits on both legs
+>   (a 0.2s hit-cd prevents an instant double at the turn), each **execute-scaled**.
+>   The crescent also clears skeletons (pierces them via the projectile path).
+> - **HARVEST execute kept exactly as sketched** — HP-percentage damage scaling, no
+>   lifesteal (the Warlock overlap is gone).
+> - **Glass executioner** identity kept via HP (lowered from 1100). Rough balance vs
+>   the current (mostly un-redesigned) roster: **HP 750, dmg 140, cd 1.0, execute
+>   k 1.5, crescent speed 360 / homing 40 / max-travel 240 → ~50% overall, ~12.5s avg,
+>   ~7% fog.** Authoritative tune is a later `./balance.sh` pass.
+> - *Lever notes from the sweep:* **homing** is the hit/miss lever (not speed — a
+>   faster crescent actually hits *more*); **HP** is the clean win-rate lever (dmg
+>   barely moved it — 60% even at half dmg); **cd** is the throw-cadence/pace lever.
+>   Crescent currently uses a **template projectile render** (not final art).
+>
+> *The orbiting-field write-up below is the original sketch, superseded by this.*
 
 **No lifesteal — that was the Warlock overlap.** Orbiting field + heal-from-damage is
 Warlock's drain-and-sustain fantasy with different leverage; *any* heal-from-damage

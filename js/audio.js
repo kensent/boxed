@@ -274,7 +274,8 @@ const Audio = (() => {
       noise(0.14, 0.14, 'highpass', 2000, { filterGlideTo: 5000 });
       tone(1400, 0.08, 'sine', 0.05, { glideTo: 2200 });
     },
-    // Reaper Blood Harvest — a warm, faintly wet restorative pulse.
+    // Heal cue — a warm, faintly wet restorative pulse (Priest DIVINE GRACE,
+    // Warlock leech). Reaper no longer heals (HARVEST is now an execute, not lifesteal).
     heal() {
       tone(440, 0.20, 'sine', 0.10, { glideTo: 660 });
       noise(0.10, 0.05, 'lowpass', 800);

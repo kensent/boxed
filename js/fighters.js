@@ -74,11 +74,14 @@ const FIGHTERS = [
     active: 'RAISE SKELETON — summons a slow skeleton, no cap',
     passive: 'BONE BURST — skeletons explode on death, damaging nearby foes',
   },
-  { id:'reaper',  name:'REAPER',    hp:1100, speed:100, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
-    ability:'sweep', cd:1.0, dmg:160, strikeReach:14,
-    harvestRate: 0.5,
-    active: 'WHIRLING BLADES — dash in and 360° spin on reach',
-    get passive() { return `BLOOD HARVEST — heal ${Math.round(this.harvestRate * 100)}% of damage dealt`; },
+  { id:'reaper',  name:'REAPER',    hp:750, speed:100, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
+    // HP is the balance lever; dmg/cd tuned for pace. cd is the post-catch RECOVERY
+    // (one crescent in flight at a time — the flight round-trip dominates the throw
+    // cycle; see abilities.js).
+    ability:'sweep', cd:1.0, dmg:140,
+    executeK: 1.5, crescentSpeed: 360, crescentHoming: 40, crescentMaxTravel: 240,
+    active: 'CRESCENT THROW — hurls a returning scythe; strikes coming and going',
+    get passive() { return `HARVEST — strikes hit harder the lower the enemy's health`; },
   },
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
     ability:'iai', cd:3.6, dmg:350,

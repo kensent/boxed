@@ -1304,6 +1304,19 @@ function draw() {
         ctx.globalAlpha = 1;
       }
       ctx.restore();
+    } else if (p.kind === 'crescent') {
+      // Reaper thrown scythe — a spinning crescent (template visual, not the final art).
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.spin || 0);
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#aa0000';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, 0, p.size, Math.PI * 0.3, Math.PI * 1.7); ctx.stroke();
+      ctx.strokeStyle = '#1a0e0e';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(0, 0, p.size - 2, Math.PI * 0.3, Math.PI * 1.7); ctx.stroke();
+      ctx.restore();
     }
   });
 
