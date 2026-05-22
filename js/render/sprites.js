@@ -1005,7 +1005,7 @@ function drawFighter(f) {
   // Anticipation hold — per-fighter dash/wind-up timings (heavier fighters dwell
   // longer relative to their dash). Applies the hold translate to the whole body.
   let windup = { active: false, ease: 1 };
-  if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, 0.42, 0.16);
+  if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, f.rampageDur, 0.16);
   else if (f.ability === 'sword')    windup = meleeWindupHold(f, enemy, 0.26, 0.12);
   else if (f.ability === 'riposte')  windup = meleeWindupHold(f, enemy, 0.3, 0.10);
   else if (f.ability === 'sweep')    windup = meleeWindupHold(f, enemy, 0.25, 0.10);

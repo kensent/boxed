@@ -523,7 +523,7 @@ function makeFighter(t, team, x, y) {
     vx: Math.cos(a) * t.speed,
     vy: Math.sin(a) * t.speed,
     cdTimer: t.cd * 0.5 + rng() * 0.5,
-    swingTimer: 0, dashTimer: 0, dashHit: false, blastTimer: 0, flash: 0, negateFlash: 0, dead: false,
+    swingTimer: 0, dashTimer: 0, dashHit: false, rampageHitCd: 0, blastTimer: 0, flash: 0, negateFlash: 0, dead: false,
     // Melee body-language (visual only — never read by the sim/balance):
     //   dashStartX/Y — launch anchor for the anticipation hold
     //   meleeImpact / meleeImpactMax — countdown (and its start value) driving the
@@ -771,6 +771,7 @@ function bounce(f, w, h) {
   if (f.y - FIGHTER_SIZE < 0) { f.y = FIGHTER_SIZE; f.vy = Math.abs(f.vy); hit = true; }
   if (f.y + FIGHTER_SIZE > h) { f.y = h - FIGHTER_SIZE; f.vy = -Math.abs(f.vy); hit = true; }
   if (hit) sfx('wall', null, f.x);
+  return hit;
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
@@ -818,7 +819,12 @@ function step(dt) {
     if (f.stunTimer <= 0) {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
-      bounce(f, w, h);
+      const bounced = bounce(f, w, h);
+      // RAMPAGE — each wall ricochet mid-rampage squashes the body so the bounce
+      // reads as a slam (visual only; the sim never reads meleeImpact back).
+      if (bounced && f.ability === 'tackle' && f.dashTimer > 0) {
+        f.meleeImpact = 0.14; f.meleeImpactMax = 0.14;
+      }
     }
 
     // ---- PASSIVES ----
@@ -879,14 +885,25 @@ function step(dt) {
       }
       const enemy = f === red ? blue : red;
       if (f.ability === 'tackle') {
-        // Berserker: the tackle is a pure collision charge — crashing in IS the hit.
-        if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
+        // Berserker RAMPAGE — keep ricocheting for the whole window; deal damage on
+        // each PASS through the enemy, gated by a per-pass i-frame so one pass = one
+        // hit (not one per frame). Do NOT end the dash or kill the speed on contact —
+        // pass clean through and bounce on. The dashTimer countdown above ends it.
+        if (f.rampageHitCd > 0) f.rampageHitCd -= dt;
+        if (!enemy.dead && f.rampageHitCd <= 0 && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
           damage(enemy, f.dmg, undefined, f);
-          f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + concussive ring
-          f.dashTimer = 0;
-          const a = Math.atan2(f.vy, f.vx);
-          f.vx = Math.cos(a) * f.speed;
-          f.vy = Math.sin(a) * f.speed;
+          f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash on each pass
+          f.rampageHitCd = f.rampageHitGap;
+          // Carom off the enemy like a round bumper — reflect the ramming velocity
+          // about the center-to-center normal (speed preserved). Gated by the i-frame
+          // above, so it reflects once per contact (no per-frame jitter).
+          const nl = Math.hypot(f.x - enemy.x, f.y - enemy.y) || 1;
+          const ux = (f.x - enemy.x) / nl, uy = (f.y - enemy.y) / nl;
+          const vdot = f.vx * ux + f.vy * uy;
+          if (vdot < 0) {                   // only when charging INTO the enemy
+            f.vx -= 2 * vdot * ux;
+            f.vy -= 2 * vdot * uy;
+          }
         }
       } else {
         // Knight / Duelist / Reaper: the dash only closes distance. The strike is
@@ -1085,7 +1102,11 @@ function step(dt) {
 
     if (f === red) {
       const enemy = blue;
-      if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
+      // A rampaging Berserker handles its own enemy collision (caroms at ramming
+      // speed in the dash branch above), so skip the generic base-speed push-apart.
+      const rampaging = (f.ability === 'tackle' && f.dashTimer > 0) ||
+                        (enemy.ability === 'tackle' && enemy.dashTimer > 0);
+      if (!rampaging && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
         const ang = Math.atan2(f.y - enemy.y, f.x - enemy.x);
         f.vx = Math.cos(ang) * f.speed;
         f.vy = Math.sin(ang) * f.speed;

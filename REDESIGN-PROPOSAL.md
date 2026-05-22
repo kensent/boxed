@@ -514,3 +514,6 @@ reusable, not one-offs:
 5. **Balance is explicitly deferred.** Every verb here changes behavior and will
    need its own `./balance.sh` pass; HP is the gentle lever (GOTCHAS.md), so most
    of these can be brought back into the 46–53% band without touching the mechanic.
+6. **Audio + animation revamp — deferred to after the mechanic revamp.** Once all
+   fighters' mechanics are locked, do a dedicated audio + animation pass over the new
+   verbs. No detail yet.

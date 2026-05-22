@@ -56,10 +56,16 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'tackle': {
+      // RAMPAGE — launch at ramming speed toward the enemy, then ricochet off the
+      // walls for the rampage window. The dashTimer holds the speed-management code
+      // off so the ramming speed persists and bounce() pinballs it; step() deals
+      // damage and caroms off the enemy on each contact (per-pass i-frame). Body
+      // holds at the launch point, then whips forward.
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
-      f.vx = Math.cos(ang) * f.speed * 3;
-      f.vy = Math.sin(ang) * f.speed * 3;
-      f.dashTimer = 0.42;
+      f.vx = Math.cos(ang) * f.speed * f.rampageSpeedMult;
+      f.vy = Math.sin(ang) * f.speed * f.rampageSpeedMult;
+      f.dashTimer = f.rampageDur;
+      f.rampageHitCd = 0;
       f.dashStartX = f.x; f.dashStartY = f.y; // visual anchor for the wind-up hold
       break;
     }

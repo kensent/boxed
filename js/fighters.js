@@ -21,9 +21,11 @@ const FIGHTERS = [
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
   },
   { id:'berserker',name:'BERSERKER', hp:1050, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
-    ability:'tackle', cd:1.7, dmg:180,
+    // dmg is now PER PASS (RAMPAGE multi-hits) — placeholder, rebalance later (was 180 single-hit).
+    ability:'tackle', cd:1.7, dmg:100,
     rageBoost: 0.33,
-    active: 'TACKLE DASH — charge that hits on collision',
+    rampageDur: 1.1, rampageSpeedMult: 4, rampageHitGap: 0.22,
+    active: 'RAMPAGE — charges and ricochets off walls, hitting on each pass',
     get passive() { return `BLOODRAGE — +${Math.round(this.rageBoost * 100)}% speed under 50% hp`; },
   },
   { id:'wizard',  name:'WIZARD',    hp:700,  speed:95,  color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
