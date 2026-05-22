@@ -1037,7 +1037,8 @@ function drawFighter(f) {
   } else if (f.aimTimer > 0 && f.aimAbility === 'lightning') {
     const prog = 1 - f.aimTimer / f.windupTime;
     drawChargeRing('255,232,61', prog);
-    // Priest voice: a few orbiting divine gleams (lightning homes — no aim-line).
+    // Priest voice: a few orbiting divine gleams on the windup (the ground reticle
+    // shows where JUDGMENT will strike, so no aim-line on the body).
     const gr = FIGHTER_SIZE + 12 - prog * 5;
     for (let i = 0; i < 3; i++) {
       const ga = (i / 3) * Math.PI * 2 + prog * 6;   // orbit (deterministic)
@@ -1174,9 +1175,8 @@ function drawFighter(f) {
     const k = f.fireKick / f.fireKickMax;            // 1 → 0
     // Discharged-from-an-implement weapons recoil BACK; casts/throws thrust FORWARD.
     // (Sapper "mine" steps back from the trap it just set.)
-    const recoil = (f.ability === 'cannon' || f.ability === 'lightning' ||
-                    f.ability === 'arrow' || f.ability === 'mine');
-    const mag = ({ cannon: 12, lightning: 8, arrow: 5, mine: 5 }[f.ability] || 7) * k;
+    const recoil = (f.ability === 'cannon' || f.ability === 'arrow' || f.ability === 'mine');
+    const mag = ({ cannon: 12, arrow: 5, mine: 5 }[f.ability] || 7) * k;
     const along = recoil ? -mag : mag;               // − = back (recoil), + = forward (thrust)
     fireX = Math.cos(f.fireDir) * along;
     fireY = Math.sin(f.fireDir) * along;
@@ -1505,26 +1505,6 @@ function drawFighter(f) {
     ctx.fillStyle = `rgba(255,232,61,${a.toFixed(3)})`;            // yellow sigil core
     drawStar(ctx, 0, 0, 4, 6 + prog * 6, 2);
     ctx.fill();
-    ctx.restore();
-  }
-
-  // ===== PRIEST — divine spark (bespoke launch flash) =======================
-  // A white cross-spark + yellow ring at the staff tip as the bolt discharges.
-  if (f.ability === 'lightning' && f.fireKick > 0) {
-    const prog = 1 - f.fireKick / f.fireKickMax;
-    const a = 1 - prog;
-    ctx.save();
-    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 5), Math.sin(f.fireDir) * (FIGHTER_SIZE + 5));
-    ctx.lineCap = 'round';
-    const len = 5 + prog * 10;
-    ctx.strokeStyle = `rgba(255,255,220,${a.toFixed(3)})`;
-    ctx.lineWidth = 2 * a + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(-len, 0); ctx.lineTo(len, 0); ctx.moveTo(0, -len); ctx.lineTo(0, len);
-    ctx.stroke();
-    ctx.strokeStyle = `rgba(255,232,61,${(a * 0.7).toFixed(3)})`;
-    ctx.lineWidth = 1.5 * a + 0.5;
-    ctx.beginPath(); ctx.arc(0, 0, 3 + prog * 9, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
 

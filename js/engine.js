@@ -822,8 +822,8 @@ function step(dt) {
     }
 
     // ---- PASSIVES ----
-    // Priest: Divine Grace — heals on each cast now (see fireAbility 'lightning'),
-    // not a continuous regen.
+    // Priest: Divine Grace — heals only when JUDGMENT lands (see resolveAim),
+    // not a continuous regen or per-cast heal.
     // Berserker: Bloodrage — +rageBoost% speed when below 50% hp.
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
     if (f.ability === 'tackle') {

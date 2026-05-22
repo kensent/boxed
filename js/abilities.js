@@ -20,17 +20,19 @@ function fireAbility(f, enemy) {
   // sounds when orbs actually spawn (not when the 3-orb cap blocks the cast).
   switch (f.ability) {
     case 'lightning': {
-      // Wind-up: charge, then aim and fire at the moment of release
+      // JUDGMENT — predictive light pillar. Lock the strike on the enemy's
+      // PREDICTED position by leading their current velocity over the windup: it
+      // lands on a straight-mover, but a wall-bounce mid-windup changes their
+      // vector and dodges it (the counterplay). Heal moved to the hit (resolveAim).
       f.aimTimer = f.windupTime;
       f.aimAbility = 'lightning';
+      // Lead the enemy's velocity, but CLAMP the strike inside the arena so the
+      // pillar never lands in the void past a wall — it always targets a spot a
+      // fighter could actually occupy. The bounce still dodges via genuine
+      // mid-arena vector changes; hugging a wall no longer auto-escapes.
+      f.judgeX = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, enemy.x + enemy.vx * f.windupTime));
+      f.judgeY = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, enemy.y + enemy.vy * f.windupTime));
       sfx('chargeUp', null, f.x);
-      // DIVINE GRACE — heal on each cast (at wind-up start). Lands ~once per cd
-      // (1.4s), mirroring the old continuous regen rate.
-      const healed = Math.min(f.maxHp, f.hp + f.healOnCast) - f.hp;
-      if (healed > 0) {
-        f.hp += healed;
-        spawnFloat(f.x, f.y - FIGHTER_SIZE, '+' + healed, healColor(f));
-      }
       // slow the priest during wind-up
       f.vx *= 0.3; f.vy *= 0.3;
       break;
@@ -254,11 +256,28 @@ function resolveAim(f) {
   const target = f === game.red ? game.blue : game.red;
   if (target.dead) { f.aimAbility = null; return; }
   if (f.aimAbility === 'lightning') {
-    // Aim is taken at the moment of release, not at the start of the windup
-    const ang = Math.atan2(target.y - f.y, target.x - f.x);
-    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*200, vy:Math.sin(ang)*200, team:f.team, dmg:f.dmg, life:2.2, kind:'lightning', size:5, homing:70, cruise:200 });
-    sfx('lightning', null, f.x);
-    f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = ang; // staff-bolt discharge (recoil)
+    // JUDGMENT lands at the locked predicted spot. The pillar + ground-ring is a
+    // headless-guarded spawn; the strike sound is the Priest's holy bell ('lightning').
+    const tx = f.judgeX, ty = f.judgeY;
+    spawnImpact(tx, ty, 'judgment', 0, 0.9);
+    sfx('lightning', null, tx);
+    // Hit = the enemy's BODY overlaps the pillar footprint — matches what the
+    // reticle shows (body touching the gold zone ring = struck), not a center
+    // point test, so a fighter visibly inside the ring can't whiff.
+    if (Math.hypot(target.x - tx, target.y - ty) < f.pillarRadius + FIGHTER_SIZE) {
+      // DIVINE GRACE heals only on a hit that actually CONNECTS — damage() returns
+      // the dealt amount, or nothing if the hit was negated (Jester dodge/invuln).
+      // So a phased judgment still strikes (pillar + sound) but grants no heal.
+      const dealt = damage(target, f.dmg, 'judgment');
+      if (dealt > 0) {
+        const healed = Math.min(f.maxHp, f.hp + f.healOnHit) - f.hp;
+        if (healed > 0) {
+          f.hp += healed;
+          spawnFloat(f.x, f.y - FIGHTER_SIZE, '+' + healed, healColor(f));
+          sfx('heal', null, f.x);
+        }
+      }
+    }
   } else if (f.aimAbility === 'cannon') {
     // Straight line, fast, big, no homing. Muzzle flash + smoke.
     const ang = Math.atan2(target.y - f.y, target.x - f.x);

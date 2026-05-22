@@ -84,28 +84,41 @@ on that spot.
 **Passive — DIVINE GRACE (re-tied).** Landing a judgment restores HP. Whiff it and
 you get nothing.
 
-**Why it's distinct.** It's the only attack that plays *against* ballistic
-movement. Between wall bounces, fighters travel in straight lines — so a led strike
-is reliable, *unless the target clips a wall during the windup and changes vector.*
-Wall geometry becomes the counterplay. No one else has a delayed ground-target that
-leads the enemy (Sapper's mine sits at Priest's own position and waits for contact;
-this hunts a future point).
+**Why it's distinct.** It's the only attack that plays *against* ballistic movement:
+it leads the enemy's current velocity, so a fighter moving in a straight line gets
+struck, but a genuine *vector change* during the windup (or Jester's teleport) dodges
+it. No one else has a delayed ground-target that leads the enemy (Sapper's mine sits
+at Priest's own position and waits for contact; this hunts a future point).
 
 **The real fix.** Today the heal ticks regardless of anything Priest does — zero
 synergy. Tying sustain to *landing* judgment creates the loop Priest has never had:
 hit → live; miss → starve.
 
-**Matchup texture.** Crushes slow/large movers who can't escape the lead (Cannoneer,
-Knight, Necromancer). Folds against erratic bouncers and hard against Jester, whose
-teleport breaks the prediction outright.
-
-**Reads as.** A reticle/cross blooms at the target spot, the existing priest charge
-gleams orbit and tighten, then a gold column drops with a ground-ring force-shape —
-a satisfying inversion of Priest's DISSOLVE death (judgment comes *down*; the soul
+**Reads as.** A reticle blooms at the target spot, the existing priest charge gleams
+orbit and tighten, then a gold column drops with a ground-ring force-shape — a
+satisfying inversion of Priest's DISSOLVE death (judgment comes *down*; the soul
 rises *up*).
 
 **Sounds as.** Windup = rising bell harmonic; the pillar = a bright bell-strike with
 a warm gold resonance tail; a soft ascending chime confirms the heal on a hit.
+
+**Implemented & validated** (`abilities.js`/`arena.js`/`fighters.js`; internal id
+stays `lightning` to keep the DISSOLVE death + telegraph + audio). Refinements made
+during the prototype:
+- **Aim is clamped inside the arena**, not a raw straight-line lead. A pillar in the
+  void past a wall looked like a misfire and made Priest dead weight whenever the
+  enemy was near an edge — so the strike always targets a spot a fighter could
+  occupy. Net: *wall-hugging no longer auto-dodges*; the counterplay is genuine
+  mid-arena vector changes + Jester. (This walks back the original "wall bounce is
+  THE counterplay" framing.)
+- **Hit = body overlaps the gold zone** (`dist < pillarRadius + FIGHTER_SIZE`), so
+  the reticle and the hit boundary are the same circle — no whiff on a fighter
+  visibly inside the ring.
+- **DIVINE GRACE heals only on a connecting hit** — a judgment phased by Jester's
+  dodge still strikes (pillar + sound) but grants no heal; a reduced (armor/shield)
+  hit still counts.
+- Tunables: `windupTime 0.45`, `pillarRadius 34`, `healOnHit 28`, `dmg 180`.
+  Balance deferred per plan.
 
 ---
 

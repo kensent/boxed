@@ -78,13 +78,6 @@ function drawImpact(im) {
       for (let i = 0; i < 7; i++) { const g = (i / 7) * Math.PI * 2 + i * 0.5; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 3, Math.sin(g) * 3); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
       break;
     }
-    case 'lightning': {                             // yellow zap
-      const r = 4 + prog * 11;
-      ctx.strokeStyle = `rgba(255,232,61,${a.toFixed(3)})`;
-      ctx.lineWidth = 1.6 * a + 0.4;
-      for (let i = 0; i < 6; i++) { const g = (i / 6) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(g) * r * 0.6 + Math.cos(g + 1) * 2, Math.sin(g) * r * 0.6 + Math.sin(g + 1) * 2); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
-      break;
-    }
     case 'orb': {                                   // purple rune pop
       ctx.strokeStyle = `rgba(199,125,255,${a.toFixed(3)})`;
       ctx.lineWidth = 2 * a + 0.4;
@@ -143,6 +136,25 @@ function drawImpact(im) {
       ctx.moveTo(0, 0); ctx.lineTo(-sp, -sp * 0.6);                                     // splinters fanning back
       ctx.moveTo(0, 0); ctx.lineTo(-sp, sp * 0.6);
       ctx.stroke();
+      break;
+    }
+    case 'judgment': {                              // Priest JUDGMENT — holy light shaft + gold ground-ring
+      const sh = 64 + m * 28;                       // shaft height (light from above)
+      ctx.strokeStyle = `rgba(255,255,255,${(a * 0.9).toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.6;
+      ctx.beginPath(); ctx.moveTo(0, -sh); ctx.lineTo(0, 0); ctx.stroke();           // bright core ray
+      ctx.strokeStyle = `rgba(255,232,61,${(a * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 1.5 * a + 0.4;
+      const fan = 5 + prog * 5;
+      ctx.beginPath();
+      ctx.moveTo(-fan, -sh); ctx.lineTo(0, 0); ctx.moveTo(fan, -sh); ctx.lineTo(0, 0); // flanking rays converge
+      ctx.stroke();
+      const r = 5 + prog * (22 + m * 16);           // gold ground-ring expands
+      ctx.strokeStyle = `rgba(255,232,61,${(a * 0.9).toFixed(3)})`;
+      ctx.lineWidth = 2.5 * a + 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,255,240,${a.toFixed(3)})`;                            // white-hot point
+      ctx.beginPath(); ctx.arc(0, 0, 3 * a + 1, 0, Math.PI * 2); ctx.fill();
       break;
     }
     default: {                                      // generic flash
@@ -967,6 +979,38 @@ function draw() {
     }
   });
 
+  // Priest JUDGMENT — windup target reticle at the locked predicted spot (world
+  // space, behind the fighters). Tightens + brightens as the strike nears.
+  // Deterministic: driven by windup progress + time, never rng (GOTCHAS).
+  [game.red, game.blue].forEach(f => {
+    if (f.aimAbility !== 'lightning' || f.aimTimer <= 0 || f.dead) return;
+    const prog = 1 - f.aimTimer / f.windupTime;
+    const pr = f.pillarRadius || 34;               // THE damage zone: a body touching this ring is struck
+    const al = 0.3 + prog * 0.6;
+    ctx.save();
+    ctx.translate(f.judgeX, f.judgeY);
+    // converging telegraph — a light ring tightening onto the zone (incoming)
+    const conv = pr * (2.1 - prog * 1.1);          // ~2.1·pr → pr as the strike nears
+    ctx.strokeStyle = `rgba(255,255,255,${(0.12 + prog * 0.28).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, conv, 0, Math.PI * 2); ctx.stroke();
+    // the damage zone — bold gold, the ring a body must not touch
+    ctx.strokeStyle = `rgba(255,232,61,${al.toFixed(3)})`;
+    ctx.lineWidth = 1.5 + prog * 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, pr, 0, Math.PI * 2); ctx.stroke();
+    // crosshair ticks across the zone ring
+    ctx.lineWidth = 1 + prog;
+    const tk = 4 + prog * 4;
+    for (let i = 0; i < 4; i++) {
+      const ga = i * Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ga) * (pr - tk), Math.sin(ga) * (pr - tk));
+      ctx.lineTo(Math.cos(ga) * (pr + tk), Math.sin(ga) * (pr + tk));
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+
   game.mines.forEach(m => {
     const pulse = Math.sin(m.life * 8) * 0.5 + 0.5;
     const armed = m.armed <= 0;
@@ -1062,86 +1106,7 @@ function draw() {
   });
 
   game.projectiles.forEach(p => {
-    if (p.kind === 'lightning') {
-      // Jagged lightning dart trailing behind the lead point. Irregular segment
-      // lengths + wandering off-axis path + uneven forks make it read as
-      // ELECTRICITY, not an even zigzag. Every value is deterministic (layered
-      // sin seeded by segment index + a per-bolt phase) — NEVER vrng(): the
-      // renderer must not touch the sim RNG stream or live fights desync.
-      const ang = Math.atan2(p.vy, p.vx);
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(ang);
-      // A phase unique-ish per bolt so two bolts don't draw identically, but
-      // STABLE for a given bolt (its life counts down, giving a slow flicker).
-      const ph = (p.life || 0) * 9.0;
-      const segs = 7;
-      // Build the bolt path: points march back from the tip (0,0) along -x,
-      // with irregular step lengths and a wandering perpendicular offset.
-      const pts = [{ x: 0, y: 0 }];
-      let bx = 0;
-      for (let i = 1; i <= segs; i++) {
-        // Uneven segment length: 2..5px, varied per segment.
-        const stepLen = 2.4 + Math.abs(Math.sin(i * 2.7 + ph)) * 2.6;
-        bx -= stepLen;
-        // Wandering offset — mix two frequencies so it veers rather than
-        // politely alternating; amplitude grows slightly toward the tail.
-        const wob = (Math.sin(i * 1.9 + ph) + Math.sin(i * 4.3 + ph * 1.7) * 0.5);
-        const off = wob * (1.6 + i * 0.45);
-        pts.push({ x: bx, y: off });
-      }
-      // Outer glow stroke — soft, wide, low alpha.
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(255,232,61,0.35)';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      // Main yellow bolt — width tapers from tail (thin) to tip (thick).
-      for (let i = 1; i < pts.length; i++) {
-        const t = 1 - i / pts.length;            // 1 at tip, → 0 at tail
-        ctx.strokeStyle = '#ffe83d';
-        ctx.lineWidth = 1.2 + t * 1.8;
-        ctx.beginPath();
-        ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
-        ctx.lineTo(pts[i].x, pts[i].y);
-        ctx.stroke();
-      }
-      // White-hot core down the centre — thin, bright, electric.
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      // Two forks of different sizes, branching at sharp angles from irregular
-      // points along the bolt.
-      const forkAt = [2, 5];
-      for (let k = 0; k < forkAt.length; k++) {
-        const a = pts[forkAt[k]];
-        const fl = 4 + k * 3;                    // different lengths
-        const fdir = (k === 0 ? 1 : -1);
-        const fang = (0.7 + Math.abs(Math.sin(ph + k * 3.1)) * 0.6) * fdir;
-        ctx.strokeStyle = '#ffe83d';
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(a.x - Math.cos(fang) * fl, a.y + Math.sin(fang) * fl);
-        ctx.stroke();
-      }
-      // Bright tip — tight white core + small yellow glow (no big blobby orb).
-      ctx.fillStyle = 'rgba(255,232,61,0.45)';
-      ctx.beginPath();
-      ctx.arc(0, 0, p.size + 1, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(0, 0, p.size - 1.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    } else if (p.kind === 'arrow') {
+    if (p.kind === 'arrow') {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.angle);
