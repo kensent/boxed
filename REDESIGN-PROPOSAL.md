@@ -55,7 +55,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 |---|---|---|
 | **Priest** | redesign | `JUDGMENT` — predictive light pillar; landing it heals |
 | **Berserker** | redesign | `RAMPAGE` — becomes a wall-ricocheting charge |
-| **Knight** | redesign | `BULWARK` — plant, absorb incoming, discharge as a slam |
+| **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
 | **Reaper** | redesign | `REAP` — orbiting scythe field + EXECUTE: hits scale up as the enemy weakens |
 | **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
 | **Ronin** | redesign | `IAI` — committed line-dash *through* the enemy + recovery |
@@ -155,8 +155,37 @@ heavy meaty slam on each wall ricochet; low primal rumble tail.
 
 ---
 
-## KNIGHT → `BULWARK`
+## KNIGHT → `BULWARK` *(UNRESOLVED — prototyping shelved; see status)*
 *Material: heavy plate steel, deep clang, resonant ring (unchanged).*
+
+> **STATUS (2026-05-23): Knight is the hard corner of this whole effort.** Every
+> direction we tried hit a wall, because a **melee tank under autonomous DVD movement**
+> is a genuinely tight design box. What we explored and why each failed:
+> - **BULWARK (reactive absorb → counter-return):** *impossible to balance.* Its output
+>   depends on the enemy attacking during an un-timable stance window; with no agency to
+>   time the guard, the result is RNG coincidence, not a tunable function. (This is the
+>   general no-reactive-timing lesson — see the note in GOTCHAS / memory.)
+> - **JUGGERNAUT (continuous homing pursuit + bash):** tuned and paced great, but **broke
+>   the DVD-bounce identity** — Knight cutting straight at the enemy looked wrong.
+> - **SHIELD THROW (boomerang projectile):** keeps DVD and tunes cleanly, but **turns the
+>   frontline tank into a ranged fighter** — off-brand.
+> - **SHIELD CHARGE (brief dash-charge + tank twist):** keeps DVD and is melee, but the
+>   locomotion is "a dash," so it's only a modest twist on the generic dash we're trying
+>   to move the cluster *away* from.
+>
+> **The trilemma:** a melee tank under DVD can only land reliable damage by (a) dashing
+> to close — on-brand but "just a dash"; (b) reaching out — ranged, off-brand; or
+> (c) random body-contact — pure DVD but unreliable/slow. There's no clean fourth path.
+>
+> **Decision pending:** either accept a modest **Shield Charge** as Knight's redesign, or
+> **cut Knight from the roster and design a new 16th fighter with a genuinely distinct,
+> DVD-friendly verb** to take his slot. Leaning toward the latter — it's better to add a
+> fighter that *wants* to exist in this design space than to force one that doesn't.
+> Prototyping is skipped for now; Knight stays on the original SHIELD BASH in code until
+> this is decided.
+>
+> *The BULWARK write-up below is the original sketch, kept for reference — it is
+> superseded by this status.*
 
 **Active — BULWARK.** The opposite of a dash. Knight **plants** and raises guard for a
 brief stance. Damage taken during the stance is reduced *and* **banked**; when the
