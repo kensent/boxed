@@ -475,6 +475,29 @@ reusable, not one-offs:
 3. **Two redesigns now share a grammar by design** — Priest (precise) and Cannoneer
    (area) are the same predictive-strike family. Confirm that reads as intentional
    contrast and not repetition before building both.
-4. **Balance is explicitly deferred.** Every verb here changes behavior and will
+4. **Connection rate — arena/fighter size ratio.** Under autonomous RNG movement, the
+   thing that governs how often *anything* lands is the ratio of (fighter size +
+   ability ranges) to arena size, plus the speeds — that's the real "connection rate"
+   for two random-bouncing bodies. Today a 32px-diameter fighter sits in a 360 arena
+   (~9% of the width) with a lot of empty space. That's fine for the current
+   mostly-homing/auto-aim roster, but several redesigns lean hard on raw geometry
+   actually intersecting (Berserker's ricochet passes, Reaper's field uptime, Sapper's
+   thrown stick, the predictive strikes) and will feel whiffy if connection stays this
+   sparse.
+   - **Decide it empirically, while prototyping** the most connection-hungry redesign
+     (Berserker RAMPAGE or Reaper REAP): build it, watch ~20 fights, see if it connects
+     enough. The redesigns themselves are what reveal whether the arena needs to be denser.
+   - **Lean: shrink the arena slightly, not grow the fighters.** Readability is already
+     solved by the follow-camera (so there's no readability gain to chase from bigger
+     sprites); a smaller arena *also* raises wall-bounce frequency, which strengthens
+     the core DVD identity and directly feeds Berserker + Witch; and `FIGHTER_SIZE` is
+     baked into every melee reach (`FIGHTER_SIZE*2 + strikeReach`), so growing it
+     silently inflates all five melee ranges. The arena's only real entanglement is the
+     camera (its zoom formula uses `ARENA`) — a cheap, isolated render-only re-tune.
+   - **Caveats:** shrinking the arena at fixed speeds is a *speed* change in disguise
+     (same speeds cross a smaller box faster — more frantic), so co-tune speeds; and
+     don't overshoot, or the camera framing flattens (fighters always touching kills the
+     spread/close drama).
+5. **Balance is explicitly deferred.** Every verb here changes behavior and will
    need its own `./balance.sh` pass; HP is the gentle lever (GOTCHAS.md), so most
    of these can be brought back into the 46–53% band without touching the mechanic.
