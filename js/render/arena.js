@@ -998,37 +998,22 @@ function draw() {
     shaken = true;
   }
 
-  // Reaper WAKE hazard segments — curved blade-cuts left along the scythe's
-  // arc. A scythe blade is CURVED, so its cut should be curved too. Each
-  // segment renders as a bold short arc (the main slash) plus a faint paired
-  // arc (the deeper-cut shadow underneath), at a deterministic per-segment
-  // angle from world (x, y) — no rng in draw(). Adjacent segments compose
-  // into a row of overlapping crimson scythe-cuts. No filled under-pool;
-  // earlier "circle blob" wasn't reading as a slash.
+  // Reaper WAKE hazard segments — clean crimson damage-zone markers.
+  // Just an outlined ring + small inner dot per segment; overlapping segments
+  // along the scythe's trajectory compose into the trail without per-segment
+  // visual noise. (Earlier paired-arc "slash" version was reading as messy
+  // with all the random per-segment rotation; this is the calmer alternative.)
   (game.hazards || []).forEach(h => {
     const fade = h.timer / h.maxTimer;               // 1 → 0
-    const ang = (h.x * 0.137 + h.y * 0.211) % (Math.PI * 2);
-    const r = h.radius;
-    ctx.save();
-    ctx.translate(h.x, h.y);
-    ctx.rotate(ang);
-    ctx.lineCap = 'round';
-    // Bright primary slash — a short curved arc, the shape of a scythe-cut.
-    // Centred so the cut spans roughly 2r and dips down ~0.5r at its lowest.
-    ctx.strokeStyle = `rgba(220,30,30,${(fade * 0.95).toFixed(3)})`;
-    ctx.lineWidth = 2.8;
+    ctx.strokeStyle = `rgba(180,20,20,${(fade * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.arc(0, r * 0.6, r * 1.15, Math.PI * 1.22, Math.PI * 1.78);
+    ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
     ctx.stroke();
-    // Deeper shadow underneath — fainter, slightly smaller arc, gives the cut
-    // weight (a fresh wound has two layers: the bright outer edge + the dark
-    // depth). Same arc shape so it reads as one cut, not two.
-    ctx.strokeStyle = `rgba(110,0,0,${(fade * 0.55).toFixed(3)})`;
-    ctx.lineWidth = 1.6;
+    ctx.fillStyle = `rgba(150,0,0,${(fade * 0.45).toFixed(3)})`;
     ctx.beginPath();
-    ctx.arc(0, r * 0.6 + 1.5, r * 1.05, Math.PI * 1.25, Math.PI * 1.75);
-    ctx.stroke();
-    ctx.restore();
+    ctx.arc(h.x, h.y, h.radius * 0.35, 0, Math.PI * 2);
+    ctx.fill();
   });
 
   // Priest JUDGMENT — windup target reticle at the locked predicted spot (world
