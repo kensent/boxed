@@ -89,10 +89,17 @@ const FIGHTERS = [
     get passive() { return `DOPPELGANGER — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
   },
   { id:'cannoneer',name:'CANNONEER',hp:1030, speed:85,  color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
-    ability:'cannon', cd:3.0, dmg:400,
-    windupTime: 1.0, splashRadius: 55,
+    // dmg 400 -> 360 + splashMinFrac 0.4 floor on EPICENTER falloff. The
+    // previous setup ran Cannoneer at 56% (top of band); the linear-to-zero
+    // falloff also meant "close miss" landed for 0 damage, which felt bad.
+    // New shape: center still hits hard (360), edge deals 40% (144) instead
+    // of nothing — near-misses are rewarded, but max damage is lower so
+    // overall win rate drops back into band.
+    // (340 + 0.3 floor over-corrected to 47%; 360 + 0.4 targets ~52%.)
+    ability:'cannon', cd:3.0, dmg:360,
+    windupTime: 1.0, splashRadius: 55, splashMinFrac: 0.4,
     get active() { return `BOMBARD — ${this.windupTime}s windup, then a heavy shell that splashes on landing`; },
-    passive: 'EPICENTER — damage peaks at the blast center, scaling to nothing at the splash edge',
+    get passive() { return `EPICENTER — damage peaks at the blast center, falling off to ${Math.round(this.splashMinFrac * 100)}% at the splash edge`; },
   },
   { id:'duelist', name:'DUELIST',   hp:950,  speed:115, color:'#1a1a2e', accent:'#c0c0e8', shape:'rapier',
     ability:'riposte', cd:1.7, dmg:250, strikeReach:10,
@@ -123,10 +130,13 @@ const FIGHTERS = [
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
-    // dmg 130 -> 118 to compensate for the FOCUS-plant buff (predictable iai
-    // launch geometry from a fixed stance reliably connects more chained cuts).
-    // 130 ran at 64.6%, 110 over-corrected to 47.7%, 118 lands ~52%.
-    ability:'iai', cd:2.5, dmg:118,
+    // dmg 130 -> 118 -> 112 — the 118 figure landed ~52% in a 15-fighter
+    // roster but climbed to 56.7% in the 16-fighter roster (Geomancer's
+    // wall-bouncer kit feeds Ronin a 77% favourable matchup, pulling his
+    // overall average up). Trimming to 112 to compensate.
+    // 130 ran at 64.6%, 110 over-corrected to 47.7%, 118 ran ~52% (15-roster)
+    // / 56.7% (16-roster), 112 targets ~53% in the 16-roster.
+    ability:'iai', cd:2.5, dmg:112,
     windupTime: 0.5,
     // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
     // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%

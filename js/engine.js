@@ -1551,14 +1551,19 @@ function step(dt) {
     p.life -= dt;
     if (p.life <= 0) {
       // BOMBARD landing — a cannon shell that didn't directly contact the enemy
-      // EXPLODES at its predicted landing point with DIRECT HIT falloff (max at
-      // center, scaling to 0 at splashRadius). Same logic as the contact branch.
+      // EXPLODES at its predicted landing point with DIRECT HIT falloff (max
+      // at center, falling off to `splashMinFrac` at the edge — not zero,
+      // so a near-miss inside the splash radius is rewarded with a chip
+      // instead of a whiff). Same logic as the contact branch.
       if (p.kind === 'cannon') {
         const ownerC = p.team === 'red' ? red : blue;
         const tgtC = p.team === 'red' ? blue : red;
         if (!ownerC.dead && !tgtC.dead) {
           const d = Math.hypot(tgtC.x - p.x, tgtC.y - p.y);
-          if (d < ownerC.splashRadius) damage(tgtC, p.dmg * (1 - d / ownerC.splashRadius), 'projectile');
+          if (d < ownerC.splashRadius) {
+            const falloff = Math.max(ownerC.splashMinFrac, 1 - d / ownerC.splashRadius);
+            damage(tgtC, p.dmg * falloff, 'projectile');
+          }
         }
         spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         sfx('impact', { kind: 'cannon', big: 1 }, p.x);
