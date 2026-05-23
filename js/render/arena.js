@@ -1727,7 +1727,14 @@ function draw() {
   game.impacts.forEach(drawImpact);
 
   game.floatTexts.forEach(ft => {
-    ctx.globalAlpha = Math.min(1, ft.life * 1.5);
+    // Alpha is fully opaque while alive; fades only in the final ~0.25s of
+    // life. Decouples "how long the float is visible" from "alpha at
+    // spawn" — important because endGame() clamps life on the killing
+    // blow to 0.25s, which under the old life-proportional alpha would
+    // draw the killing-blow float semi-transparent from frame 1. Fade
+    // threshold matches the endGame clamp so a clamped float renders
+    // fully opaque at spawn and then decays cleanly.
+    ctx.globalAlpha = ft.life >= 0.25 ? 1 : Math.max(0, ft.life / 0.25);
     ctx.textAlign = 'center';
     if (ft.big != null) {
       // Damage number — an event. Size scales with the hit's weight, and it
