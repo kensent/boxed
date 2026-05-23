@@ -12,14 +12,9 @@ function shake(mag) {
   // gone so the draw() shake transform stays inert. Rebuild with the new system.
   return;
 }
-// hitStop(dur): freeze the sim for a few ms. The micro-pause makes a hit land
-// hard — it's the core trick behind "punchy" game feel. NOTE: not guarded by
-// `headless` — the headless runner replicates the loop's hitstop handling so
-// a hunted seed reproduces the exact same fight when watched live.
-function hitStop(dur) {
-  if (!game) return;
-  game.hitStop = Math.max(game.hitStop, dur);
-}
+// (hitStop / frame-freeze on high-dmg hits removed — see commit history.
+//  Was a deterministic sim pause for "feel" but it stuttered the fight tempo;
+//  the visual punch lives in the damage float + recoil + flash now.)
 
 function damage(target, dmg, srcKind, src) {
   if (target.dead) return;
@@ -100,14 +95,13 @@ function damage(target, dmg, srcKind, src) {
   // and an HP/damage rescale stays a clean linear transform of this value.
   const feedbackDmg = burstMerge ? (target.dmgFloat.rawTotal + dmg) : dmg;
   // Impact feedback scales with damage magnitude — a chip barely registers,
-  // a big hit rocks the screen, flashes hard, and briefly freezes the sim.
-  // Drain (the continuous channel tick) skips the punchy feedback so a sustained
-  // beam doesn't machine-gun the shake.
+  // a big hit rocks the screen and flashes hard. Drain (the continuous channel
+  // tick) skips the punchy feedback so a sustained beam doesn't machine-gun
+  // the shake. (The old high-dmg hitStop frame-freeze was removed.)
   const big = Math.min(1, feedbackDmg / 260); // 0..1, ~1 at the heaviest hits
   if (srcKind !== 'drain') {
     target.flash = 0.14 + big * 0.20;
     shake(2 + big * 9);
-    if (feedbackDmg >= 120) hitStop(0.03 + big * 0.05);
   } else {
     target.flash = 0.12;
   }

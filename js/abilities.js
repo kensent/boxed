@@ -453,7 +453,6 @@ function resolveAim(f) {
         });
       }
       shake(8);
-      hitStop(0.05);
     }
     // Low roll (1-2) — LOADED DICE: halve the remaining cooldown so an
     // unlucky roll comes back around faster. Applied here, at resolve, since

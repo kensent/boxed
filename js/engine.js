@@ -465,7 +465,7 @@ function buildGame(redT, blueT) {
     projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
-    shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
+    shakeTime: 0, shakeMag: 0, flashFrame: 0,
     introPlaying: true,
   };
 }
@@ -790,11 +790,7 @@ function advance() {
   }
   if (game.koTimer > 0) game.koTimer -= realDt;
   if (game.flashFrame > 0) game.flashFrame -= realDt;
-  let simDt = realDt * game.timeScale;
-  if (game.hitStop > 0) {
-    game.hitStop -= realDt;
-    simDt = 0;
-  }
+  const simDt = realDt * game.timeScale;
   if (game.shakeTime > 0) {
     game.shakeTime -= realDt;
     if (game.shakeTime <= 0) game.shakeMag = 0;
