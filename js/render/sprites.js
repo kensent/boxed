@@ -1138,27 +1138,8 @@ function drawFighter(f) {
     }
     ctx.restore();
   }
-  // FOG — magenta fog-licks encroaching from outside while caught in the closing
-  // ring. Sparse radial licks (NOT a ring) so it never collides with a fighter's own
-  // state ring (bloodrage/FOCUS/mana-shield/…), which FOG can co-occur with.
-  if (game.elapsed > 20 && !f.dead) {
-    const dc = Math.hypot(f.x - game.w / 2, f.y - game.h / 2);
-    if (dc > (game.ringRadius || 999)) {
-      const pulse = 0.5 + Math.sin(performance.now() / 90) * 0.5;   // fast alarm
-      ctx.strokeStyle = `rgba(210,90,255,${(0.45 + pulse * 0.45).toFixed(3)})`;
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      const r1 = FIGHTER_SIZE + 12;
-      for (let i = 0; i < 8; i++) {
-        const ang = (i / 8) * Math.PI * 2;
-        const fl = 4 + Math.abs(Math.sin(performance.now() / 80 + i * 1.6)) * 5;  // flicker inward
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
-        ctx.lineTo(Math.cos(ang) * (r1 - fl), Math.sin(ang) * (r1 - fl));
-        ctx.stroke();
-      }
-    }
-  }
+  // (FOG state indicator removed with the closing-ring mechanic — fights are
+  // resolved by fighters now, not pressured by an arena hazard.)
 
   // Orientation: face the enemy. Mirror rather than rotate past vertical so the
   // sprite never goes upside-down (forward is local +x).

@@ -23,19 +23,6 @@ function hitStop(dur) {
 
 function damage(target, dmg, srcKind, src) {
   if (target.dead) return;
-  // Fog (closing-ring) damage is environmental — bypasses every dodge, shield,
-  // parry, and reduction. It also doesn't spawn a damage float (the ring visual
-  // and the draining HP bar already make it obvious).
-  if (srcKind === 'fog') {
-    target.hp -= dmg;
-    target.flash = 0.12;
-    if (target.hp <= 0) {
-      target.hp = 0;
-      target.dead = true;
-      endGame();  // death sound fires when the kill-cam arrives + body shatters (draw)
-    }
-    return;
-  }
   // Jester DOPPELGANGER: every hit Jester actually takes spawns a phantom
   // decoy at her current position. Decoys are stationary targets that absorb
   // the NEXT incoming attack on Jester (decoys are added to defender.decoys
@@ -114,9 +101,10 @@ function damage(target, dmg, srcKind, src) {
   const feedbackDmg = burstMerge ? (target.dmgFloat.rawTotal + dmg) : dmg;
   // Impact feedback scales with damage magnitude — a chip barely registers,
   // a big hit rocks the screen, flashes hard, and briefly freezes the sim.
-  // Fog/drain are environmental/continuous — they skip the punchy feedback.
+  // Drain (the continuous channel tick) skips the punchy feedback so a sustained
+  // beam doesn't machine-gun the shake.
   const big = Math.min(1, feedbackDmg / 260); // 0..1, ~1 at the heaviest hits
-  if (srcKind !== 'fog' && srcKind !== 'drain') {
+  if (srcKind !== 'drain') {
     target.flash = 0.14 + big * 0.20;
     shake(2 + big * 9);
     if (feedbackDmg >= 120) hitStop(0.03 + big * 0.05);

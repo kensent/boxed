@@ -54,21 +54,24 @@ const engine = loadEngine();
 const EXCLUDE_IDS = new Set(['knight']);
 const ids = engine.FIGHTERS.map(f => f.id).filter(id => !EXCLUDE_IDS.has(id));
 const N = 500;
-const RING_START = 20; // seconds — matches engine.js step()
+// Fights that took longer than this (seconds) get counted as "long" — useful for
+// spotting stalemate-prone matchups now that the fog mechanic was removed and
+// nothing artificially shortens fights.
+const LONG_FIGHT_THRESHOLD = 30;
 
 function matchupStats(a, b, salt) {
-  let wins = 0, totalElapsed = 0, fogCount = 0;
+  let wins = 0, totalElapsed = 0, longCount = 0;
   for (let k = 0; k < N; k++) {
     const seed = (salt * 2654435761 + k * 40503) >>> 0;  // same formula as boxedsim.js
     const r = engine.simulateFightDetailed(a, b, seed);
     if (r.winId === a) wins++;
     totalElapsed += r.elapsed || 0;
-    if ((r.elapsed || 0) > RING_START) fogCount++;
+    if ((r.elapsed || 0) > LONG_FIGHT_THRESHOLD) longCount++;
   }
   return {
     wr: Math.round(wins / N * 100),
     avgElapsed: Math.round(totalElapsed / N * 10) / 10,
-    fogPct: Math.round(fogCount / N * 100),
+    longPct: Math.round(longCount / N * 100),
   };
 }
 
@@ -93,7 +96,7 @@ const out = [];
 for (let m = start; m < end && m < matchups.length; m++) {
   const { a, b, salt } = matchups[m];
   const s = matchupStats(a, b, salt);
-  out.push(`'${a}_${b}':${s.wr}:${s.avgElapsed}:${s.fogPct}`);
+  out.push(`'${a}_${b}':${s.wr}:${s.avgElapsed}:${s.longPct}`);
 }
 fs.appendFileSync(outfile, out.join('\n') + '\n');
 console.error(`shard [${start},${end}) done: ${out.length} matchups in ${((Date.now()-t0)/1000).toFixed(1)}s`);

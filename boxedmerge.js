@@ -29,7 +29,7 @@ if (lines.length !== expected) {
 }
 
 // De-dupe (in case a shard ran twice), keep last occurrence.
-// Format: 'a_b':winRate[:avgElapsed[:fogPct]  (old format: 2 fields; new: 4)
+// Format: 'a_b':winRate[:avgElapsed[:longPct]  (long% = fights past 30s)
 const tbl = {};
 lines.forEach(l => {
   const parts = l.split(':');
@@ -37,7 +37,7 @@ lines.forEach(l => {
   tbl[key] = {
     wr: +parts[1],
     elapsed: parts.length > 2 ? +parts[2] : null,
-    fogPct: parts.length > 3 ? +parts[3] : null,
+    longPct: parts.length > 3 ? +parts[3] : null,
   };
 });
 
@@ -56,14 +56,14 @@ for (let i = 0; i < ordered.length; i += 5)
 block += '};';
 console.log(block);
 
-// Per-fighter stats: average win rate, average fight time, fog engagement %.
+// Per-fighter stats: average win rate, average fight time, % of fights past 30s.
 function odds(a, b) {
   if (tbl[a + '_' + b] != null) return tbl[a + '_' + b].wr;
   if (tbl[b + '_' + a] != null) return 100 - tbl[b + '_' + a].wr;
   return 50;
 }
-const avg = {}, elapsedBuf = {}, fogBuf = {};
-ids.forEach(id => { avg[id] = []; elapsedBuf[id] = []; fogBuf[id] = []; });
+const avg = {}, elapsedBuf = {}, longBuf = {};
+ids.forEach(id => { avg[id] = []; elapsedBuf[id] = []; longBuf[id] = []; });
 for (let i = 0; i < ids.length; i++) {
   for (let j = 0; j < ids.length; j++) {
     if (i === j) continue;
@@ -76,7 +76,7 @@ for (let i = 0; i < ids.length; i++) {
     const row = tbl[key];
     if (!row) continue;
     if (row.elapsed != null) { elapsedBuf[ids[i]].push(row.elapsed); elapsedBuf[ids[j]].push(row.elapsed); }
-    if (row.fogPct  != null) { fogBuf[ids[i]].push(row.fogPct);  fogBuf[ids[j]].push(row.fogPct);  }
+    if (row.longPct != null) { longBuf[ids[i]].push(row.longPct); longBuf[ids[j]].push(row.longPct); }
   }
 }
 const mean = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : null;
@@ -84,13 +84,13 @@ const summary = ids.map(id => ({
   id,
   wr:      Math.round(mean(avg[id]) * 10) / 10,
   elapsed: elapsedBuf[id].length ? Math.round(mean(elapsedBuf[id]) * 10) / 10 : null,
-  fog:     fogBuf[id].length     ? Math.round(mean(fogBuf[id]))             : null,
+  longP:   longBuf[id].length    ? Math.round(mean(longBuf[id]))             : null,
 })).sort((a, b) => b.wr - a.wr);
 
 console.error('\n--- per-fighter stats ---');
-console.error('  ' + 'fighter'.padEnd(14) + 'win%'.padEnd(8) + 'avg time'.padEnd(12) + 'fog%');
+console.error('  ' + 'fighter'.padEnd(14) + 'win%'.padEnd(8) + 'avg time'.padEnd(12) + 'long%');
 summary.forEach(s => {
   const elapsed = s.elapsed != null ? s.elapsed.toFixed(1) + 's' : '?';
-  const fog = s.fog != null ? s.fog + '%' : '?';
-  console.error(`  ${s.id.padEnd(14)}${String(s.wr + '%').padEnd(8)}${elapsed.padEnd(12)}${fog}`);
+  const longP = s.longP != null ? s.longP + '%' : '?';
+  console.error(`  ${s.id.padEnd(14)}${String(s.wr + '%').padEnd(8)}${elapsed.padEnd(12)}${longP}`);
 });

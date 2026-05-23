@@ -426,7 +426,7 @@ function buildGame(redT, blueT) {
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
     projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
-    over: false, finishTimer: 0, winner: null, elapsed: 0, ringRadius: 999, ringWarned: false, lastT: performance.now(),
+    over: false, finishTimer: 0, winner: null, elapsed: 0, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, hitStop: 0, flashFrame: 0,
     introPlaying: true,
@@ -669,25 +669,21 @@ function updateHp() {
   document.getElementById('hp-blue').style.width = Math.max(0, (game.blue.hp/game.blue.maxHp)*100) + '%';
   document.getElementById('hp-text-red').textContent = `${Math.max(0,Math.round(game.red.hp))} / ${game.red.maxHp}`;
   document.getElementById('hp-text-blue').textContent = `${Math.max(0,Math.round(game.blue.hp))} / ${game.blue.maxHp}`;
-  // Fight clock — counts down to the closing ring (0:20), then shows FOG while
-  // the ring is active. Turns red and pulses once the fog is closing in.
+  // Fight clock — counts UP from 0:00 since the fog mechanic was removed. Pure
+  // informational display (how long the fight has been going), no urgent state.
   const clock = document.getElementById('fight-clock');
   if (clock) {
     const elapsed = game.elapsed || 0;
-    if (elapsed < 20) {
-      const secs = Math.ceil(20 - elapsed);
-      clock.textContent = '0:' + (secs < 10 ? '0' : '') + secs;
-      clock.classList.remove('urgent');
-    } else {
-      clock.textContent = 'FOG';
-      clock.classList.add('urgent');
-    }
+    const total = Math.floor(elapsed);
+    const mins = Math.floor(total / 60), secs = total % 60;
+    clock.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    clock.classList.remove('urgent');
   }
 }
 
 // (The DOM status-badge system was removed: every status now reads on the fighter
 // itself — armed/rage/focus rings, stun stars, mark sigil, slow drag-trail, the
-// loaded pop, the fog alarm ring — so a HUD badge row would just double-report.)
+// loaded pop — so a HUD badge row would just double-report.)
 
 // Fixed simulation timestep. The loop accumulates real time and advances the
 // sim in exact FIXED_DT chunks — so the fight is fully deterministic from its
@@ -824,28 +820,12 @@ function tryHitDecoy(pos, defender, hitRange) {
 function step(dt) {
   const { w, h, red, blue } = game;
 
-  // Closing ring: after RING_START the safe zone shrinks toward arena center.
-  // Fighters outside it take escalating "fog" damage. Forces a KO finish —
-  // the 30s cap is now just an unreachable backstop.
-  if (!game.winner) {
-    game.elapsed += dt;
-    const RING_START = 20, RING_FULL = 28;
-    const arenaR = Math.hypot(w, h) / 2;
-    if (game.elapsed > RING_START) {
-      if (!game.ringWarned) { game.ringWarned = true; sfx('ringClose'); } // one-shot fog-onset warning
-      const prog = Math.min(1, (game.elapsed - RING_START) / (RING_FULL - RING_START));
-      game.ringRadius = arenaR * (1 - prog);
-      let fogDps = 30 + prog * 90;
-      if (game.elapsed > RING_FULL) fogDps += (game.elapsed - RING_FULL) * 200;
-      [red, blue].forEach(f => {
-        if (f.dead) return;
-        const dc = Math.hypot(f.x - w / 2, f.y - h / 2);
-        if (dc > game.ringRadius) damage(f, fogDps * dt, 'fog');
-      });
-    } else {
-      game.ringRadius = arenaR;
-    }
-  }
+  // Fight clock — just tracks elapsed time. The old closing-ring / fog mechanic
+  // was removed: Shorts viewers want to see fights finished naturally on the
+  // fighters' own merits, not pressured by an external arena hazard. The
+  // headless harness's 4000-tick guard (simulateFightDetailed) still catches
+  // any truly infinite stalemate so balance runs always terminate.
+  if (!game.winner) game.elapsed += dt;
 
   [red, blue].forEach(f => {
     if (f.dead) return;

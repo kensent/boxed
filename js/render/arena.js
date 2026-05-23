@@ -1531,35 +1531,6 @@ function draw() {
   // Impact bursts — at the contact point, on top of the fighters they struck.
   game.impacts.forEach(drawImpact);
 
-  // Closing ring — once active, draw the encroaching fog beyond the safe circle
-  // plus a bright pulsing boundary line. Sits above fighters so the danger reads.
-  if (game.elapsed > 20 && game.ringRadius < Math.hypot(game.w, game.h) / 2) {
-    const cx = game.w / 2, cy = game.h / 2;
-    const r = Math.max(0, game.ringRadius);
-    // Fog fill: everything OUTSIDE the safe circle. Use even-odd fill so the
-    // safe zone is punched out.
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, game.w, game.h);
-    ctx.arc(cx, cy, r, 0, Math.PI * 2, true); // reverse winding = hole
-    const pulse = 0.5 + Math.sin(performance.now() / 200) * 0.12;
-    ctx.fillStyle = `rgba(150,40,200,${(0.22 * pulse + 0.12).toFixed(3)})`;
-    ctx.fill('evenodd');
-    ctx.restore();
-    // Boundary ring — bright pulsing circle
-    ctx.strokeStyle = `rgba(210,90,255,${(0.6 + Math.sin(performance.now() / 150) * 0.3).toFixed(2)})`;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-    // Inner faint guide ring
-    ctx.strokeStyle = 'rgba(210,90,255,0.25)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy, Math.max(0, r - 4), 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
   game.floatTexts.forEach(ft => {
     ctx.globalAlpha = Math.min(1, ft.life * 1.5);
     ctx.textAlign = 'center';

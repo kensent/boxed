@@ -413,14 +413,6 @@ const Audio = (() => {
       noise(0.14, 0.18, 'bandpass', 1500, { filterGlideTo: 400 });
       tone(150, 0.16, 'triangle', 0.08, { glideTo: 60 });
     },
-    // The closing ring begins — a single low ominous swell as the fog moves in.
-    // One-shot event marker (fires once at RING_START), not an ambient bed.
-    ringClose() {
-      tone(120, 0.70, 'sawtooth', 0.16, { glideTo: 90, attack: 0.25 });
-      tone(60, 0.70, 'sine', 0.10, { glideTo: 50 });
-      noise(0.70, 0.05, 'lowpass', 300, { filterGlideTo: 650 });
-    },
-
     // Per-fighter death voice — routed by archetype (AUDIO.md). Death is the
     // ceiling: the archetype voice is bigger than the fighter's own material.
     death(ability) {
