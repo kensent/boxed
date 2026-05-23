@@ -58,20 +58,44 @@ const N = 500;
 // spotting stalemate-prone matchups now that the fog mechanic was removed and
 // nothing artificially shortens fights.
 const LONG_FIGHT_THRESHOLD = 30;
+// A "tight" fight is one where the winner barely survived — finished below this
+// fraction of their max HP. Captures the dramatic close-finish profile of a
+// matchup (per-fight, not the matchup's overall win rate).
+const TIGHT_HP_FRACTION = 0.3;
+
+// Cache fighter templates by id once so the inner loop just looks up max HP.
+const FBYID = {};
+engine.FIGHTERS.forEach(f => { FBYID[f.id] = f; });
 
 function matchupStats(a, b, salt) {
   let wins = 0, totalElapsed = 0, longCount = 0;
+  let tightCount = 0, tightElapsedTotal = 0;
+  const aMax = FBYID[a].hp, bMax = FBYID[b].hp;
   for (let k = 0; k < N; k++) {
     const seed = (salt * 2654435761 + k * 40503) >>> 0;  // same formula as boxedsim.js
     const r = engine.simulateFightDetailed(a, b, seed);
     if (r.winId === a) wins++;
     totalElapsed += r.elapsed || 0;
     if ((r.elapsed || 0) > LONG_FIGHT_THRESHOLD) longCount++;
+    // Tight = winner ended on < TIGHT_HP_FRACTION of their max HP (regardless of
+    // who won). Stalemates without a winner don't count as tight (no margin).
+    if (r.winId) {
+      const winMax = r.winId === a ? aMax : bMax;
+      if (r.winnerHp / winMax < TIGHT_HP_FRACTION) {
+        tightCount++;
+        tightElapsedTotal += r.elapsed || 0;
+      }
+    }
   }
   return {
     wr: Math.round(wins / N * 100),
     avgElapsed: Math.round(totalElapsed / N * 10) / 10,
     longPct: Math.round(longCount / N * 100),
+    // Total tight elapsed + count are emitted as raw sums (not averages); the
+    // merge step computes per-matchup AND per-fighter averages from them, so
+    // rounding only happens once at display time.
+    tightCount,
+    tightElapsedTotal: Math.round(tightElapsedTotal * 10) / 10,
   };
 }
 
@@ -96,7 +120,7 @@ const out = [];
 for (let m = start; m < end && m < matchups.length; m++) {
   const { a, b, salt } = matchups[m];
   const s = matchupStats(a, b, salt);
-  out.push(`'${a}_${b}':${s.wr}:${s.avgElapsed}:${s.longPct}`);
+  out.push(`'${a}_${b}':${s.wr}:${s.avgElapsed}:${s.longPct}:${s.tightCount}:${s.tightElapsedTotal}`);
 }
 fs.appendFileSync(outfile, out.join('\n') + '\n');
 console.error(`shard [${start},${end}) done: ${out.length} matchups in ${((Date.now()-t0)/1000).toFixed(1)}s`);

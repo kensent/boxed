@@ -29,7 +29,11 @@ if (lines.length !== expected) {
 }
 
 // De-dupe (in case a shard ran twice), keep last occurrence.
-// Format: 'a_b':winRate[:avgElapsed[:longPct]  (long% = fights past 30s)
+// Format: 'a_b':wr:avgElapsed:longPct:tightCount:tightElapsedTotal
+//   - long%   = fraction of fights past LONG_FIGHT_THRESHOLD (stalemate detector)
+//   - tight   = winner finished below TIGHT_HP_FRACTION of max HP (close finish);
+//               TOTAL elapsed of those fights + COUNT are emitted raw so the
+//               average is computed once here at display time.
 const tbl = {};
 lines.forEach(l => {
   const parts = l.split(':');
@@ -38,6 +42,8 @@ lines.forEach(l => {
     wr: +parts[1],
     elapsed: parts.length > 2 ? +parts[2] : null,
     longPct: parts.length > 3 ? +parts[3] : null,
+    tightCount: parts.length > 4 ? +parts[4] : null,
+    tightElapsedTotal: parts.length > 5 ? +parts[5] : null,
   };
 });
 
@@ -56,14 +62,22 @@ for (let i = 0; i < ordered.length; i += 5)
 block += '};';
 console.log(block);
 
-// Per-fighter stats: average win rate, average fight time, % of fights past 30s.
+// Per-fighter stats: win rate, avg time, long% (stalemate-prone matchups), and
+// average tight-fight time (winner < 30% HP at finish). Tight time is weighted
+// by the per-matchup count so matchups that produce more close finishes have
+// more pull on the per-fighter average. Per-matchup tight time is then printed
+// in a separate section below.
 function odds(a, b) {
   if (tbl[a + '_' + b] != null) return tbl[a + '_' + b].wr;
   if (tbl[b + '_' + a] != null) return 100 - tbl[b + '_' + a].wr;
   return 50;
 }
 const avg = {}, elapsedBuf = {}, longBuf = {};
-ids.forEach(id => { avg[id] = []; elapsedBuf[id] = []; longBuf[id] = []; });
+const tightSum = {}, tightTotal = {};   // sum-of-elapsed and count, per fighter
+ids.forEach(id => {
+  avg[id] = []; elapsedBuf[id] = []; longBuf[id] = [];
+  tightSum[id] = 0; tightTotal[id] = 0;
+});
 for (let i = 0; i < ids.length; i++) {
   for (let j = 0; j < ids.length; j++) {
     if (i === j) continue;
@@ -77,20 +91,51 @@ for (let i = 0; i < ids.length; i++) {
     if (!row) continue;
     if (row.elapsed != null) { elapsedBuf[ids[i]].push(row.elapsed); elapsedBuf[ids[j]].push(row.elapsed); }
     if (row.longPct != null) { longBuf[ids[i]].push(row.longPct); longBuf[ids[j]].push(row.longPct); }
+    if (row.tightCount != null && row.tightElapsedTotal != null) {
+      // Tight fights show up on BOTH fighters' rows (the matchup produced them).
+      tightSum[ids[i]] += row.tightElapsedTotal; tightTotal[ids[i]] += row.tightCount;
+      tightSum[ids[j]] += row.tightElapsedTotal; tightTotal[ids[j]] += row.tightCount;
+    }
   }
 }
 const mean = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : null;
 const summary = ids.map(id => ({
   id,
-  wr:      Math.round(mean(avg[id]) * 10) / 10,
-  elapsed: elapsedBuf[id].length ? Math.round(mean(elapsedBuf[id]) * 10) / 10 : null,
-  longP:   longBuf[id].length    ? Math.round(mean(longBuf[id]))             : null,
+  wr:        Math.round(mean(avg[id]) * 10) / 10,
+  elapsed:   elapsedBuf[id].length ? Math.round(mean(elapsedBuf[id]) * 10) / 10 : null,
+  longP:     longBuf[id].length    ? Math.round(mean(longBuf[id]))             : null,
+  tightTime: tightTotal[id] > 0    ? Math.round(tightSum[id] / tightTotal[id] * 10) / 10 : null,
+  tightN:    tightTotal[id],
 })).sort((a, b) => b.wr - a.wr);
 
 console.error('\n--- per-fighter stats ---');
-console.error('  ' + 'fighter'.padEnd(14) + 'win%'.padEnd(8) + 'avg time'.padEnd(12) + 'long%');
+console.error('  ' + 'fighter'.padEnd(14) + 'win%'.padEnd(8) + 'avg time'.padEnd(11) + 'long%'.padEnd(8) + 'tight avg'.padEnd(11) + '(n)');
 summary.forEach(s => {
-  const elapsed = s.elapsed != null ? s.elapsed.toFixed(1) + 's' : '?';
-  const longP = s.longP != null ? s.longP + '%' : '?';
-  console.error(`  ${s.id.padEnd(14)}${String(s.wr + '%').padEnd(8)}${elapsed.padEnd(12)}${longP}`);
+  const elapsed   = s.elapsed   != null ? s.elapsed.toFixed(1) + 's' : '?';
+  const longP     = s.longP     != null ? s.longP + '%'              : '?';
+  const tightTime = s.tightTime != null ? s.tightTime.toFixed(1) + 's' : '—';
+  const tightN    = '(' + s.tightN + ')';
+  console.error(`  ${s.id.padEnd(14)}${String(s.wr + '%').padEnd(8)}${elapsed.padEnd(11)}${longP.padEnd(8)}${tightTime.padEnd(11)}${tightN}`);
+});
+
+// Per-matchup tight-fight stats. Every matchup gets a row even if zero tight
+// fights happened (so the table covers all 105 pairings). Sorted by tight count
+// DESC so the most dramatically close matchups float to the top.
+console.error('\n--- per-matchup tight fights (winner finished < 30% HP) ---');
+console.error('  ' + 'matchup'.padEnd(28) + 'tight#'.padEnd(8) + 'tight avg time');
+const matchupRows = [];
+for (let i = 0; i < ids.length; i++) {
+  for (let j = i + 1; j < ids.length; j++) {
+    const key = ids[i] + '_' + ids[j];
+    const row = tbl[key];
+    if (!row) continue;
+    const n = row.tightCount || 0;
+    const avgT = n > 0 ? Math.round(row.tightElapsedTotal / n * 10) / 10 : null;
+    matchupRows.push({ key, n, avgT });
+  }
+}
+matchupRows.sort((a, b) => b.n - a.n || (a.key < b.key ? -1 : 1));
+matchupRows.forEach(r => {
+  const avgT = r.avgT != null ? r.avgT.toFixed(1) + 's' : '—';
+  console.error(`  ${r.key.padEnd(28)}${String(r.n).padEnd(8)}${avgT}`);
 });
