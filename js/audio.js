@@ -324,6 +324,12 @@ const Audio = (() => {
       } else if (mat === 'sweep') {      // Reaper — dry bone arc crack
         noise(0.08, v, 'bandpass', 1200, { filterGlideTo: 600 });
         tone(240, 0.10, 'triangle', v * 0.85, { glideTo: 120 });
+      } else if (mat === 'iai') {        // Ronin — fine drawn steel, single clean ring
+        noise(0.03, v * 0.7, 'bandpass', 4400);
+        tone(1400, 0.14, 'sine', v * 0.9, { glideTo: 800 });
+      } else if (mat === 'blink') {      // Jester — brittle ceramic-dagger puncture
+        noise(0.03, v * 0.6, 'highpass', 4200);
+        tone(2400, 0.07, 'triangle', v * 0.85, { glideTo: 1600 });
       }
     },
     // Projectile / trap / minion impact crack — the audio mirror of the visual
