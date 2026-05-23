@@ -193,7 +193,7 @@ function fireAbility(f, enemy) {
         // Real HP: damage now goes through damageSkeleton() with each
         // attacker's true dmg, so this is a meaningful pool. Tune via SKEL_HP.
         team: f.team, hp: SKEL_HP, maxHp: SKEL_HP, dmg: f.dmg, size: 8,
-        attackCd: 0.5, spin: 0, hitCd: 0, flash: 0,
+        attackCd: 0.5, spin: 0, hitCd: 0, wakeHitCd: 0, flash: 0,
         chargeTimer: 0, chargeHit: false,
       });
       f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x); // raise gesture (thrust)

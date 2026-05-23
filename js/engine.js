@@ -1421,9 +1421,9 @@ function step(dt) {
       };
       if (p.phase === 'out') {
         // DOPPELGANGER: outbound steers toward the nearest of {target, decoys}.
-        // Decoys don't move, so a decoy-locked crescent will just fly straight at
-        // it; the projectile-hit branch above turns the crescent into Reaper's
-        // discard if the decoy absorbs it (crescentOut cleared, cooldown resumes).
+        // Decoys don't move, so a decoy-locked crescent will fly straight at
+        // it; on contact the hit-branch below consumes the decoy and the
+        // scythe overshoots through (same as enemy-overshoot behavior).
         const aim = pickTarget(p, target);
         if (aim === target ? !target.dead : true) steer(aim.x, aim.y, p.homing);
       }
@@ -1464,12 +1464,12 @@ function step(dt) {
       // Hit (gated by hitCd so it can't double-hit on a single overshoot/return
       // pass). The hit doesn't terminate the scythe's flight — it overshoots
       // and can connect again on the return leg.
-      // DOPPELGANGER: a closer decoy absorbs the crescent and ends its run.
-      // The boomerang doesn't return — owner.crescentOut is cleared so Reaper
-      // can throw a fresh one next cd cycle.
+      // DOPPELGANGER: a closer decoy absorbs ONE hit attempt and is consumed,
+      // but the scythe overshoots through (same shape as the enemy-overshoot
+      // behavior — landing a hit shouldn't end the throw). hitCd guards the
+      // next frame from retriggering on the same decoy / chaining decoys.
       if (p.hitCd <= 0 && tryHitDecoy(p, target, FIGHTER_SIZE + p.size)) {
-        owner.crescentOut = false;
-        return false;
+        p.hitCd = 0.2;
       }
       if (!target.dead && p.hitCd <= 0 && dist(p, target) < FIGHTER_SIZE + p.size) {
         damage(target, p.dmg, 'projectile');
@@ -1728,7 +1728,8 @@ function step(dt) {
     if (h.timer <= 0) return false;
     // Reaper WAKE — the only hazard kind currently in use (Cannoneer's fire pool
     // was retired when EPICENTER became the passive). Dense overlapping segments
-    // gate damage on the TARGET's wakeHitCd, not a per-segment cooldown.
+    // gate damage on each TARGET's wakeHitCd (per-fighter, per-skeleton), not
+    // a per-segment cooldown.
     const target = h.team === 'red' ? blue : red;
     if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {
       damage(target, h.dmg, 'hazard');
@@ -1737,6 +1738,15 @@ function step(dt) {
       sfx('wakeTick', null, target.x);
       target.wakeHitCd = WAKE_HIT_GAP;
     }
+    // WAKE also chips ENEMY skeletons in range — same WAKE_HIT_GAP rate per
+    // skeleton so a dense wake patch can't double-dip per frame.
+    game.skeletons = game.skeletons.filter(sk => {
+      if (sk.team === h.team) return true;             // wake belongs to h.team; harm only the OTHER team's skeletons
+      if (sk.wakeHitCd > 0) return true;
+      if (dist(h, sk) >= h.radius + sk.size) return true;
+      sk.wakeHitCd = WAKE_HIT_GAP;
+      return !damageSkeleton(sk, h.dmg);                // damageSkeleton returns true on kill → remove
+    });
     return true;
   });
 
@@ -1836,6 +1846,7 @@ function step(dt) {
     if (sk.y < sk.size) { sk.y = sk.size; sk.vy = Math.abs(sk.vy); }
     if (sk.y > h - sk.size) { sk.y = h - sk.size; sk.vy = -Math.abs(sk.vy); }
     if (sk.hitCd > 0) sk.hitCd -= dt;
+    if (sk.wakeHitCd > 0) sk.wakeHitCd -= dt;
     if (sk.flash > 0) sk.flash -= dt;
     return true;
   });
