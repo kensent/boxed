@@ -1446,6 +1446,51 @@ function draw() {
     });
   });
 
+  // SHATTER burst — the moment of release. A bright green ring expands outward
+  // from the target's body; the previously embedded arrows fly out as residue
+  // in their stuck-in directions, fading. Both layers share the same set of
+  // per-fighter fields and live for 0.3s / 0.4s respectively (set in engine
+  // when the cushion crosses shatterAt).
+  [game.red, game.blue].forEach(f => {
+    if (f.dead) return;
+    // Expanding ring — peaks at burst, fades to nothing.
+    if (f.shatterFlash > 0) {
+      const t = 1 - f.shatterFlash / 0.3;               // 0 at burst, 1 at end
+      const r = FIGHTER_SIZE + t * 42;
+      const a = (1 - t) * 0.85;
+      ctx.strokeStyle = `rgba(60,255,138,${a.toFixed(3)})`;
+      ctx.lineWidth = 2.5 + (1 - t) * 1.5;
+      ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.stroke();
+      // Secondary inner ring — adds weight without an alpha-fill (mobile budget).
+      ctx.strokeStyle = `rgba(220,255,200,${(a * 0.6).toFixed(3)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.72, 0, Math.PI * 2); ctx.stroke();
+    }
+    // Scattering arrows — fly outward from the body in their stuck-in angles.
+    if (f.shattering && f.shattering.length) {
+      f.shattering.forEach(s => {
+        const t = 1 - s.timer / 0.4;                    // 0 at burst, 1 at end
+        const fade = 1 - t;
+        const c = Math.cos(s.angle), si = Math.sin(s.angle);
+        const px = -si, py = c;
+        const r0 = FIGHTER_SIZE * 0.92 + t * 38;        // arrowhead flies out
+        const r1 = FIGHTER_SIZE + 12 + t * 38;          // tail too
+        const hx = f.x + c * r0, hy = f.y + si * r0;
+        const tx = f.x + c * r1, ty = f.y + si * r1;
+        ctx.strokeStyle = `rgba(232,222,184,${(0.9 * fade).toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.strokeStyle = `rgba(60,255,138,${(0.9 * fade).toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(tx + px * 2.5, ty + py * 2.5);
+        ctx.lineTo(tx - c * 2.4, ty - si * 2.4);
+        ctx.lineTo(tx - px * 2.5, ty - py * 2.5);
+        ctx.stroke();
+      });
+    }
+  });
+
   // Impact bursts — at the contact point, on top of the fighters they struck.
   game.impacts.forEach(drawImpact);
 

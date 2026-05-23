@@ -38,10 +38,9 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'arrow': {
-      // VOLLEY — no windup, fan f.volleyArrows arrows in a narrow spread (no
-      // every-Nth gimmick). Each arrow carries the PINCUSHION params on the
-      // projectile so a parried-back arrow still applies the same ramp when it
-      // lands; stack count + scaling lives on the target.
+      // VOLLEY — no windup, fan f.volleyArrows arrows in a narrow spread.
+      // SHATTER params ride on the projectile so a Duelist-parried arrow still
+      // contributes to (and triggers) the same shatter cycle on its new target.
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
       const spread = f.volleySpread;
       for (let i = 0; i < f.volleyArrows; i++) {
@@ -50,9 +49,9 @@ function fireAbility(f, enemy) {
           x: f.x, y: f.y, vx: Math.cos(a2) * 290, vy: Math.sin(a2) * 290,
           team: f.team, dmg: f.dmg, life: 2.2,
           kind: 'arrow', size: 3, homing: 0, angle: a2,
-          pincushionMult: f.pincushionMult,
+          shatterAt: f.shatterAt,
+          shatterPerStack: f.shatterPerStack,
           pincushionDur: f.pincushionDur,
-          pincushionCap: f.pincushionCap,
         });
       }
       f.fireKick = 0.12; f.fireKickMax = 0.12; f.fireDir = ang; // light bowstring snap-back

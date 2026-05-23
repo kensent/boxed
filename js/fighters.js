@@ -48,14 +48,15 @@ const FIGHTERS = [
     passive: 'BLAST RADIUS — the detonation knocks the enemy back',
   },
   { id:'archer',  name:'ARCHER',    hp:730,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
-    // VOLLEY fan per cast (no every-Nth gimmick) + PINCUSHION stack ramp. Stacks
-    // decay so it's a tempo mechanic, not a runaway clock — fire-rate × duration
-    // self-caps the held stack count (and pincushionCap is the hard ceiling).
-    ability:'arrow', cd:0.7, dmg:34,
+    // VOLLEY fan per cast + SHATTER: arrows embed visibly; the shatterAt-th arrow
+    // bursts the whole cushion for stacks × shatterPerStack damage in one number
+    // (the trigger arrow's chip is folded into the burst). Individual stacks
+    // decay slowly so a quiet archer doesn't carry a phantom cushion forever.
+    ability:'arrow', cd:0.7, dmg:30,
     volleyArrows: 3, volleySpread: 0.18,
-    pincushionMult: 0.07, pincushionDur: 0.9, pincushionCap: 5,
+    shatterAt: 5, shatterPerStack: 18, pincushionDur: 2.0,
     active: 'VOLLEY — a fan of arrows on every cast, fired while moving',
-    get passive() { return `PINCUSHION — each landed arrow stacks +${Math.round(this.pincushionMult * 100)}% damage on the next; stacks decay`; },
+    get passive() { return `SHATTER — each landed arrow embeds in the enemy; the ${this.shatterAt}th bursts the whole cushion for ${this.shatterPerStack} damage per arrow`; },
   },
   { id:'jester',  name:'JESTER',    hp:750,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
     ability:'blink', cd:2.5, dmg:130,

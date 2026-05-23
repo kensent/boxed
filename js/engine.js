@@ -549,12 +549,14 @@ function makeFighter(t, team, x, y) {
     iaiAngle: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
-    // Archer PINCUSHION — each stack is { timer, angle, born } in world coords;
-    // angle is the incoming arrow's tail direction (pre-rolled at hit time, no
-    // RNG in draw). `born` is a brief landing-burst countdown for the visual
-    // pop when each arrow first sticks. pincushionFlash is the cluster pulse
-    // (all arrows brighten + thicken) triggered every time a new stack lands.
+    // Archer SHATTER state — pincushion is the live cushion (each entry has a
+    // timer, world angle, and landing-burst `born`); pincushionFlash is the
+    // brief cluster shudder on a new landing. shattering is the post-burst
+    // residue: arrows flying outward over 0.4s after a SHATTER trigger.
+    // shatterFlash is the expanding ring at the moment of burst.
+    // Everything here is visual or sim-state; never read by balance code.
     pincushion: [], pincushionFlash: 0,
+    shattering: [], shatterFlash: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
     // Warlock drain channel state
@@ -989,6 +991,14 @@ function step(dt) {
       }
     }
     if (f.pincushionFlash > 0) f.pincushionFlash -= dt;
+    // SHATTER residue — scattered arrows fly outward over 0.4s after a burst.
+    if (f.shattering && f.shattering.length) {
+      for (let i = f.shattering.length - 1; i >= 0; i--) {
+        f.shattering[i].timer -= dt;
+        if (f.shattering[i].timer <= 0) f.shattering.splice(i, 1);
+      }
+    }
+    if (f.shatterFlash > 0) f.shatterFlash -= dt;
 
     // Warlock: drain channel. Ticks f.dmg every 0.2s while the enemy stays in
     // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
@@ -1491,37 +1501,50 @@ function step(dt) {
         }
         target.witchMarkTimer = p.markDuration;
       }
-      // Archer PINCUSHION — each existing stack on the target boosts the next
-      // arrow's damage. Stack-push happens AFTER damage() (we want stacks-before-
-      // hit to do the scaling, then the freshly landed arrow seeds its own stack).
-      if (p.kind === 'arrow' && target.pincushion) {
-        dmgOut = dmgOut * (1 + target.pincushion.length * p.pincushionMult);
-      }
-      damage(target, dmgOut, 'projectile');
+      // Archer SHATTER — each arrow embeds first; if that pushes the cushion to
+      // p.shatterAt, the whole cushion BURSTS. The trigger arrow's chip damage
+      // is folded into the burst (one big damage number rather than two stacked
+      // floats); the embedded arrows move to the `shattering` residue array for
+      // the fly-outward scatter visual; the cushion resets.
+      let shattered = false;
       if (p.kind === 'arrow' && !target.dead) {
         if (!target.pincushion) target.pincushion = [];
-        if (target.pincushion.length < p.pincushionCap) {
-          // Tail angle = direction the arrow came FROM, so the shaft visually
-          // sticks out where it hit. Pre-rolled in sim — render reads it back.
-          // `born` drives the landing-burst pop on this specific arrow; the
-          // target-wide `pincushionFlash` makes the whole cluster shudder.
-          target.pincushion.push({
-            timer: p.pincushionDur,
-            angle: Math.atan2(-p.vy, -p.vx),
-            born: 0.18,
-          });
-          target.pincushionFlash = 0.15;
+        target.pincushion.push({
+          timer: p.pincushionDur,
+          angle: Math.atan2(-p.vy, -p.vx),
+          born: 0.18,
+        });
+        target.pincushionFlash = 0.15;
+        if (target.pincushion.length >= p.shatterAt) {
+          const stacks = target.pincushion.length;
+          dmgOut = stacks * p.shatterPerStack;
+          target.shattering = target.pincushion.map(s => ({
+            angle: s.angle,
+            timer: 0.4,
+          }));
+          target.pincushion = [];
+          target.shatterFlash = 0.3;
+          shattered = true;
         }
       }
+      damage(target, dmgOut, 'projectile');
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
       // + sfx ALWAYS fire so the boom lands before the kill-cam push-in even on a
-      // lethal hit; only the victim's recoil-shake needs the alive gate.
-      const big = Math.min(1, dmgOut / 260);
+      // lethal hit; only the victim's recoil-shake needs the alive gate. On
+      // SHATTER the burst centres on the body (the cushion releases at once)
+      // rather than at the arrow's strike point.
       const hitAng = Math.atan2(p.vy, p.vx);
-      spawnImpact(p.x, p.y, p.kind, hitAng, big);
-      sfx('impact', { kind: p.kind, big: big }, p.x);
+      if (shattered) {
+        spawnImpact(target.x, target.y, 'arrow', 0, 1);
+        sfx('impact', { kind: 'arrow', big: 1 }, target.x);
+      } else {
+        const big = Math.min(1, dmgOut / 260);
+        spawnImpact(p.x, p.y, p.kind, hitAng, big);
+        sfx('impact', { kind: p.kind, big: big }, p.x);
+      }
       if (!target.dead) {
-        target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
+        const recoilBig = shattered ? 1 : Math.min(1, dmgOut / 260);
+        target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = recoilBig * 13;
       }
       return false;
     }

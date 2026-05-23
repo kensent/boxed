@@ -57,7 +57,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Berserker** | redesign | `RAMPAGE` — becomes a wall-ricocheting charge |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
 | **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
-| **Archer** | shipped | `VOLLEY` — fan of arrows per cast + PINCUSHION ramp (decaying stacks of bonus damage on the target) |
+| **Archer** | shipped | `VOLLEY` — fan of arrows per cast + SHATTER (cushion of embedded arrows bursts at 5 stacks for stacks×N damage) |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
 | **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
 | **Sapper** | shipped | `STICK CHARGE` — thrown fused limpet bomb; sticks on contact, detonates after a fuse, BLAST RADIUS knockback |
@@ -308,41 +308,54 @@ bonus climbs; a bone settle when the ring collapses back.
 
 ---
 
-## ARCHER → `VOLLEY` + `PINCUSHION` *(shipped — fan + stacking ramp)*
+## ARCHER → `VOLLEY` + `SHATTER` *(shipped — fan + cushion-burst)*
 *Material: wood + taut string, snap + thin whistle (unchanged).*
 
-> **IMPLEMENTED & VALIDATED (2026-05-23).** Built as proposed:
-> - **Active — VOLLEY:** every cast loosens a 3-arrow fan (no every-Nth gimmick).
->   No windup. Spread 0.18 rad — close enough to all-connect at point-blank, just
->   wide enough to graze at long range. Fires while moving (no dash, no stop).
-> - **Passive — PINCUSHION:** every arrow that lands on the enemy pushes a stack
->   onto them with its own decay timer (0.9s). Each existing stack on the target
->   raises the NEXT arrow's damage by `pincushionMult` (7%). Stacks decay individually
->   (a tempo mechanic — sustained fire keeps the cushion fat, any break in the
->   hit-stream lets it fall off). Hard cap at 5 stacks belt-and-braces, with the
->   real cap implicit via fire-rate × duration (~4 sustained at perfect connect).
-> - **Stacks live on the target, params live on the projectile.** Each arrow
->   carries `pincushionMult/Dur/Cap` so a Duelist-parried arrow still applies the
->   same ramp when it lands on the original archer. Symmetric.
-> - **Visual — literal pincushion.** Stuck arrows render in WORLD space anchored
->   at the body edge, each at the incoming arrow's tail-direction (pre-rolled in
->   the sim — no RNG in draw). The arrow shaft sticks outward; fletching is a
->   short green notch at the tail. Each shaft fades over the last 0.3s of its
->   stack timer, so you can SEE the cushion thin out as the hit-stream breaks.
-> - **Numbers:** hp 730, speed 125, dmg 34 base per arrow, cd 0.7, volleyArrows 3,
->   volleySpread 0.18, pincushionMult 0.07, pincushionDur 0.9, pincushionCap 5
->   → **~51.5% overall, ~14.2s avg, ~8% fog.**
-> - **Matchup texture (intended).** Wins on attrition: Wizard 99, Hunter 86,
->   Duelist 75, Knight 66 (the ramp breaks through PLATE ARMOR — flat -20 is
->   brutal vs single arrows, but PINCUSHION-fed arrows above the floor stack
->   real damage). Hard-countered as predicted: Priest 0 (predictive light pillar
->   + heal-on-hit outpaces attrition), Berserker 16 (rampage in tight arena
->   eats ranged), Jester 20 (dodge phases through one arrow per volley — the
->   stacks fall off in the gaps).
-> - **Tuning history:** the first prototype (`dmg 40 / mult 0.12 / cap 8 / dur
->   1.2 / cd 0.55`) ran at **83.7%** — pincushion ramped too hard. Halving the
->   per-stack mult, dropping cap to 5, shortening duration to 0.9s, slowing the
->   cd to 0.7, and rebasing damage to 34 landed inside the band on iteration two.
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Active VOLLEY as in the original
+> sketch (3-arrow fan per cast, no windup, fires while moving). PINCUSHION was
+> shipped first as a per-stack ramp but it played as a slow stat creep with no
+> moment — replaced with **SHATTER** to make the passive a *spectacle*, not a
+> ramp.
+> - **Passive — SHATTER.** Every arrow that lands still EMBEDS in the enemy (the
+>   literal pincushion visual is the whole point), and each arrow still does its
+>   small chip damage in flight. There is no per-stack ramp — arrows are
+>   accumulating *tension*, not bonus damage. The instant a 5th arrow lands the
+>   cushion **bursts**: the trigger arrow's chip is folded into a single
+>   `stacks × shatterPerStack` damage number (5 × 18 = **90** in one float), the
+>   embedded arrows fly outward as residue, a green ring expands from the body,
+>   and the cushion resets to 0. Cycle repeats.
+> - **Why SHATTER over a ramp.** The ramp had no event — every arrow felt
+>   identical, the +7% per stack was math the eye couldn't see, and the payoff
+>   was diffuse. SHATTER converts the same accumulation into a clear *moment*:
+>   you watch the porcupine grow (4 arrows stuck, halo glowing, near-trigger),
+>   the next hit BURSTS, big number, big visual. The literal storytelling
+>   matches the mechanic.
+> - **Visual storytelling.** Each landed arrow keeps its shaft + white head +
+>   green V-fletching anchored at the body edge in world space. New stacks pop
+>   a landing burst (per-arrow `born` ring) and shudder the whole cluster
+>   (`pincushionFlash`). At 3+ stacks a green saturation halo pulses around the
+>   body — the "about to shatter" tell. On burst: an expanding double-ring
+>   (`shatterFlash`) over 0.3s and the embedded arrows scatter outward over
+>   0.4s as the cushion clears. All animations are pre-rolled in the sim —
+>   draw is RNG-free per principle 7.
+> - **Stacks decay individually (slow).** A quiet archer doesn't carry a
+>   phantom cushion forever — each stack expires after `pincushionDur` (2.0s) so
+>   long droughts melt the cushion before it can chain. Connect-pressure-driven
+>   shatter rate.
+> - **Numbers:** hp 730, speed 125, dmg 30 base per arrow, cd 0.7, volleyArrows 3,
+>   volleySpread 0.18, shatterAt 5, shatterPerStack 18, pincushionDur 2.0
+>   → **~52.2% overall, ~14.2s avg, ~9% fog.**
+> - **Matchup texture.** Wins on the burst breaking through tank mitigation:
+>   Wizard 99, Hunter 88, Duelist 76, Knight 72 (one SHATTER cuts past PLATE
+>   ARMOR's flat -20 in a way that 5 small chip arrows can't — 90 dmg burst
+>   becomes 70, still huge), Necromancer 59, Reaper 57. Hard-countered as
+>   designed: Priest 0, Berserker 26 (rampage shreds ranged in the tight
+>   arena), Jester 21 (the dodge eats the trigger arrow → no shatter that
+>   cycle).
+> - **Tuning history.** First SHATTER prototype (`shatterPerStack 22`) ran
+>   at 56.3% — slightly hot. Dropping to 18 (90 burst at cap) landed in the
+>   band on iteration two. Earlier PINCUSHION ramp attempts are documented in
+>   git history; SHATTER replaces them outright.
 >
 > *The original sketch below is preserved for reference — superseded by this.*
 
