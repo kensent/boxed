@@ -1308,6 +1308,27 @@ function draw() {
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(0, 0, p.size - 2, Math.PI * 0.3, Math.PI * 1.7); ctx.stroke();
       ctx.restore();
+    } else if (p.kind === 'charge') {
+      // Sapper thrown charge — dark casing with a blinking red fuse-tip. When stuck,
+      // draw above the enemy's body (so the limpet reads as attached, not overlapping).
+      // Template visual; bespoke art deferred to the polish pass.
+      ctx.save();
+      if (p.stuck) {
+        ctx.translate(p.x, p.y - FIGHTER_SIZE * 0.7);
+      } else {
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle || 0);
+      }
+      ctx.fillStyle = '#3a2614';
+      ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0, 0, p.size * 0.62, Math.PI * 1.05, Math.PI * 1.5); ctx.stroke();
+      // blinking red fuse — fast pulse while stuck (warning), steady glow in flight
+      const pulse = p.stuck ? (0.5 + Math.sin(performance.now() / 60) * 0.5) : 0.7;
+      ctx.fillStyle = `rgba(255,46,46,${pulse.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, -p.size * 0.5, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
     }
   });
 

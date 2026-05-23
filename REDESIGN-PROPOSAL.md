@@ -60,7 +60,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
 | **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
-| **Sapper** | redesign | `STICK CHARGE` — thrown fused limpet bomb; guaranteed delayed burst + knockback |
+| **Sapper** | shipped | `STICK CHARGE` — thrown fused limpet bomb; sticks on contact, detonates after a fuse, BLAST RADIUS knockback |
 | Wizard | keep | orbs are offense **and** shield |
 | Jester | keep | teleport-behind + phase-dodge |
 | Duelist | keep | reflect projectiles + auto-counter |
@@ -507,8 +507,38 @@ material); a low rumble tail under the crackle of the fire pool igniting.
 
 ---
 
-## SAPPER → `STICK CHARGE` (fused limpet bomb)
+## SAPPER → `STICK CHARGE` *(shipped — fused limpet bomb)*
 *Material: dark metal casing, sharp metallic crack + pressure (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Built the proposal's STICK CHARGE as
+> sketched — the reliability shift from "drop a mine at Sapper's random position and
+> hope the enemy wanders by" to "throw a charge that connects, sticks, fuses, and
+> detonates with a guaranteed payoff" played out exactly as predicted.
+> - **Active — STICK CHARGE:** Sapper throws a charge as a normal projectile (speed
+>   300, no homing). On contact with the enemy it **sticks to their body** and the
+>   fuse starts ticking (1.5s). On detonation: damage + **BLAST RADIUS knockback**.
+>   On miss (edge, life-expire) the charge despawns. Variance lives in the **throw**
+>   (a fair projectile connect) rather than in random enemy wandering.
+> - **Skeletons still die to the in-flight charge** (the projectile-skeleton loop
+>   handles it), so Sapper still has answers against Necromancer's screen — and the
+>   charge then sticks to the necro behind them.
+> - **Duelist parry** works as expected: the charge gets reflected back at Sapper
+>   and, if it now sticks to him, he eats his own bomb. Good content; rare enough not
+>   to dominate the matchup.
+> - **Numbers:** hp 720, dmg 200, cd 1.4, throwSpeed 300, fuseTime 1.5 → **~52%
+>   overall, ~13.7s avg, ~9% fog.** Crushes Knight 100% (slow, easy stick) and
+>   Necromancer 90% (charge clears the screen). Hard-countered by Priest 0%, Wizard 9%,
+>   Jester 17%, Berserker 24%.
+> - **Visuals are template** — dark casing with a pulsing red fuse (pulses faster
+>   when stuck). Bespoke art deferred to the polish pass.
+> - **Cleanup along the way:** the old `game.mines` array stays as infrastructure
+>   (no fighter spawns mines anymore; the loop is a no-op). The kill-cam-silent bug
+>   where lethal projectile detonations skipped the impact visual + sound was found
+>   and fixed PROJECT-WIDE in the same pass (hook, hex, orb, coin, arrow, crescent,
+>   charge) — impact/sfx now always fire on a hit; only the victim's recoil-shake
+>   is gated on a live target.
+>
+> *The original sketch below is preserved for reference — superseded by this.*
 
 **The problem with the current mine.** It drops at Sapper's *own (random) position*
 (`game.mines.push({x:f.x, y:f.y})`) and waits for the enemy to wander onto it. Under

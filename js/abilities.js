@@ -81,8 +81,20 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'mine': {
-      game.mines.push({ x:f.x, y:f.y, team:f.team, dmg:f.dmg, life:6, armed:f.mineArmDelay, size:10 });
-      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x); // set the trap, step back
+      // SAPPER STICK CHARGE — hurl a fused bomb at the enemy. It flies as a normal
+      // projectile until it CONTACTS the enemy, at which point it sticks and the
+      // fuse starts ticking; on fuse expire (step()): damage + BLAST RADIUS knockback.
+      // Misses (edge, wall, life-expire) despawn the charge — variance lives in the
+      // throw connect, not in random enemy wandering onto a placed mine.
+      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      game.projectiles.push({
+        x: f.x, y: f.y,
+        vx: Math.cos(ang) * f.throwSpeed, vy: Math.sin(ang) * f.throwSpeed,
+        team: f.team, dmg: f.dmg, life: 2.0,
+        kind: 'charge', size: 7, homing: 0, angle: ang,
+        stuck: false, fuse: f.fuseTime, fuseTotal: f.fuseTime,
+      });
+      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw gesture
       break;
     }
     case 'cast': {

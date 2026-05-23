@@ -1185,6 +1185,60 @@ function step(dt) {
 
   game.projectiles = game.projectiles.filter(p => {
     if (p.spent) return false;
+    if (p.kind === 'charge') {
+      // SAPPER STICK CHARGE — flies until it contacts the enemy, then STICKS to them
+      // and a fuse ticks down to a detonation (damage + BLAST RADIUS knockback). A
+      // miss (edge, life-expire) despawns the charge. Duelist can parry it back to
+      // the thrower — and yes, the thrower then eats their own bomb.
+      const owner = p.team === 'red' ? red : blue;
+      if (owner.dead) return false;
+      if (p.stuck) {
+        const stuckTo = p.stuckTo;
+        if (!stuckTo || stuckTo.dead) return false;
+        p.x = stuckTo.x; p.y = stuckTo.y;       // follow the body
+        p.fuse -= dt;
+        if (p.fuse <= 0) {
+          damage(stuckTo, p.dmg, 'projectile');
+          // The explosion's visual + sound ALWAYS fire — even on a lethal detonation
+          // (a kill should still BOOM, with the impact landing before the kill-cam
+          // pushes in). Only the knockback is gated on a live target.
+          spawnImpact(p.x, p.y, 'mine', 0, 1);
+          sfx('impact', { kind: 'mine', big: 1 }, p.x);
+          if (!stuckTo.dead) {
+            // BLAST RADIUS — knock the enemy along the throw line (away from thrower)
+            const ka = Math.atan2(stuckTo.y - owner.y, stuckTo.x - owner.x);
+            stuckTo.vx = Math.cos(ka) * 400;
+            stuckTo.vy = Math.sin(ka) * 400;
+            stuckTo.blastTimer = 0.22;
+          }
+          return false;
+        }
+        return true;
+      }
+      // In-flight phase — straight throw, no homing.
+      p.life -= dt;
+      if (p.life <= 0) return false;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.x < 0 || p.x > w || p.y < 0 || p.y > h) return false;
+      const tgt = p.team === 'red' ? blue : red;
+      if (!tgt.dead && dist(p, tgt) < FIGHTER_SIZE + p.size) {
+        if (tgt.ability === 'riposte' && tgt.parryTimer > 0) {
+          // Duelist parry — flip the charge back at the thrower.
+          p.team = tgt.team;
+          p.vx = -p.vx; p.vy = -p.vy;
+          p.angle = Math.atan2(p.vy, p.vx);
+          sfx('parry', null, tgt.x);
+          tgt.negateFlash = 0.25;
+          return true;
+        }
+        // Stick! The charge clamps to the target's body and the fuse starts.
+        p.stuck = true;
+        p.stuckTo = tgt;
+        p.vx = 0; p.vy = 0;
+        sfx('mine', null, tgt.x);   // clamp sound (reuses the mine cast sound)
+      }
+      return true;
+    }
     if (p.kind === 'crescent') {
       // Reaper CRESCENT THROW — returning boomerang. Outbound homes MILDLY at the
       // enemy (a thrown blade); at max travel it turns and homes STRONGLY back to
@@ -1242,10 +1296,12 @@ function step(dt) {
       let hitNow = false;
       if (!target.dead && p.hitCd <= 0 && dist(p, target) < FIGHTER_SIZE + p.size) {
         damage(target, p.dmg, 'projectile');
+        // Impact + sfx ALWAYS fire — even on a lethal hit (the kill-cam jumps in
+        // silent otherwise). Only the victim's recoil-shake needs the alive gate.
+        const big = Math.min(1, p.dmg / 260), ha = Math.atan2(p.vy, p.vx);
+        spawnImpact(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
+        sfx('impact', { kind: 'bone', big: big }, p.x);
         if (!target.dead) {
-          const big = Math.min(1, p.dmg / 260), ha = Math.atan2(p.vy, p.vx);
-          spawnImpact(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
-          sfx('impact', { kind: 'bone', big: big }, p.x);
           target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = big * 13;
         }
         p.hitCd = 0.2;
@@ -1388,10 +1444,10 @@ function step(dt) {
         target.tetherStartX = target.x;
         target.tetherStartY = target.y;
         damage(target, p.dmg, 'projectile');
-        if (!target.dead) {
-          spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5); // bite clink (no recoil — it reels IN)
-          sfx('impact', { kind: 'hook', big: 0.5 }, p.x);
-        }
+        // Bite clink ALWAYS fires — even on a lethal hook (otherwise the kill-cam
+        // pushes in silent). No recoil here (the hook reels the target IN).
+        spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5);
+        sfx('impact', { kind: 'hook', big: 0.5 }, p.x);
         target.stunTimer = Math.max(target.stunTimer, CRIPPLE_STUN);
         return false;
       }
@@ -1405,18 +1461,14 @@ function step(dt) {
       }
       damage(target, dmgOut, 'projectile');
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
-      // at the contact point + a damage-scaled victim knockback along the shot.
+      // + sfx ALWAYS fire so the boom lands before the kill-cam push-in even on a
+      // lethal hit; only the victim's recoil-shake needs the alive gate.
+      const big = Math.min(1, dmgOut / 260);
+      const hitAng = Math.atan2(p.vy, p.vx);
+      spawnImpact(p.x, p.y, p.kind, hitAng, big);
+      sfx('impact', { kind: p.kind, big: big }, p.x);
       if (!target.dead) {
-        const big = Math.min(1, dmgOut / 260);
-        const hitAng = Math.atan2(p.vy, p.vx);
-        spawnImpact(p.x, p.y, p.kind, hitAng, big);
-        sfx('impact', { kind: p.kind, big: big }, p.x);
         target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
-      }
-      // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
-      // tickCd 0.5 = a 0.5s ignition delay before the first burn tick.
-      if (p.kind === 'cannon') {
-        game.hazards.push({ x: p.x, y: p.y, radius: 65, timer: 1.5, maxTimer: 1.5, tickCd: 0.5, dmg: 10, kind: 'fire', team: p.team });
       }
       return false;
     }
