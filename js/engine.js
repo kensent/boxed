@@ -22,27 +22,19 @@ let fightToken = 0;
 // Re-introduces the Knight design space (a melee tank can now actually connect).
 const ARENA = 300;
 
-// --- Follow-camera ---------------------------------------------------------
-// A dynamic camera frames both fighters for Shorts. Zoom: holds CAM_COMFORT
-// while they fit, eases OUT (toward CAM_MIN) only when they spread too far —
-// never IN past comfort (that's what felt swingy). Pan: a DEADZONE — the camera
-// holds STILL while both fighters sit inside a central box, and only moves to
-// keep the one drifting out at the box edge (recentring on their midpoint once
-// they're too far apart to both fit the box). The deadzone is the key to feel:
-// chasing the raw midpoint of two bouncers made the frame wander constantly;
-// holding still during contained exchanges kills that. On the kill it becomes a
-// KILL-CAM — pushing in on the loser's death position (CAM_KILL, tighter than
-// comfort) so the "K.O." frames the actual kill, melee or ranged. It does NOT
-// clamp to the arena, so the focus can sit past the walls (the border just marks
-// the edge; beyond is the same dark background). Render-only — it reads fighter
-// positions, but the 360x360 sim never reads it back, so balance is untouched.
-// The grid + border are drawn in-world (see drawArenaBackdrop) so they
-// scroll/scale with the camera, not sit static.
-const CAM_MIN = 1.0, CAM_COMFORT = 1.45, CAM_PAD = 80;
-// CAM_DEADZONE: fraction of the view's half-extent the fighters can roam before
-// the camera moves (bigger = holds still more). CAM_KILL: kill-cam zoom on the
-// finish. Smoothing time constants (seconds) — smaller = snappier; one per channel.
-const CAM_DEADZONE = 0.55, CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
+// --- Camera ----------------------------------------------------------------
+// During play the camera holds STATIC at the arena centre at zoom 1.0 — the
+// whole 300x300 arena is always framed. Disabled the dynamic follow-cam after
+// the arena shrink: a smaller arena already keeps both fighters comfortably
+// inside a static frame, and the dynamic pan/zoom that mattered for the old
+// 360 arena was now over-engineering. On the kill it becomes a KILL-CAM —
+// pushing in on the loser's death position (CAM_KILL, tighter than 1.0) so
+// the "K.O." frames the actual kill. The kill-cam smoothing time constants
+// (CAM_PAN_TAU/CAM_ZOOM_TAU) drive the push-in animation when the winner
+// resolves. Render-only — it reads fighter positions, but the sim never
+// reads camera state back, so balance is untouched. Grid + border are drawn
+// in-world (see drawArenaBackdrop) so they zoom with the camera on the kill.
+const CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
 // Finish/kill-cam timing (real seconds): the body holds frozen until the kill-cam
 // arrives (or KILLCAM_MAX_PUSH elapses, a fallback), then the death plays over a
 // fixed DEATH_DUR — so every kill, melee or ranged, gets its full beat instead of
@@ -62,7 +54,9 @@ function resizeCanvas() {
   ctx.setTransform(pxPerRef, 0, 0, pxPerRef, 0, 0);
 }
 
-// Ease the camera toward framing both fighters. Called once per drawn frame.
+// Update the camera target each drawn frame. During play the target is static
+// (centre, zoom 1) so this is a no-op after the first frame; on the kill it
+// becomes a smooth push-in onto the loser.
 function updateCamera() {
   if (!game) return;
   const r = game.red, b = game.blue;
@@ -73,21 +67,8 @@ function updateCamera() {
     const loser = game.winner === r ? b : r;
     tx = loser.x; ty = loser.y; tz = CAM_KILL;
   } else {
-    // Hold comfort zoom while they fit; only ease out when they spread too far.
-    const span = Math.max(Math.abs(r.x - b.x), Math.abs(r.y - b.y)) + CAM_PAD * 2;
-    tz = Math.max(CAM_MIN, Math.min(CAM_COMFORT, ARENA / span));
-    // Pan deadzone (per axis): hold while both fighters sit inside the central box
-    // [cam-dz, cam+dz]; otherwise move just enough to pin the escaping fighter to
-    // the box edge. If they're too far apart to both fit the box, recentre on the
-    // midpoint. Not clamped to the arena — the focus may sit past the walls.
-    const dz = ((ARENA / camera.zoom) / 2) * CAM_DEADZONE;
-    const axisTarget = (p1, p2, cur) => {
-      const lo = Math.min(p1, p2), hi = Math.max(p1, p2);
-      const camLo = hi - dz, camHi = lo + dz;     // valid camera range to keep both in the box
-      return camLo > camHi ? (lo + hi) / 2 : Math.max(camLo, Math.min(camHi, cur));
-    };
-    tx = axisTarget(r.x, b.x, camera.x);
-    ty = axisTarget(r.y, b.y, camera.y);
+    // Live play: static at arena centre, zoom 1 (full 300x300 visible).
+    tx = ARENA / 2; ty = ARENA / 2; tz = 1;
   }
   const now = performance.now();
   const dt = _camLastT ? Math.min(0.05, (now - _camLastT) / 1000) : 0;
