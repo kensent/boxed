@@ -78,7 +78,11 @@ const FIGHTERS = [
     get passive() { return `SHATTER — each landed arrow embeds in the enemy; the ${this.shatterAt}th bursts the whole cushion for ${this.shatterPerStack} damage per arrow`; },
   },
   { id:'jester',  name:'JESTER',    hp:820,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
-    ability:'blink', cd:2.5, dmg:130,
+    // cd 2.5 -> 2.0 + dmg 130 -> 110 to lift Jester from the bottom of the
+    // band (44.7%). Identity is harassment, not assassination, so more
+    // frequent blinks + lower per-stab damage fits the kit shape. DPS goes
+    // from 52 -> 55; the bigger win is presence (every 2.0s instead of 2.5s).
+    ability:'blink', cd:2.0, dmg:110,
     // DOPPELGANGER replaces UNCANNY DODGE: every hit Jester takes spawns a
     // stationary phantom decoy at her current position. Decoys are valid
     // targets for every enemy ability (uniform "aim nearest" targeting); a
