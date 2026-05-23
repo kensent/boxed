@@ -73,15 +73,20 @@
   in camera space. We shipped the K.O. at world centre once and it floated off — hence
   this note.
 - **The finish is a sequence, and the death voice + K.O. boom fire from `draw()`, not
-  the sim path.** On the kill the body holds frozen (death at frame 0) until the
-  kill-cam has pushed in on the loser (`game.koArriveAt` captured at arrival); only
-  then does it shatter, and the camera-snap `flashFrame` + the `death`/`koHit` sfx are
-  all triggered *there* (in the finish block of `draw()`) so the snap/audio land with
-  the shatter instead of leading it during the push-in. Don't "tidy" the flash or
-  those sfx back into `combat.js`/`endGame` — that reintroduces the desync. Safe
-  because `draw()` never runs headless and `sfx` is headless-guarded regardless.
-  Death progress is a fixed `DEATH_DUR` measured from arrival (not the leftover
-  window), so every kill gets its full beat; `FINISH_WINDOW` is the total.
+  the sim path.** On the kill the loser's ORIGINAL sprite is drawn (intact, NO death
+  animation layers yet) until the kill-cam has pushed in on it (`game.koArriveAt`
+  captured at arrival); only then does `drawDeath` take over and the per-fighter
+  death sequence begin from frame 0, and the camera-snap `flashFrame` + the
+  `death`/`koHit` sfx are all triggered *there* (in the finish block of `draw()`)
+  so the snap/audio land with the shatter instead of leading it during the push-in.
+  An earlier version called `drawDeath(loser, 0)` every frame pre-arrival, but
+  `prog=0` already started each fighter's voice-effect layer at small radius —
+  the "hold" wasn't actually holding. The intact-sprite hold is drawn manually
+  in the death-ceremony block (drawFighter early-returns on dead). Don't "tidy"
+  the flash or those sfx back into `combat.js`/`endGame` — that reintroduces the
+  desync. Safe because `draw()` never runs headless and `sfx` is headless-guarded
+  regardless. Death progress is a fixed `DEATH_DUR` measured from arrival (not the
+  leftover window), so every kill gets its full beat; `FINISH_WINDOW` is the total.
 - **Uniform "aim at nearest" targeting (DOPPELGANGER substrate).** Every fighter
   that aims at an enemy must route through `pickTarget(attacker, defender)` in
   `engine.js`, which returns the nearest of `{real defender, ...defender.decoys}`.

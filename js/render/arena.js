@@ -1689,9 +1689,29 @@ function draw() {
     const started = game.koArriveAt != null;
     // Death plays over a fixed DEATH_DUR measured from arrival — full beat every
     // kill, not compressed into whatever's left of the window.
-    const prog = started ? Math.min(1, (game.koArriveAt - game.koTimer) / DEATH_DUR) : 0;
-
-    drawDeath(loser, prog);   // prog 0 = the body frozen at the kill instant
+    if (!started) {
+      // Pre-arrival HOLD — show the loser's ORIGINAL sprite (no death animation
+      // layers running yet). The kill-cam pushes in on this intact body; once
+      // it arrives, drawDeath takes over and the per-fighter death sequence
+      // BEGINS from frame 0. The previous code called drawDeath(loser, 0)
+      // every frame pre-arrival, which already started each fighter's voice
+      // effects (shockwaves, blood-arcs, etc.) at small radius — making the
+      // "hold" not actually hold. drawFighter early-returns on dead so we
+      // draw the sprite manually here (mirror's drawFighter's pose + team ring).
+      ctx.save();
+      ctx.translate(loser.x, loser.y);
+      if (Math.cos(loser.lastFacing || 0) < 0) ctx.scale(-1, 1);
+      ctx.strokeStyle = loser.team === 'red' ? '#ff2e2e' : '#2e9eff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
+      ctx.stroke();
+      drawShape(ctx, loser);
+      ctx.restore();
+    } else {
+      const prog = Math.min(1, (game.koArriveAt - game.koTimer) / DEATH_DUR);
+      drawDeath(loser, prog);   // begins at frame 0 the moment the cam arrives
+    }
 
     // "K.O." — punches in once the death STARTS (on arrival), not at the kill, so
     // it accompanies the shatter. Screen-space upper-banner (CSS-px), kept clear
