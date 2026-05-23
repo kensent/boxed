@@ -105,7 +105,10 @@ const FIGHTERS = [
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
-    ability:'iai', cd:2.5, dmg:130,
+    // dmg 130 -> 118 to compensate for the FOCUS-plant buff (predictable iai
+    // launch geometry from a fixed stance reliably connects more chained cuts).
+    // 130 ran at 64.6%, 110 over-corrected to 47.7%, 118 lands ~52%.
+    ability:'iai', cd:2.5, dmg:118,
     windupTime: 0.5,
     // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
     // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%
