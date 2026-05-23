@@ -12,11 +12,11 @@
 const FIGHTER_SIZE = 16;
 
 const FIGHTERS = [
-  { id:'priest',  name:'PRIEST',    hp:800,  speed:110, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
+  { id:'priest',  name:'PRIEST',    hp:830,  speed:110, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
     // Internal ability id stays 'lightning' — it keys Priest's DISSOLVE death,
     // charge telegraph, fire-recoil, and audio. The ability itself is now JUDGMENT.
     ability:'lightning', cd:1.6, dmg:112,
-    windupTime: 0.45, healOnHit: 18, pillarRadius: 34,
+    windupTime: 0.45, healOnHit: 18, pillarRadius: 40,
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
   },
@@ -113,8 +113,13 @@ const FIGHTERS = [
     get active() { return `BOMBARD — ${this.windupTime}s windup, then a heavy shell that splashes on landing`; },
     get passive() { return `EPICENTER — damage peaks at the blast center, falling off to ${Math.round(this.splashMinFrac * 100)}% at the splash edge`; },
   },
-  { id:'duelist', name:'DUELIST',   hp:950,  speed:115, color:'#1a1a2e', accent:'#c0c0e8', shape:'rapier',
-    ability:'riposte', cd:1.7, dmg:250, strikeReach:10,
+  { id:'duelist', name:'DUELIST',   hp:950,  speed:100, color:'#1a1a2e', accent:'#c0c0e8', shape:'rapier',
+    // cd 1.7 -> 1.6 (more frequent ripostes); speed 115 -> 100 to
+    // compensate. Speed is sharply sensitive at Duelist (~0.6 wr per
+    // 1 speed in tuning trials): 105 ran 53.1%, 95 dropped to 46.8%,
+    // 100 targets ~50%. Cast cadence dominates damage output; speed
+    // cut tones down idle closing pressure between casts.
+    ability:'riposte', cd:1.6, dmg:250, strikeReach:10,
     active: 'RIPOSTE THRUST — dash in and thrust on reach',
     passive: 'COUNTER — the thrust parries melee hits and reflects projectiles',
   },
