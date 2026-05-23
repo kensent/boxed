@@ -546,6 +546,7 @@ function makeFighter(t, team, x, y) {
     sweepTimer: 0, sweepHit: false, crescentOut: false, wakeHitCd: 0,
     // Ronin
     iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focused: false,
+    iaiAngle: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
@@ -1021,35 +1022,29 @@ function step(dt) {
     // low roll, purely so the LOADED status badge knows when to show.
     if (f.loadedFx > 0) f.loadedFx -= dt;
 
-    // Ronin: iai windup + teleport-strike
+    // Ronin: IAI — windup (planted) → teleport-OVERSHOOT along the LOCKED direction
+    // → line-cleave everything on the dash path. Clean cut: FOCUS refunds cd, skips
+    // recovery. Whiff: drop into a slow RECOVERY beat (vulnerable). Direction is
+    // locked at cast, so the enemy bouncing off the line during the windup is real
+    // counterplay — no homing correction.
     if (f.ability === 'iai') {
       const enemy = f === red ? blue : red;
       if (f.iaiWindup > 0) {
         f.iaiWindup -= dt;
+        f.vx = 0; f.vy = 0;   // hold the plant
         if (f.iaiWindup <= 0) {
           f.iaiStrike = 0.15;
           sfx('iaiStrike');
-          // Capture origin for the visual trail
-          const startX = f.x;
-          const startY = f.y;
-          // Teleport-step toward enemy (capped at 120 units) for the strike
-          const dx = enemy.x - f.x;
-          const dy = enemy.y - f.y;
-          const d = Math.hypot(dx, dy);
-          const strikeReach = FIGHTER_SIZE + FIGHTER_SIZE + 22;
-          const maxStep = 120;
-          if (d > strikeReach) {
-            const stepDist = Math.min(d - strikeReach, maxStep);
-            f.x += dx / d * stepDist;
-            f.y += dy / d * stepDist;
-          }
-          const ang = Math.atan2(dy, dx);
-          f.vx = Math.cos(ang) * f.speed;
-          f.vy = Math.sin(ang) * f.speed;
-          // Store dash trail for the renderer (fades over the strike window)
+          const startX = f.x, startY = f.y;
+          // Teleport-OVERSHOOT a fixed distance along the locked direction (clamped
+          // to inside the arena so it doesn't slide off-screen against a wall).
+          const cosA = Math.cos(f.iaiAngle), sinA = Math.sin(f.iaiAngle);
+          f.x = Math.max(FIGHTER_SIZE, Math.min(w - FIGHTER_SIZE, f.x + cosA * f.strikeDist));
+          f.y = Math.max(FIGHTER_SIZE, Math.min(h - FIGHTER_SIZE, f.y + sinA * f.strikeDist));
+          f.vx = cosA * f.speed; f.vy = sinA * f.speed;
+          // Visual trail (existing renderer reads x1/y1 → x2/y2).
           f.iaiTrail = { x1: startX, y1: startY, x2: f.x, y2: f.y };
-          // Cleave everything along the dash line — skeletons and the enemy
-          // fighter if they fall within the slash width of the path segment.
+          // Line cleave — perpendicular distance helper from the dash segment.
           const sdx = f.x - startX, sdy = f.y - startY;
           const sLen2 = sdx*sdx + sdy*sdy;
           const segDist = (px, py) => {
@@ -1057,43 +1052,42 @@ function step(dt) {
             const t = Math.max(0, Math.min(1, ((px-startX)*sdx + (py-startY)*sdy) / sLen2));
             return Math.hypot(px - (startX + t*sdx), py - (startY + t*sdy));
           };
-          const slashReach = FIGHTER_SIZE + 10;
+          // Cleave skeletons on the path (force-burst since Ronin passed through them).
           game.skeletons = game.skeletons.filter(sk => {
             if (sk.team === f.team) return true;
-            if (segDist(sk.x, sk.y) < slashReach + sk.size) {
-              // forceBurst=true: Ronin passed through the skeleton so burst always fires
+            if (segDist(sk.x, sk.y) < f.slashReach + sk.size) {
               if (damageSkeleton(sk, f.dmg, true)) return false;
             }
             return true;
           });
-          // Mines along the dash path detonate on the Ronin
+          // Mines on the path detonate ON Ronin.
           game.mines = game.mines.filter(m => {
             if (m.team === f.team || m.armed > 0) return true;
             if (segDist(m.x, m.y) < FIGHTER_SIZE + m.size + 6) {
               damage(f, m.dmg);
-              spawnImpact(m.x, m.y, 'mine', 0, 1); // the mine still explodes
+              spawnImpact(m.x, m.y, 'mine', 0, 1);
               sfx('impact', { kind: 'mine', big: 1 }, m.x);
               return false;
             }
             return true;
           });
-          if (!enemy.dead && segDist(enemy.x, enemy.y) < slashReach + FIGHTER_SIZE) {
+          // Hit enemy on the line.
+          if (!enemy.dead && segDist(enemy.x, enemy.y) < f.slashReach + FIGHTER_SIZE) {
             damage(enemy, f.dmg, undefined, f);
             f.iaiHit = true;
-            f.cdTimer = f.cd * 0.5;
-            f.focused = true; // landed a clean hit — enter/hold FOCUS
+            f.cdTimer = f.cd * f.focusRefund;   // FOCUS — clean cut refunds cooldown (chain)
+            f.focused = true;
           }
         }
       } else if (f.iaiStrike > 0) {
         f.iaiStrike -= dt;
-        if (!f.iaiHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + 25) {
-          damage(enemy, f.dmg, undefined, f);
-          f.iaiHit = true;
-          f.cdTimer = f.cd * 0.5; // FOCUS — clean strike halves the cooldown
-          f.focused = true;
+        // Strike window over: trail fades. A whiff breaks FOCUS so the next cast is
+        // on the full cd (which IS the visible "recovery" beat — no hidden slow).
+        if (f.iaiStrike <= 0) {
+          f.iaiTrail = null;
+          if (!f.iaiHit) f.focused = false;
+          f.iaiHit = false;
         }
-        // Strike window over: a whiffed iai (never connected) breaks FOCUS.
-        if (f.iaiStrike <= 0) { if (!f.iaiHit) f.focused = false; f.iaiHit = false; f.iaiTrail = null; }
       }
     }
 

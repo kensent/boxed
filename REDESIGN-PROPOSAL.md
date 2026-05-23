@@ -58,7 +58,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
 | **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
 | **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
-| **Ronin** | redesign | `IAI` — committed line-dash *through* the enemy + recovery |
+| **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
 | **Cannoneer** | redesign | `BOMBARD` — lobbed area shell: splash + lingering fire pool |
 | **Sapper** | redesign | `STICK CHARGE` — thrown fused limpet bomb; guaranteed delayed burst + knockback |
 | Wizard | keep | orbs are offense **and** shield |
@@ -357,8 +357,41 @@ rising tick as each stack lands, climbing in pitch as the pincushion grows.
 
 ---
 
-## RONIN → `IAI` (committed line-dash *through* the enemy)
+## RONIN → `IAI` *(shipped — overshoot line-cut + FOCUS-skips-windup chain)*
 *Material: fine drawn steel, whisper-crack, single clean note (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Built the proposal's "overshoot line-cut +
+> FOCUS chain" with two key refinements during playtest:
+> - **Opener:** Ronin plants for a 0.5s windup with the dash direction **locked at
+>   cast** (enemy's random bounce during the windup is the counterplay — Priest-JUDGMENT-
+>   style dodge). At windup end, teleport-overshoot a fixed `strikeDist` (200px) along
+>   the locked direction; cleave skeletons + mines + enemy on the line. Clamped to the
+>   arena so the overshoot can't slide off-screen.
+> - **FOCUS** now **skips the windup *and* refunds the cooldown** — landing a cut puts
+>   Ronin in flow, where the next iai fires *instantly* (re-aimed at the enemy's then-
+>   current position). The chain breaks on a whiff: focus clears, next iai is a full
+>   windup again. The counterplay during a chain is the cd-between-strikes (~1s of
+>   enemy bouncing); during an opener it's the 0.5s windup itself.
+> - **Hidden slow-recovery dropped.** Originally the proposal called for a vulnerable
+>   re-sheathe with reduced movement speed. Under the no-new-animation directive that
+>   slow had no visible indicator → a hidden mechanic. The cooldown IS the visible
+>   recovery (chain = ~1s gap; whiff = full 2.5s wait), so the speed-slow was redundant
+>   and got cut. FOCUS still "skips the recovery" — that recovery is just the cd now.
+> - **Unified gold ring.** The pre-existing FOCUS aura and the windup charge ring were
+>   two similar gold rings. Merged into ONE: fill level conveys state. *Empty* = idle.
+>   *Filling 0→1* = opener winding up. *Held full* (no flash) = FOCUS, next strike pre-
+>   charged. *Hidden during the strike window* — the slash trail does that beat. Cleaner
+>   visual vocabulary aligned with the charge-telegraph grammar ("the focus state IS the
+>   maintained charge"). `drawChargeRing` gained a `held` flag to suppress the release
+>   flash for the held-full case.
+> - **Numbers:** hp 920, dmg 130, cd 2.5, windupTime 0.5, strikeDist 200, slashReach 26,
+>   focusRefund 0.4 → **~50% overall, ~11.6s avg, ~1% fog.** Reuses existing iai visuals
+>   (gold ring + slash trail). No new audio.
+> - *Matchup notes:* Duelist 1% is a real hard counter — Duelist's COUNTER procs on
+>   every melee hit, and FOCUS chains stack the counter procs. Berserker (rampage) and
+>   Sapper (mines on the line) also counter cleanly. Thematic; intended content.
+>
+> *The original sketch below is preserved for reference — superseded by this.*
 
 The current iai is already better than the other dashers — it cleaves a *line*
 (engine.js:1047 cuts skeletons + mines along the dash path) and FOCUS halves the

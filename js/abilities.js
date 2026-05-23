@@ -194,9 +194,19 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'iai': {
-      // Ronin: f.windupTime windup, then teleport-step strike. Resolve passive reduces dmg during windup.
-      f.iaiWindup = f.windupTime;
+      // RONIN IAI — opener: plant during the windup, LOCK the dash direction at cast
+      // (the enemy's random bounce during the windup is the counterplay). FOCUS chain:
+      // skip the windup entirely — direction re-aims at the enemy now, the strike
+      // fires on the very next tick. The chain breaks when a strike whiffs (focused
+      // clears in the iaiStrike-end branch of step()).
+      f.iaiAngle = Math.atan2(enemy.y - f.y, enemy.x - f.x);
       f.iaiHit = false;
+      if (f.focused) {
+        f.iaiWindup = 0.001;   // effectively zero — windup-end branch fires the strike next frame
+      } else {
+        f.iaiWindup = f.windupTime;
+        f.vx = 0; f.vy = 0;   // plant
+      }
       break;
     }
     case 'hex': {

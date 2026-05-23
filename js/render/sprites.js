@@ -892,7 +892,7 @@ function meleeWindupHold(f, enemy, dashDur, windupDur) {
 // TIGHTENS inward + brightens (energy gathering), and FLASHES full just before
 // release. `rgb` is the fighter's colour voice; `prog` is 0→1. ctx must be
 // translated to the fighter's centre. Line-drawn — no particles.
-function drawChargeRing(rgb, prog) {
+function drawChargeRing(rgb, prog, held) {
   const r = FIGHTER_SIZE + 12 - prog * 5;            // tightens inward as it charges
   const a = 0.3 + prog * 0.6;                         // brightens toward release
   // faint backing track — the full ring it's filling toward
@@ -906,8 +906,9 @@ function drawChargeRing(rgb, prog) {
   ctx.beginPath();
   ctx.arc(0, 0, r, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
   ctx.stroke();
-  // pre-release flash in the last sliver
-  if (prog > 0.88) {
+  // pre-release flash in the last sliver — skipped when the ring is HELD at full
+  // (e.g. Ronin's FOCUS aura, which reuses this ring at prog=1 as a "pre-charged" state).
+  if (!held && prog > 0.88) {
     const fa = (prog - 0.88) / 0.12;
     ctx.strokeStyle = `rgba(255,255,255,${(fa * 0.85).toFixed(3)})`;
     ctx.lineWidth = 2 + fa * 2;
@@ -1045,9 +1046,12 @@ function drawFighter(f) {
       ctx.fillStyle = `rgba(255,255,220,${(0.4 + prog * 0.5).toFixed(3)})`;
       ctx.beginPath(); ctx.arc(Math.cos(ga) * gr, Math.sin(ga) * gr, 1.5 + prog, 0, Math.PI * 2); ctx.fill();
     }
-  } else if (f.iaiWindup > 0) {
-    // Ronin voice: the gold ring on top of the coil + tremor it already has.
-    drawChargeRing('232,192,32', 1 - f.iaiWindup / f.windupTime);
+  } else if (f.ability === 'iai' && !f.dead && f.iaiStrike <= 0 && (f.focused || f.iaiWindup > 0)) {
+    // Ronin voice: ONE gold ring, level conveys state. Filling 0→1 during the opener
+    // windup; held FULL while in FOCUS (the next strike is pre-charged → instant cut).
+    // Hidden during the strike window (the slash trail covers that beat).
+    const prog = f.focused ? 1 : (1 - f.iaiWindup / f.windupTime);
+    drawChargeRing('232,192,32', prog, f.focused);
   }
 
   // Defensive-state indicators — armed passive (soft pulsing ring), active window
@@ -1102,11 +1106,8 @@ function drawFighter(f) {
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4 + np * 14, 0, Math.PI * 2); ctx.stroke();
   }
-  // FOCUS (Ronin) — steady gold aura while on a clean-hit streak. Hidden during
-  // the windup/strike so it never stacks with the (filling) gold charge ring.
-  if (f.ability === 'iai' && f.focused && f.iaiWindup <= 0 && f.iaiStrike <= 0 && !f.dead) {
-    armedRing('232,192,32');
-  }
+  // (Ronin FOCUS aura is now unified with the charge ring above — a HELD-full gold
+  // ring communicates the FOCUS state. One ring, level conveys state.)
   // VOLLEY (Archer) — green fan of arrowhead ticks aimed at the enemy: the next
   // shot fans 4 arrows, telegraphed.
   if (f.ability === 'arrow' && (f.shotCount % 4 === 3) && !f.dead && enemy && !enemy.dead) {
@@ -1248,8 +1249,8 @@ function drawFighter(f) {
       const k = f.iaiStrike / 0.15;                  // 1 → 0
       bodyX = 1 + 0.40 * k;                          // the cut: blade thrusts forward, returns
       bodyY = 1 - 0.10 * k;
-    } else if (f.iaiWindup > 0) {
-      const wp = 1 - f.iaiWindup / 0.7;              // 0 → 1 as the windup completes
+    } else if (f.iaiWindup > 0 && !f.focused) {
+      const wp = 1 - f.iaiWindup / f.windupTime;     // 0 → 1 as the windup completes
       bodyX = 1 - 0.18 * wp;                         // draw the blade back (coil), deepening
       bodyY = 1 + 0.06 * wp;
       if (wp > 0.5) bodyRot = Math.sin(performance.now() / 22) * 0.05 * ((wp - 0.5) / 0.5);
