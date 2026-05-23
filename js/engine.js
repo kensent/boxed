@@ -395,6 +395,43 @@ huntTightBtn.addEventListener('click', async () => {
   }
 });
 
+const huntLowHpBtn = document.getElementById('hunt-low-hp-btn');
+huntLowHpBtn.addEventListener('click', async () => {
+  // Second tap while hunting = cancel.
+  if (huntActive) { huntActive = false; return; }
+  if (!pickRed || !pickBlue) return;
+  huntActive = true;
+  let result = { found: false, best: null }, total = 0;
+  while (huntActive && !result.found && total < HUNT_MAX) {
+    result = huntCloseFinish(pickRed, pickBlue, HUNT_CHUNK, result.best);
+    total += HUNT_CHUNK;
+    if (result.found) break;
+    huntLowHpBtn.textContent = 'HUNTING… ' + total + '  (tap to cancel)';
+    await new Promise(r => requestAnimationFrame(r));
+  }
+  const wasCancelled = !huntActive && !result.found;
+  huntActive = false;
+  // result.best is always the lowest-HP-% fight seen — and when found, it IS
+  // the < CLOSE_FINISH_HP_FRAC one. Use it directly.
+  const pick = (result.best && !wasCancelled) ? result.best : null;
+  if (pick) {
+    seedInput.value = String(pick.seed);
+    pendingSeed = pick.seed;
+    const wf = FIGHTERS.find(f => f.id === pick.winId);
+    const tag = result.found ? 'CLOSE' : 'CLOSEST';
+    const pctTxt = Math.round(pick.pct * 100);
+    // e.g. "CLOSE — JESTER WINS ON 18% HP (140/750) · TAP FIGHT"
+    huntLowHpBtn.textContent = tag + ' — ' + wf.name + ' WINS ON '
+      + pctTxt + '% HP (' + Math.round(pick.winnerHp) + '/' + pick.winnerMax + ') · TAP FIGHT';
+  } else if (wasCancelled) {
+    huntLowHpBtn.textContent = 'HUNT CANCELLED';
+    setTimeout(updateUI, 1500);
+  } else {
+    huntLowHpBtn.textContent = 'NO CLOSE FINISH FOUND';
+    setTimeout(updateUI, 2500);
+  }
+});
+
 const muteBtn = document.getElementById('mute-btn');
 muteBtn.addEventListener('click', () => {
   const nowMuted = Audio.toggle();
@@ -496,6 +533,32 @@ function huntTight(redId, blueId, maxTries, best) {
       best = { seed, winnerHp: r.winnerHp, loserDmg, margin, elapsed: r.elapsed, winId: r.winId };
     }
     if (margin <= 0) {
+      return { seed, found: true, best };
+    }
+  }
+  return { seed: null, found: false, best };
+}
+
+// huntCloseFinish(redId, blueId, maxTries, best) — sibling to huntTight using a
+// different "close" metric: the WINNER finished below CLOSE_FINISH_HP_FRAC of
+// their max HP (currently 0.3 = 30%). Matches the TIGHT_HP_FRACTION used in
+// boxedshard.js so the offline balance harness and the in-game picker agree on
+// what counts as a close finish. `best` carries the lowest-HP-percent fight
+// seen across chunked calls. Returns { seed, found, best }; best is shaped
+// { seed, winnerHp, winnerMax, pct, elapsed, winId }.
+const CLOSE_FINISH_HP_FRAC = 0.3;
+function huntCloseFinish(redId, blueId, maxTries, best) {
+  for (let i = 1; i <= maxTries; i++) {
+    const seed = randomSeed();
+    const r = simulateFightDetailed(redId, blueId, seed);
+    if (r.winId == null || r.loseId == null) continue; // skip any non-result
+    const winner = FIGHTERS.find(g => g.id === r.winId);
+    const winnerMax = winner.hp;
+    const pct = r.winnerHp / winnerMax;        // 0..1 of max — lower is closer
+    if (!best || pct < best.pct) {
+      best = { seed, winnerHp: r.winnerHp, winnerMax, pct, elapsed: r.elapsed, winId: r.winId };
+    }
+    if (pct < CLOSE_FINISH_HP_FRAC) {
       return { seed, found: true, best };
     }
   }

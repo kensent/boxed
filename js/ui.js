@@ -58,6 +58,7 @@ function updateUI() {
   // Skipped entirely while a hunt is running so its progress label survives.
   const huntBtn = document.getElementById('hunt-btn');
   const huntTightBtn = document.getElementById('hunt-tight-btn');
+  const huntLowHpBtn = document.getElementById('hunt-low-hp-btn');
   if (huntActive) { renderRoster(); return; }
   if (pickRed && pickBlue) {
     const ro = matchupOdds(pickRed, pickBlue);
@@ -73,9 +74,13 @@ function updateUI() {
     // Tight-fight hunt is meaningful for any matchup — always offered.
     huntTightBtn.textContent = 'HUNT A TIGHT FIGHT';
     huntTightBtn.style.display = '';
+    // Close-finish hunt (winner < 30% HP) — also matchup-agnostic.
+    huntLowHpBtn.textContent = 'HUNT A CLOSE FINISH';
+    huntLowHpBtn.style.display = '';
   } else {
     huntBtn.style.display = 'none';
     huntTightBtn.style.display = 'none';
+    huntLowHpBtn.style.display = 'none';
   }
   renderRoster();
 }

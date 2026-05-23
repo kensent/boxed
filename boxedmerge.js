@@ -63,11 +63,10 @@ block += '};';
 console.log(block);
 
 // Per-fighter stats: win rate, avg time, long% (stalemate-prone matchups), and
-// average tight-fight time (winner < 20% HP at finish, controlled by
-// TIGHT_HP_FRACTION in boxedshard.js). Tight time is weighted by the
-// per-matchup count so matchups that produce more close finishes have more
-// pull on the per-fighter average. Per-matchup tight time is printed in a
-// separate section below.
+// average tight-fight time (winner < TIGHT_HP_FRACTION of max HP at finish —
+// see boxedshard.js). Tight time is weighted by the per-matchup count so
+// matchups that produce more close finishes have more pull on the per-fighter
+// average. Per-matchup tight time is printed in a separate section below.
 function odds(a, b) {
   if (tbl[a + '_' + b] != null) return tbl[a + '_' + b].wr;
   if (tbl[b + '_' + a] != null) return 100 - tbl[b + '_' + a].wr;
@@ -122,7 +121,7 @@ summary.forEach(s => {
 // Per-matchup tight-fight stats. Every matchup gets a row even if zero tight
 // fights happened (so the table covers all 105 pairings). Sorted by tight count
 // DESC so the most dramatically close matchups float to the top.
-console.error('\n--- per-matchup tight fights (winner finished < 20% HP) ---');
+console.error('\n--- per-matchup tight fights (winner finished < 30% HP) ---');
 console.error('  ' + 'matchup'.padEnd(28) + 'tight#'.padEnd(8) + 'tight avg time');
 const matchupRows = [];
 for (let i = 0; i < ids.length; i++) {
