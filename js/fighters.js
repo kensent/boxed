@@ -64,9 +64,14 @@ const FIGHTERS = [
   },
   { id:'jester',  name:'JESTER',    hp:750,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
     ability:'blink', cd:2.5, dmg:130,
-    dodgeCd: 6.0,
+    // DOPPELGANGER replaces UNCANNY DODGE: every hit Jester takes spawns a
+    // stationary phantom decoy at her current position. Decoys are valid
+    // targets for every enemy ability (uniform "aim nearest" targeting); a
+    // decoy absorbs one incoming hit then dies. Cap of decoyCap simultaneously
+    // (oldest replaced on overflow). Decoy lifetime is decoyLife seconds.
+    decoyCap: 2, decoyLife: 3.0,
     active: 'BLINK DAGGER — teleports behind enemy and stabs',
-    get passive() { return `UNCANNY DODGE — phases through next hit, ${this.dodgeCd}s cd`; },
+    get passive() { return `DOPPELGANGER — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
   },
   { id:'cannoneer',name:'CANNONEER',hp:1030, speed:85,  color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
     ability:'cannon', cd:3.0, dmg:400,

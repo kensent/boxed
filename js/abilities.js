@@ -6,6 +6,14 @@
 // ============================================================================
 
 function fireAbility(f, enemy) {
+  // Uniform DOPPELGANGER rule: every fighter aims at the NEAREST of {real
+  // enemy, ...enemy's decoys}. pickTarget() handles the choice; for fighters
+  // that don't spawn decoys (everyone except Jester) the call collapses to
+  // returning the real enemy and behaviour matches pre-DOPPELGANGER code.
+  // Decoys have no velocity, so any predictive aim that reads .vx/.vy will
+  // see 0 — predictions land on the decoy's current (stationary) position.
+  const aim = pickTarget(f, enemy);
+  const aimVX = aim.vx || 0, aimVY = aim.vy || 0;
   // Cast sound — keyed off ability id. Abilities that own their sound elsewhere
   // are excluded here: windup abilities (lightning, cannon, iai) play at their
   // resolution point so the sound lands on the actual shot/strike; cast/drain
@@ -30,8 +38,8 @@ function fireAbility(f, enemy) {
       // pillar never lands in the void past a wall — it always targets a spot a
       // fighter could actually occupy. The bounce still dodges via genuine
       // mid-arena vector changes; hugging a wall no longer auto-escapes.
-      f.judgeX = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, enemy.x + enemy.vx * f.windupTime));
-      f.judgeY = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, enemy.y + enemy.vy * f.windupTime));
+      f.judgeX = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, aim.x + aimVX * f.windupTime));
+      f.judgeY = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, aim.y + aimVY * f.windupTime));
       sfx('chargeUp', null, f.x);
       // slow the priest during wind-up
       f.vx *= 0.3; f.vy *= 0.3;
@@ -41,7 +49,7 @@ function fireAbility(f, enemy) {
       // VOLLEY — no windup, fan f.volleyArrows arrows in a narrow spread.
       // SHATTER params ride on the projectile so a Duelist-parried arrow still
       // contributes to (and triggers) the same shatter cycle on its new target.
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       const spread = f.volleySpread;
       for (let i = 0; i < f.volleyArrows; i++) {
         const a2 = ang + (i - (f.volleyArrows - 1) / 2) * spread;
@@ -63,7 +71,7 @@ function fireAbility(f, enemy) {
       // off so the ramming speed persists and bounce() pinballs it; step() deals
       // damage and caroms off the enemy on each contact (per-pass i-frame). Body
       // holds at the launch point, then whips forward.
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       f.vx = Math.cos(ang) * f.speed * f.rampageSpeedMult;
       f.vy = Math.sin(ang) * f.speed * f.rampageSpeedMult;
       f.dashTimer = f.rampageDur;
@@ -73,7 +81,7 @@ function fireAbility(f, enemy) {
     }
     case 'sword': {
       // Lunge toward enemy as part of the swing
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       f.vx = Math.cos(ang) * f.speed * 2.5;
       f.vy = Math.sin(ang) * f.speed * 2.5;
       f.dashTimer = 0.26;
@@ -88,7 +96,7 @@ function fireAbility(f, enemy) {
       // fuse starts ticking; on fuse expire (step()): damage + BLAST RADIUS knockback.
       // Misses (edge, wall, life-expire) despawn the charge — variance lives in the
       // throw connect, not in random enemy wandering onto a placed mine.
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(ang) * f.throwSpeed, vy: Math.sin(ang) * f.throwSpeed,
@@ -123,7 +131,7 @@ function fireAbility(f, enemy) {
       if (toSpawn > 0) {
         sfx('cast', null, f.x);
         // visual: thrust the spellbook forward + a rune flare as the orbs release
-        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x);
       }
       break;
     }
@@ -159,7 +167,7 @@ function fireAbility(f, enemy) {
     }
     case 'riposte': {
       // Short forward lunge: f.dmg on contact, plus 0.25s parry window at the start
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       f.vx = Math.cos(ang) * f.speed * 2.2;
       f.vy = Math.sin(ang) * f.speed * 2.2;
       f.dashTimer = 0.3;
@@ -182,7 +190,7 @@ function fireAbility(f, enemy) {
         attackCd: 0.5, spin: 0, hitCd: 0, flash: 0,
         chargeTimer: 0, chargeHit: false,
       });
-      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x); // raise gesture (thrust)
+      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x); // raise gesture (thrust)
       break;
     }
     case 'sweep': {
@@ -191,9 +199,8 @@ function fireAbility(f, enemy) {
       // Outbound homes mildly to the enemy (a thrown blade); it turns at max travel
       // and homes back to Reaper, getting "caught". Hits once per leg, execute-scaled
       // (see the crescent handler in step()).
-      const enemy = f === game.red ? game.blue : game.red;
       if (f.crescentOut) { f.sweepWhiff = true; break; }
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(ang) * f.crescentSpeed, vy: Math.sin(ang) * f.crescentSpeed,
@@ -213,7 +220,7 @@ function fireAbility(f, enemy) {
       // skip the windup entirely — direction re-aims at the enemy now, the strike
       // fires on the very next tick. The chain breaks when a strike whiffs (focused
       // clears in the iaiStrike-end branch of step()).
-      f.iaiAngle = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      f.iaiAngle = Math.atan2(aim.y - f.y, aim.x - f.x);
       f.iaiHit = false;
       if (f.focused) {
         f.iaiWindup = 0.001;   // effectively zero — windup-end branch fires the strike next frame
@@ -225,8 +232,7 @@ function fireAbility(f, enemy) {
     }
     case 'hex': {
       // Witch: fires a fast bouncing projectile. Up to f.maxBounces wall bounces.
-      const enemy = f === game.red ? game.blue : game.red;
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(ang) * 280, vy: Math.sin(ang) * 280,
@@ -244,8 +250,7 @@ function fireAbility(f, enemy) {
       // Hunter: fires a hook projectile. On hit it deals damage AND tethers the
       // enemy, reeling them in. CRIPPLING HOOK (passive) slows the hooked enemy
       // — applied in the projectile-hit code.
-      const enemy = f === game.red ? game.blue : game.red;
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(ang) * 420, vy: Math.sin(ang) * 420,
@@ -257,20 +262,22 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'drain': {
-      // Warlock: open a drain channel onto the enemy if within close range. Channels
-      // for 1.2s, ticking f.dmg every 0.2s and healing the Warlock (Leech passive).
-      // If the enemy is out of range the cast whiffs — we flag it so the cooldown
-      // block can retry quickly instead of burning the full 2.2s on a no-op.
-      const enemy = f === game.red ? game.blue : game.red;
-      const d = Math.hypot(enemy.x - f.x, enemy.y - f.y);
+      // Warlock: open a drain channel onto the picked target if within close range.
+      // Channels for 1.2s, ticking f.dmg every 0.2s and healing the Warlock (Leech
+      // passive). If the target is out of range the cast whiffs — we flag it so
+      // the cooldown block can retry quickly instead of burning the full 2.2s on
+      // a no-op. NOTE under DOPPELGANGER: drainTarget can be a phantom decoy; the
+      // first tick consumes it and the channel breaks via the engine drain tick
+      // logic (decoy.dead -> drainTimer cleared). That's intended counter-texture.
+      const d = Math.hypot(aim.x - f.x, aim.y - f.y);
       if (d < 140) {
         f.drainTimer = 1.2;
         f.drainTickTimer = 0;
-        f.drainTarget = enemy;
+        f.drainTarget = aim;
         f.drainElapsed = 0;
         sfx('drain', null, f.x); // sustained beam drone — only on a real connect
         f.drainWhiffed = false;
-        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(enemy.y - f.y, enemy.x - f.x); // channel lock-on reach
+        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x); // channel lock-on reach
       } else {
         f.drainWhiffed = true;
       }
@@ -294,19 +301,35 @@ function resolveAim(f) {
   // Called when aimTimer hits 0
   const target = f === game.red ? game.blue : game.red;
   if (target.dead) { f.aimAbility = null; return; }
+  // DOPPELGANGER pick for resolve-time aimers (cannon, wildcard). Lightning's
+  // aim was locked at cast (f.judgeX/judgeY); here we just need to know if any
+  // decoy gets caught in the pillar footprint at resolve time.
+  const aim = pickTarget(f, target);
   if (f.aimAbility === 'lightning') {
     // JUDGMENT lands at the locked predicted spot. The pillar + ground-ring is a
     // headless-guarded spawn; the strike sound is the Priest's holy bell ('lightning').
     const tx = f.judgeX, ty = f.judgeY;
     spawnImpact(tx, ty, 'judgment', 0, 0.9);
     sfx('lightning', null, tx);
+    // Decoys caught in the pillar footprint are consumed first (the pillar is
+    // AOE — it strikes everything in range). Real-Jester hit still happens
+    // independently below.
+    if (target.decoys && target.decoys.length) {
+      for (const d of target.decoys) {
+        if (Math.hypot(d.x - tx, d.y - ty) < f.pillarRadius + FIGHTER_SIZE) {
+          d.dead = true;
+        }
+      }
+    }
     // Hit = the enemy's BODY overlaps the pillar footprint — matches what the
     // reticle shows (body touching the gold zone ring = struck), not a center
     // point test, so a fighter visibly inside the ring can't whiff.
     if (Math.hypot(target.x - tx, target.y - ty) < f.pillarRadius + FIGHTER_SIZE) {
       // DIVINE GRACE heals only on a hit that actually CONNECTS — damage() returns
-      // the dealt amount, or nothing if the hit was negated (Jester dodge/invuln).
-      // So a phased judgment still strikes (pillar + sound) but grants no heal.
+      // the dealt amount, or nothing if the hit was negated. So a phased judgment
+      // still strikes (pillar + sound) but grants no heal. A judgment that ONLY
+      // catches decoys (no real-target damage) likewise grants no heal — the
+      // phantom shattered, not the body.
       const dealt = damage(target, f.dmg, 'judgment');
       if (dealt > 0) {
         const healed = Math.min(f.maxHp, f.hp + f.healOnHit) - f.hp;
@@ -318,12 +341,13 @@ function resolveAim(f) {
       }
     }
   } else if (f.aimAbility === 'cannon') {
-    // BOMBARD — fire a heavy shell STRAIGHT at the enemy's CURRENT position (no lead,
-    // no smart math: dumb heavy artillery, unlike Priest's predictive pillar). Shell
-    // expires at the aim point; if the enemy moved off it during flight, splash with
-    // DIRECT HIT falloff catches near-misses. The enemy's own movement IS the dodge.
+    // BOMBARD — fire a heavy shell STRAIGHT at the picked target's CURRENT position
+    // (no lead, no smart math: dumb heavy artillery, unlike Priest's predictive
+    // pillar). Shell expires at the aim point; if the target moved off it during
+    // flight, splash with DIRECT HIT falloff catches near-misses. A decoy can be
+    // the picked target — shell flies at the decoy, decoy gets the direct hit.
     const speed = 340;
-    const dx = target.x - f.x, dy = target.y - f.y;
+    const dx = aim.x - f.x, dy = aim.y - f.y;
     const dist = Math.hypot(dx, dy) || 1;
     const ang = Math.atan2(dy, dx);
     game.projectiles.push({
@@ -339,7 +363,7 @@ function resolveAim(f) {
     // pattern. Every face throws spinning gold COINS; higher faces are worth
     // more on average (verified monotonic in the sim). COIN_DMG (top-level)
     // is the single balance lever — per-coin damage.
-    const ang = Math.atan2(target.y - f.y, target.x - f.x);
+    const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
     f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = ang; // coin throw (thrust)
     // The die has just settled on its face — a hard clack, brighter on a
     // high roll (5-6) to signal the lucky result before the coins fly.

@@ -36,17 +36,26 @@ function damage(target, dmg, srcKind, src) {
     }
     return;
   }
-  // Jester: Uncanny Dodge — phases through next hit, plus 0.3s follow-up invuln window
-  if (target.ability === 'blink' && target.dodgeInvuln > 0) {
-    return;
-  }
-  if (target.ability === 'blink' && target.dodgeReady) {
-    target.dodgeReady = false;
-    target.dodgeTimer = target.dodgeCd;
-    target.dodgeInvuln = 0.3;
-    target.negateFlash = 0.25;
-    sfx('negate', null, target.x);
-    return;
+  // Jester DOPPELGANGER: every hit Jester actually takes spawns a phantom
+  // decoy at her current position. Decoys are stationary targets that absorb
+  // the NEXT incoming attack on Jester (decoys are added to defender.decoys
+  // and resolved as targets by pickTarget; hits that land on a decoy never
+  // reach this damage() call — the projectile/melee hit loops route them).
+  // So if we got HERE on a Jester hit, no decoy intercepted it; spawn a
+  // fresh one for the NEXT incoming attack.
+  if (target.ability === 'blink') {
+    target.decoys = target.decoys || [];
+    if (target.decoys.length >= target.decoyCap) {
+      target.decoys.shift();   // oldest fades to make room (continuous rotation)
+    }
+    target.decoys.push({
+      x: target.x, y: target.y,
+      life: target.decoyLife,
+      decoy: true, dead: false,
+      // Visual fields so drawShape can render the phantom Jester.
+      shape: target.shape, color: target.color, accent: target.accent,
+      team: target.team,
+    });
   }
   // (Cannoneer's old Powder Store invuln-on-windup was removed — its passive
   // is now SIEGE ROUNDS, an offensive armor-piercing trait handled below.)

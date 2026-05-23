@@ -536,9 +536,12 @@ function makeFighter(t, team, x, y) {
     aimTimer: 0, aimAngle: 0, aimAbility: null,
     shotCount: 0, trail: [],
     slowTimer: 0, stunTimer: 0,
-    // Jester
-    dodgeReady: true, dodgeTimer: 0, dodgeInvuln: 0, blinkFx: 0,
-    blinkFromX: 0, blinkFromY: 0,
+    // Jester DOPPELGANGER state — decoys is the live phantom roster (each
+    // entry { x, y, life, dead, decoy:true, shape, color, accent } so pickTarget
+    // + drawShape can treat them uniformly). Decoy spawn happens in combat.js
+    // damage(), decay + consumed-cleanup in step() below.
+    blinkFx: 0, blinkFromX: 0, blinkFromY: 0,
+    decoys: [],
     // Duelist
     lastX: x, lastY: y,
     parryTimer: 0, counterAnim: 0, counterDir: 0,
@@ -789,6 +792,39 @@ function bounce(f, w, h) {
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
+// pickTarget(attacker, defender) — returns the nearest of {defender, ...defender's decoys}
+// from the attacker's perspective. Used UNIFORMLY by every fighter's aim call so any
+// fighter that spawns decoys (currently only Jester via DOPPELGANGER) is "fooled" the
+// same way by every ability. Tiebreaker: real fighter wins ties (strict-less for decoys),
+// which keeps behaviour identical to the pre-decoy code when no decoys exist.
+// Return value has at least {x, y, dead}; decoys also have a `decoy:true` flag and `life`;
+// real fighters have all the fighter fields (vx, vy, etc).
+function pickTarget(attacker, defender) {
+  if (!defender.decoys || defender.decoys.length === 0) return defender;
+  let best = defender, bestD = dist(attacker, defender);
+  for (const d of defender.decoys) {
+    const dd = dist(attacker, d);
+    if (dd < bestD) { best = d; bestD = dd; }
+  }
+  return best;
+}
+
+// tryHitDecoy(pos, defender, hitRange) — if a decoy is in hit range AND closer
+// to `pos` than the real defender, mark that decoy dead and return it. The
+// caller should treat this as the projectile/strike being absorbed (despawn,
+// no damage to real defender). Returns null when no decoy intercepts.
+function tryHitDecoy(pos, defender, hitRange) {
+  if (!defender.decoys || !defender.decoys.length) return null;
+  const realD = defender.dead ? Infinity : dist(pos, defender);
+  let best = null, bestD = Math.min(hitRange, realD);
+  for (const d of defender.decoys) {
+    const dd = dist(pos, d);
+    if (dd < bestD) { best = d; bestD = dd; }
+  }
+  if (best) best.dead = true;
+  return best;
+}
+
 
 // ============================================================================
 // === STEP (per-frame simulation) ============================================
@@ -867,14 +903,17 @@ function step(dt) {
       f.vy = f.vy / sp * targetSpeed;
       f.speed = targetSpeed;
     }
-    // Jester: Uncanny Dodge recharge + invuln tick
+    // Jester DOPPELGANGER: decoy lifecycle. Decay each decoy's life; cull on
+    // timeout or `dead` flag (set by the projectile/melee hit loops when a
+    // decoy absorbs an attack). Iterate back-to-front for safe splice.
     if (f.ability === 'blink') {
-      if (!f.dodgeReady) {
-        f.dodgeTimer -= dt;
-        if (f.dodgeTimer <= 0) f.dodgeReady = true;
-      }
-      if (f.dodgeInvuln > 0) f.dodgeInvuln -= dt;
       if (f.blinkFx > 0) f.blinkFx -= dt;
+      if (f.decoys && f.decoys.length) {
+        for (let i = f.decoys.length - 1; i >= 0; i--) {
+          f.decoys[i].life -= dt;
+          if (f.decoys[i].life <= 0 || f.decoys[i].dead) f.decoys.splice(i, 1);
+        }
+      }
     }
     if (f.ability === 'riposte') {
       if (f.parryTimer > 0) f.parryTimer -= dt;
@@ -903,34 +942,60 @@ function step(dt) {
         // each PASS through the enemy, gated by a per-pass i-frame so one pass = one
         // hit (not one per frame). Do NOT end the dash or kill the speed on contact —
         // pass clean through and bounce on. The dashTimer countdown above ends it.
+        // DOPPELGANGER: a decoy can absorb a single pass — consumes one i-frame
+        // cycle (rampageHitCd resets, no damage to real Jester, body ricochets off
+        // the decoy position). Subsequent passes can still hit the real enemy.
         if (f.rampageHitCd > 0) f.rampageHitCd -= dt;
-        if (!enemy.dead && f.rampageHitCd <= 0 && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
-          damage(enemy, f.dmg, undefined, f);
-          f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash on each pass
-          f.rampageHitCd = f.rampageHitGap;
-          // Carom off the enemy like a round bumper — reflect the ramming velocity
-          // about the center-to-center normal (speed preserved). Gated by the i-frame
-          // above, so it reflects once per contact (no per-frame jitter).
-          const nl = Math.hypot(f.x - enemy.x, f.y - enemy.y) || 1;
-          const ux = (f.x - enemy.x) / nl, uy = (f.y - enemy.y) / nl;
-          const vdot = f.vx * ux + f.vy * uy;
-          if (vdot < 0) {                   // only when charging INTO the enemy
-            f.vx -= 2 * vdot * ux;
-            f.vy -= 2 * vdot * uy;
+        if (f.rampageHitCd <= 0) {
+          const decoyHit = tryHitDecoy(f, enemy, FIGHTER_SIZE + FIGHTER_SIZE);
+          if (decoyHit) {
+            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18;
+            f.rampageHitCd = f.rampageHitGap;
+            // Ricochet off the decoy's position like a wall bumper.
+            const nl = Math.hypot(f.x - decoyHit.x, f.y - decoyHit.y) || 1;
+            const ux = (f.x - decoyHit.x) / nl, uy = (f.y - decoyHit.y) / nl;
+            const vdot = f.vx * ux + f.vy * uy;
+            if (vdot < 0) { f.vx -= 2 * vdot * ux; f.vy -= 2 * vdot * uy; }
+          } else if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
+            damage(enemy, f.dmg, undefined, f);
+            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash on each pass
+            f.rampageHitCd = f.rampageHitGap;
+            // Carom off the enemy like a round bumper — reflect the ramming velocity
+            // about the center-to-center normal (speed preserved). Gated by the i-frame
+            // above, so it reflects once per contact (no per-frame jitter).
+            const nl = Math.hypot(f.x - enemy.x, f.y - enemy.y) || 1;
+            const ux = (f.x - enemy.x) / nl, uy = (f.y - enemy.y) / nl;
+            const vdot = f.vx * ux + f.vy * uy;
+            if (vdot < 0) {                   // only when charging INTO the enemy
+              f.vx -= 2 * vdot * ux;
+              f.vy -= 2 * vdot * uy;
+            }
           }
         }
       } else {
         // Knight / Duelist / Reaper: the dash only closes distance. The strike is
         // LIVE for the whole dash — the first frame the enemy is within this
         // fighter's strike range, the single hit lands (once per dash).
-        if (!f.dashHit && !enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach) {
-          damage(enemy, f.dmg, undefined, f);
-          f.dashHit = true;
-          f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
-          f.dashTimer = 0;
-          const a = Math.atan2(f.vy, f.vx);
-          f.vx = Math.cos(a) * f.speed;
-          f.vy = Math.sin(a) * f.speed;
+        // DOPPELGANGER: a decoy in range consumes the single strike (one-shot
+        // melee abilities don't get to chain through a decoy to the real body).
+        if (!f.dashHit) {
+          const decoyHit = tryHitDecoy(f, enemy, FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach);
+          if (decoyHit) {
+            f.dashHit = true;
+            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18;
+            f.dashTimer = 0;
+            const a = Math.atan2(f.vy, f.vx);
+            f.vx = Math.cos(a) * f.speed;
+            f.vy = Math.sin(a) * f.speed;
+          } else if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach) {
+            damage(enemy, f.dmg, undefined, f);
+            f.dashHit = true;
+            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
+            f.dashTimer = 0;
+            const a = Math.atan2(f.vy, f.vx);
+            f.vx = Math.cos(a) * f.speed;
+            f.vy = Math.sin(a) * f.speed;
+          }
         }
       }
     }
@@ -1006,7 +1071,16 @@ function step(dt) {
       f.drainTimer -= dt;
       f.drainElapsed += dt;
       const t = f.drainTarget;
-      if (t && !t.dead) {
+      // DOPPELGANGER: if the drain locked onto a phantom decoy, the first
+      // tick's worth of channel pulls "real" essence out of the phantom — it
+      // collapses (decoy.dead = true) and the channel breaks. Warlock just
+      // burnt the cast on a ghost; that's the counter-texture (a Jester
+      // decoy in range fools the lock-on).
+      if (t && t.decoy) {
+        t.dead = true;
+        f.drainTimer = 0;
+        f.drainTarget = null;
+      } else if (t && !t.dead) {
         const d = Math.hypot(t.x - f.x, t.y - f.y);
         if (d > 165) {
           f.drainTimer = 0;
@@ -1099,6 +1173,14 @@ function step(dt) {
             }
             return true;
           });
+          // Decoys on the line are cleaved too (each one ON the iai segment dies).
+          // FOCUS only chains on a REAL hit — slicing a phantom doesn't grant the
+          // refund (the cut connected with nothing of substance).
+          if (enemy.decoys && enemy.decoys.length) {
+            for (const d of enemy.decoys) {
+              if (segDist(d.x, d.y) < f.slashReach + FIGHTER_SIZE) d.dead = true;
+            }
+          }
           // Hit enemy on the line.
           if (!enemy.dead && segDist(enemy.x, enemy.y) < f.slashReach + FIGHTER_SIZE) {
             damage(enemy, f.dmg, undefined, f);
@@ -1258,6 +1340,9 @@ function step(dt) {
       p.x += p.vx * dt; p.y += p.vy * dt;
       if (p.x < 0 || p.x > w || p.y < 0 || p.y > h) return false;
       const tgt = p.team === 'red' ? blue : red;
+      // DOPPELGANGER: a closer decoy intercepts the charge, sticks to nothing
+      // (decoy is consumed), and the charge despawns. Real Jester isn't touched.
+      if (tryHitDecoy(p, tgt, FIGHTER_SIZE + p.size)) return false;
       if (!tgt.dead && dist(p, tgt) < FIGHTER_SIZE + p.size) {
         if (tgt.ability === 'riposte' && tgt.parryTimer > 0) {
           // Duelist parry — flip the charge back at the thrower.
@@ -1299,7 +1384,14 @@ function step(dt) {
         p.vx += (Math.cos(ang) * sp - p.vx) * Math.min(1, k * dt / 100);
         p.vy += (Math.sin(ang) * sp - p.vy) * Math.min(1, k * dt / 100);
       };
-      if (p.phase === 'out') { if (!target.dead) steer(target.x, target.y, p.homing); }
+      if (p.phase === 'out') {
+        // DOPPELGANGER: outbound steers toward the nearest of {target, decoys}.
+        // Decoys don't move, so a decoy-locked crescent will just fly straight at
+        // it; the projectile-hit branch above turns the crescent into Reaper's
+        // discard if the decoy absorbs it (crescentOut cleared, cooldown resumes).
+        const aim = pickTarget(p, target);
+        if (aim === target ? !target.dead : true) steer(aim.x, aim.y, p.homing);
+      }
       else {
         // Return = retrieval: beeline straight at Reaper so it always gets caught
         // (a lerp-homing turn radius is too wide at this speed — it would orbit).
@@ -1336,6 +1428,13 @@ function step(dt) {
       }
       // hit (gated by hitCd so it can't double-hit at the turn).
       let hitNow = false;
+      // DOPPELGANGER: a closer decoy absorbs the crescent and ends its run.
+      // The boomerang doesn't return — owner.crescentOut is cleared so Reaper
+      // can throw a fresh one next cd cycle.
+      if (p.hitCd <= 0 && tryHitDecoy(p, target, FIGHTER_SIZE + p.size)) {
+        owner.crescentOut = false;
+        return false;
+      }
       if (!target.dead && p.hitCd <= 0 && dist(p, target) < FIGHTER_SIZE + p.size) {
         damage(target, p.dmg, 'projectile');
         // Impact + sfx ALWAYS fire — even on a lethal hit (the kill-cam jumps in
@@ -1389,9 +1488,15 @@ function step(dt) {
       if (p.novaArm <= 0) p.homing = 220;
     }
     if (p.homing > 0) {
-      const target = p.team === 'red' ? blue : red;
-      if (!target.dead) {
-        const ang = Math.atan2(target.y - p.y, target.x - p.x);
+      const defender = p.team === 'red' ? blue : red;
+      // DOPPELGANGER: home toward the NEAREST of {real, decoys} this frame. So
+      // a homing projectile (orb/coin/hex/reflected-charge) can switch from
+      // tracking real Jester to tracking a fresh decoy if the decoy is closer.
+      // Real-defender-dead path keeps the prior behaviour (stop homing).
+      const aim = pickTarget(p, defender);
+      const aimAlive = aim === defender ? !defender.dead : true;
+      if (aimAlive) {
+        const ang = Math.atan2(aim.y - p.y, aim.x - p.x);
         const sp = Math.hypot(p.vx, p.vy);
         const tvx = Math.cos(ang) * sp;
         const tvy = Math.sin(ang) * sp;
@@ -1457,6 +1562,10 @@ function step(dt) {
       if (p.y > h - p.size) p.y = h - p.size;
     }
     const target = p.team === 'red' ? blue : red;
+    // DOPPELGANGER: a closer decoy intercepts the projectile (any kind) before
+    // it reaches the real fighter — decoy is consumed, projectile despawns,
+    // parry is never offered. The phantom "swallowed" the shot.
+    if (tryHitDecoy(p, target, FIGHTER_SIZE + p.size)) return false;
     if (!target.dead && dist(p, target) < FIGHTER_SIZE + p.size) {
       // Duelist parry: flip the projectile back at the attacker
       if (target.ability === 'riposte' && target.parryTimer > 0) {
@@ -1624,37 +1733,51 @@ function step(dt) {
     const target = sk.team === 'red' ? blue : red;
 
     if (sk.chargeTimer > 0) {
-      // Charging — locked velocity, check for contact
+      // Charging — locked velocity, check for contact (incl. decoys: a
+      // charging skeleton ramming into a phantom dies on impact like it would
+      // against the real body, AND consumes the decoy).
       sk.chargeTimer -= dt;
-      if (!sk.chargeHit && !target.dead && dist(sk, target) < FIGHTER_SIZE + sk.size) {
-        damage(target, sk.dmg);
-        // Bone clash on the dash-attack connect + a light (chip-scaled) knockback.
-        const ha = Math.atan2(target.y - sk.y, target.x - sk.x);
-        spawnImpact(target.x, target.y, 'bone', ha, 0.35);
-        sfx('impact', { kind: 'bone', big: 0.35 }, target.x);
-        target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 260) * 13;
-        sk.chargeHit = true;
-        sk.attackCd = SKEL_CHARGE_CD;
-        sk.chargeTimer = 0;
-        // Bounce back off the target
-        const ba = Math.atan2(sk.y - target.y, sk.x - target.x);
-        sk.vx = Math.cos(ba) * SKEL_IDLE_SPEED;
-        sk.vy = Math.sin(ba) * SKEL_IDLE_SPEED;
-      } else if (sk.chargeTimer <= 0) {
-        sk.attackCd = SKEL_CHARGE_CD;
+      if (!sk.chargeHit) {
+        const decoyHit = tryHitDecoy(sk, target, FIGHTER_SIZE + sk.size);
+        if (decoyHit) {
+          sk.chargeHit = true;
+          sk.attackCd = SKEL_CHARGE_CD;
+          sk.chargeTimer = 0;
+          const ba = Math.atan2(sk.y - decoyHit.y, sk.x - decoyHit.x);
+          sk.vx = Math.cos(ba) * SKEL_IDLE_SPEED;
+          sk.vy = Math.sin(ba) * SKEL_IDLE_SPEED;
+        } else if (!target.dead && dist(sk, target) < FIGHTER_SIZE + sk.size) {
+          damage(target, sk.dmg);
+          // Bone clash on the dash-attack connect + a light (chip-scaled) knockback.
+          const ha = Math.atan2(target.y - sk.y, target.x - sk.x);
+          spawnImpact(target.x, target.y, 'bone', ha, 0.35);
+          sfx('impact', { kind: 'bone', big: 0.35 }, target.x);
+          target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 260) * 13;
+          sk.chargeHit = true;
+          sk.attackCd = SKEL_CHARGE_CD;
+          sk.chargeTimer = 0;
+          // Bounce back off the target
+          const ba = Math.atan2(sk.y - target.y, sk.x - target.x);
+          sk.vx = Math.cos(ba) * SKEL_IDLE_SPEED;
+          sk.vy = Math.sin(ba) * SKEL_IDLE_SPEED;
+        }
       }
+      if (sk.chargeTimer <= 0) sk.attackCd = SKEL_CHARGE_CD;
     } else if (sk.attackCd > 0) {
-      // Idle — slow drift toward enemy
+      // Idle — slow drift toward NEAREST of {target, decoys}. Decoys can pull
+      // a skeleton wave off the real body (a Jester counter texture).
       sk.attackCd -= dt;
-      if (!target.dead) {
-        const ang = Math.atan2(target.y - sk.y, target.x - sk.x);
+      const aim = pickTarget(sk, target);
+      if (aim === target ? !target.dead : true) {
+        const ang = Math.atan2(aim.y - sk.y, aim.x - sk.x);
         sk.vx = Math.cos(ang) * SKEL_IDLE_SPEED;
         sk.vy = Math.sin(ang) * SKEL_IDLE_SPEED;
       }
     } else {
-      // Launch charge — lock aim at current target position
-      if (!target.dead) {
-        const ang = Math.atan2(target.y - sk.y, target.x - sk.x);
+      // Launch charge — lock aim at the picked target (real or decoy).
+      const aim = pickTarget(sk, target);
+      if (aim === target ? !target.dead : true) {
+        const ang = Math.atan2(aim.y - sk.y, aim.x - sk.x);
         sk.vx = Math.cos(ang) * SKEL_CHARGE_SPEED;
         sk.vy = Math.sin(ang) * SKEL_CHARGE_SPEED;
         sk.chargeTimer = 0.65;

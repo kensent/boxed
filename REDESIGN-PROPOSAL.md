@@ -62,7 +62,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
 | **Sapper** | shipped | `STICK CHARGE` — thrown fused limpet bomb; sticks on contact, detonates after a fuse, BLAST RADIUS knockback |
 | Wizard | keep | orbs are offense **and** shield |
-| Jester | keep | teleport-behind + phase-dodge |
+| **Jester** | shipped | `BLINK DAGGER` (unchanged) + `DOPPELGANGER` — every hit spawns a phantom decoy, uniform "aim nearest" routes enemy abilities into the decoy first |
 | Duelist | keep | reflect projectiles + auto-counter |
 | Necromancer | keep | summon + explode-on-death |
 | Witch | keep | wall-bouncing bolt + damage-amp mark |
@@ -671,6 +671,104 @@ casing-crack + pressure boom (its existing `mine` impact) on detonation.
 
 ---
 
+## JESTER → `BLINK DAGGER` + `DOPPELGANGER` *(shipped — universal aim-nearest decoy mechanic)*
+*Material: ceramic mask, hollow pop, brittle (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Jester was in the original "keep"
+> list — BLINK DAGGER + UNCANNY DODGE were considered distinct enough. But the
+> roster shift (Knight excluded, Reaper now semi-ranged) quietly buffed her:
+> UNCANNY DODGE (one full-phase per ~6s) was eating more critical hits each
+> matchup as the new roster grew "big single hit" attacks (SHATTER trigger,
+> STICK CHARGE detonation, BOMBARD shell, JUDGMENT pillar, CRESCENT throw).
+> She climbed to **57.9% overall**, with very few real losses outside
+> Duelist's COUNTER cascade.
+>
+> Replaced UNCANNY DODGE with **DOPPELGANGER** — bigger design lift, deeper
+> matchup texture.
+> - **Active — BLINK DAGGER (unchanged):** teleport behind enemy heading + stab.
+> - **Passive — DOPPELGANGER:** every hit Jester takes spawns a phantom decoy
+>   at her current position. Decoys are stationary, no physics; each absorbs
+>   exactly one incoming attack of any kind (projectile, melee dash strike,
+>   judgment pillar AOE, drain channel) then dies. Cap of `decoyCap` (2)
+>   simultaneously — oldest fades to make room (continuous rotation under
+>   pressure). Decoy lifetime `decoyLife` (3s).
+> - **The core mechanical change — uniform "aim at nearest target."** Every
+>   fighter's aim path (cast-time picks, continuous homing, skeleton seek,
+>   drain lock-on) now routes through one helper `pickTarget(attacker, defender)`
+>   that returns the nearest of {real defender, ...decoys}. For 14 of 15
+>   fighters this collapses to the pre-DOPPELGANGER behaviour (Jester is the
+>   only one with decoys). For attacks vs Jester, this is the entire matchup
+>   shift: the geometry of WHEN each ability picks its target determines
+>   whether it gets fooled by a decoy or hits the real body.
+>   - *Cast-time pickers* (Priest JUDGMENT predict, Cannoneer BOMBARD, dashers'
+>     anchors, Warlock drain lock, Ronin iai line, Reaper crescent throw) — pick
+>     once, commit. If a decoy was nearest at cast, the whole ability resolves
+>     against the decoy.
+>   - *Per-frame homing* (Wizard orbs, coin homing, hex steering) — re-pick
+>     every frame, so the projectile switches targets if a fresh decoy spawns
+>     mid-flight closer than the old aim.
+>   - *Skeleton seek* — per-frame pick. Skeleton waves get pulled toward
+>     whichever target's closer; decoys can drag whole skeleton waves off the
+>     real Jester.
+> - **Damage routing.** Projectile and dash-hit collision loops check
+>   `tryHitDecoy(pos, defender, range)` first. A decoy in range and closer
+>   than the real defender absorbs the hit (decoy.dead = true, projectile
+>   despawns, dash records the hit-frame). Real Jester is never touched in
+>   that frame; she takes the hit ONLY if no decoy intercepted.
+> - **JUDGMENT AOE quirk.** Priest's pillar is the one ability that doesn't
+>   pick a single target — it lands at the cast-locked spot and damages
+>   everything in range. So a JUDGMENT can hit BOTH a decoy AND real Jester
+>   if both happen to overlap the footprint. Decoys in the pillar are
+>   consumed, and the heal-on-hit only fires if real Jester took damage
+>   (not on a decoy-only kill — the phantom shattered, not the body).
+> - **DRAIN edge case.** Drain locks at cast (the channel is a maintained
+>   target). If it locks onto a decoy, the first tick consumes the phantom
+>   and the channel breaks with no further damage. Warlock burnt the cast
+>   on a ghost. Intended counter-texture.
+> - **Numbers:** hp 750, speed 120, dmg 130, cd 2.5, decoyCap 2, decoyLife 3.0
+>   → **~50.9% overall, ~15.0s avg, ~4% fog.**
+> - **Matchup texture (predictions vs reality).** Strong Jester (decoys absorb
+>   the killing move):
+>   - Priest 96 (predictive aim locks onto stationary decoy = guaranteed hit
+>     on phantom, real Jester safe)
+>   - Berserker 91 (decoys eat rampage passes; rampage ricochets off the
+>     phantom and pinballs away)
+>   - Witch 87 (hex projectiles eaten by decoys before they bounce in)
+>   - Archer 84 (the 5-arrow VOLLEY usually loses 1-2 to a decoy, breaking
+>     the SHATTER cycle)
+>   - Necromancer 76 (skeleton seek pulled off-target by decoys; whole waves
+>     waste themselves on phantoms)
+>   - Reaper 62 (crescent absorbed by decoy ends Reaper's throw cycle early)
+>
+>   Hard losses where decoys can't save her:
+>   - Duelist 0 (Jester's blink-stab still procs Duelist's COUNTER on the
+>     real-hit, and Duelist's RIPOSTE projectiles aren't reflected by Jester
+>     decoys cleanly. Pending Duelist COUNTER redesign should soften this.)
+>   - Warlock 10 (drain locks at cast; if no decoys yet, locks on real Jester
+>     and runs the full channel)
+>   - Cannoneer 34 (EPICENTER splash partial-hits real Jester even when the
+>     direct hit lands on the decoy)
+>   - Ronin 35 (iai line cuts CLEAVE — decoys on the line die but real Jester
+>     on the line also gets hit; phantoms don't help)
+>
+> - **Visual.** Decoys render in WORLD space as ghosted-Jester sprites at
+>   42% alpha plus a faint outer halo ring, drawn BEFORE the real fighter so
+>   the real Jester paints on top of any overlap (resolves the moment-of-spawn
+>   coincidence). Decoys face the nearest enemy each frame so they read as
+>   "looking at the threat" — alive-seeming phantoms, not props.
+> - **UNCANNY DODGE removed cleanly.** All `dodgeReady/Timer/Invuln/Cd` fields,
+>   the armed-ring render, the invuln-window render, the dodge-recharge tick,
+>   and the dodge-intercept in damage() are gone. armedRing() helper deleted
+>   (was Jester-only).
+> - **Known follow-up — Duelist COUNTER.** The Jester-Duelist matchup is the
+>   one place DOPPELGANGER doesn't fully resolve. COUNTER's "free thrust on
+>   every melee hit taken" still cascades on Jester's blink-stab. Per the
+>   earlier-session design discussion, COUNTER should become parry-conditional
+>   (only fires when RIPOSTE's parry window catches something). That's a
+>   separate commit.
+
+---
+
 # Keep — already distinct, no change
 
 These eight each own a unique verb. Brief rationale so the judgment is on record:
@@ -678,10 +776,14 @@ These eight each own a unique verb. Brief rationale so the judgment is on record
 - **Wizard** — orbs are *simultaneously* offense and shield: each orb out attacking is
   one not mitigating. (It's automatic double-duty, not a player decision — but the
   mechanic of one resource serving both roles is the strongest in the game.)
-- **Jester** — teleport-behind repositioning + a phase-dodge defensive cooldown. The
-  only blink.
+- ~~**Jester** — teleport-behind repositioning + a phase-dodge defensive cooldown.~~
+  *(moved out of the keep list — UNCANNY DODGE was eating too much value from the
+  redesigned roster's big single-hit moves; replaced with DOPPELGANGER, see the
+  dedicated section above.)*
 - **Duelist** — reflect projectiles + auto-counter on melee. The reactive punisher;
-  mechanically the richest melee.
+  mechanically the richest melee. *(COUNTER currently still fires on every melee
+  hit taken; queued for parry-conditional redesign — see Jester section's
+  follow-up note.)*
 - **Necromancer** — the only summoner; board presence + explode-on-death adds a
   second layer.
 - **Witch** — wall-bouncing bolt (unpredictable angles) + a setup→payoff damage mark.

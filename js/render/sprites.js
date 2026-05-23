@@ -916,19 +916,6 @@ function drawChargeRing(rgb, prog, held) {
   }
 }
 
-// armedRing() — defensive-passive READY indicator: a crisp pulsing rim + a faint
-// outer halo ring in the passive's colour, present while the passive is armed and
-// gone when it's spent. Line-drawn (no alpha-fill), ctx translated to centre.
-function armedRing(rgb) {
-  const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
-  ctx.strokeStyle = `rgba(${rgb},${(0.5 + pulse * 0.4).toFixed(3)})`;
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 6, 0, Math.PI * 2); ctx.stroke();
-  ctx.strokeStyle = `rgba(${rgb},${(0.22 * pulse).toFixed(3)})`;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 10, 0, Math.PI * 2); ctx.stroke();
-}
-
 // drawFighter() — fresh animation system, built fighter by fighter.
 // Shared grammar (ANIMATION.md #9): the fighter IS the weapon, so melee is sold
 // by deforming the BODY (squash/stretch/lunge) plus a victim recoil, not by
@@ -1076,9 +1063,6 @@ function drawFighter(f) {
       }
     }
   }
-  if (f.ability === 'blink' && f.dodgeReady && !f.dead) {
-    armedRing('232,216,184');                          // Jester UNCANNY DODGE armed
-  }
   if (f.ability === 'riposte' && f.parryTimer > 0) {   // Duelist PARRY window (active)
     const pa = f.parryTimer / 0.25;
     ctx.strokeStyle = `rgba(192,192,232,${(pa * 0.95).toFixed(3)})`;
@@ -1087,12 +1071,6 @@ function drawFighter(f) {
     ctx.strokeStyle = `rgba(255,255,255,${(pa * 0.5).toFixed(3)})`;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE - 2, 0, Math.PI * 2); ctx.stroke();
-  }
-  if (f.ability === 'blink' && f.dodgeInvuln > 0) {    // Jester invuln window (active)
-    const ia = f.dodgeInvuln / 0.3;
-    ctx.strokeStyle = `rgba(255,255,255,${(ia * 0.9).toFixed(3)})`;
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, FIGHTER_SIZE + 4, 0, Math.PI * 2); ctx.stroke();
   }
   if (f.ability === 'tackle' && f.hp < f.maxHp * 0.5 && !f.dead) { // Berserker BLOODRAGE
     const pulse = 0.6 + Math.sin(performance.now() / 110) * 0.3;    // faster, agitated pulse

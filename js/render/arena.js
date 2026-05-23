@@ -1376,6 +1376,43 @@ function draw() {
     }
   });
 
+  // Jester DOPPELGANGER decoys — render BEFORE the real fighter so the real
+  // Jester paints on top of any overlapping phantom (clears the moment-of-spawn
+  // overlap). Use drawShape (the pure-identity sprite path, no animation state)
+  // at the decoy's position, facing the enemy, with a ghost-tint alpha that
+  // fades over the last 0.5s of life. Decoys mirror left/right like real
+  // fighters do (cos(facing) < 0 -> scale -1).
+  [game.red, game.blue].forEach(f => {
+    if (!f.decoys || !f.decoys.length) return;
+    const enemy = f === game.red ? game.blue : game.red;
+    f.decoys.forEach(d => {
+      const fade = Math.min(1, d.life / 0.5);
+      const alpha = 0.42 * fade;
+      const facing = enemy && !enemy.dead
+        ? Math.atan2(enemy.y - d.y, enemy.x - d.x)
+        : 0;
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      if (Math.cos(facing) < 0) {
+        ctx.scale(-1, 1);
+        ctx.rotate(Math.PI - facing);
+      } else {
+        ctx.rotate(facing);
+      }
+      ctx.globalAlpha = alpha;
+      drawShape(ctx, d);
+      // Faint outer halo so the phantom reads as ghostly, not just dim.
+      ctx.globalAlpha = alpha * 0.45;
+      ctx.strokeStyle = `rgba(232,216,184,1)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+      ctx.restore();
+    });
+  });
+
   drawFighter(game.red);
   drawFighter(game.blue);
 
