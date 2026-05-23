@@ -13,9 +13,13 @@ function spawnFloat(x, y, text, color) { game.floatTexts.push({ x, y, vy:-40, li
 // bespoke shape per `kind` (drawImpact in arena.js), animating over its short life.
 // `dir` is the impact direction (e.g. a projectile's travel), `mag` 0..1 scales the
 // size. Visual only and headless-guarded, so it never touches the sim/balance.
-function spawnImpact(x, y, kind, dir, mag) {
+function spawnImpact(x, y, kind, dir, mag, radius) {
   if (headless || !game) return;
-  game.impacts.push({ x, y, kind, dir: dir || 0, mag: mag == null ? 0.5 : mag, life: 0.22, maxLife: 0.22 });
+  // `radius` (optional) — for impacts that have a meaningful FALLOFF zone, the
+  // outer edge in world-units. Cannoneer EPICENTER passes splashRadius here so
+  // the explosion can draw a fading edge ring showing where damage goes to zero.
+  // Defaults to 0 (no falloff visualization needed).
+  game.impacts.push({ x, y, kind, dir: dir || 0, mag: mag == null ? 0.5 : mag, radius: radius || 0, life: 0.22, maxLife: 0.22 });
 }
 // Heal floats ("+N") are tinted to the healed fighter's team so you can tell
 // WHO healed — but lightened, so they read distinct from that team's

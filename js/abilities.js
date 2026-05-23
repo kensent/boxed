@@ -370,6 +370,7 @@ function resolveAim(f) {
       x: f.x, y: f.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
       team: f.team, dmg: f.dmg, life: Math.max(0.1, dist / speed),  // expire AT the aim point
       kind: 'cannon', size: 7, homing: 0, angle: ang,
+      splashRadius: f.splashRadius,   // passed through for the EPICENTER explosion visual
     });
     sfx('cannon', null, f.x);
     shake(7); // muzzle kick

@@ -1510,7 +1510,7 @@ function step(dt) {
           const d = Math.hypot(tgtC.x - p.x, tgtC.y - p.y);
           if (d < ownerC.splashRadius) damage(tgtC, p.dmg * (1 - d / ownerC.splashRadius), 'projectile');
         }
-        spawnImpact(p.x, p.y, 'cannon', 0, 1);
+        spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         sfx('impact', { kind: 'cannon', big: 1 }, p.x);
       }
       return false;
@@ -1622,7 +1622,7 @@ function step(dt) {
       // touched by the blast.
       if (p.kind === 'cannon') {
         damage(target, p.dmg, 'projectile');
-        spawnImpact(p.x, p.y, 'cannon', 0, 1);
+        spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         sfx('impact', { kind: 'cannon', big: 1 }, p.x);
         return false;
       }

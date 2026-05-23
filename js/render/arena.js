@@ -47,16 +47,57 @@ function drawImpact(im) {
   ctx.translate(im.x, im.y);
   ctx.lineCap = 'round';
   switch (im.kind) {
-    case 'cannon': {                                // heavy orange blast
-      const r = 6 + prog * (18 + m * 16);
-      ctx.strokeStyle = `rgba(255,140,26,${(a * 0.9).toFixed(3)})`;
-      ctx.lineWidth = 3 * a + 0.5;
-      for (let i = 0; i < 8; i++) { const g = (i / 8) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 4, Math.sin(g) * 4); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
-      ctx.strokeStyle = `rgba(255,200,80,${(a * 0.7).toFixed(3)})`;
-      ctx.lineWidth = 2 * a + 0.5;
-      ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = `rgba(255,255,220,${a.toFixed(3)})`;
-      ctx.beginPath(); ctx.arc(0, 0, 3 * a + 1, 0, Math.PI * 2); ctx.fill();
+    case 'cannon': {
+      // Cannoneer BOMBARD — EPICENTER passive: max damage at center, falls off
+      // to zero at splashRadius. The explosion visualizes that gradient so the
+      // viewer can SEE the lethal zone:
+      //   1. A persistent FAINT outer ring at splashRadius — the "edge" beyond
+      //      which damage is zero. Marks the splash boundary.
+      //   2. A bright SHOCKWAVE ring expanding outward — the concussion wave,
+      //      reads as "pressure released" rather than "shrapnel scattered."
+      //   3. A bright white-yellow CORE at the impact point — the epicenter.
+      //   4. Four short directional SMOKE PUFFS — gunpowder venting, NOT the
+      //      radial spokes of a mine (which read as shrapnel-everywhere).
+      // Distinct grammar from Sapper's 'mine' (radial spokes + thick ring).
+      const splashR = im.radius || 32;  // fallback for any cannon impact without a radius
+      // 1) Splash-edge ring — faint, sits at the splashRadius for the impact's
+      //    full life (slightly brightens then fades). Marks the falloff edge.
+      const edgeA = a * 0.45;
+      ctx.strokeStyle = `rgba(255,140,26,${edgeA.toFixed(3)})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.arc(0, 0, splashR, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      // 2) Concussion shockwave — bright ring expanding from center to splashR.
+      const shockR = prog * splashR;
+      const shockA = a * (1 - prog * 0.4);   // brightest at start, dims as it expands
+      ctx.strokeStyle = `rgba(255,180,60,${shockA.toFixed(3)})`;
+      ctx.lineWidth = 3.5 * a + 0.8;
+      ctx.beginPath(); ctx.arc(0, 0, shockR, 0, Math.PI * 2); ctx.stroke();
+      // Inner secondary shock — half-radius, slightly delayed, brighter color.
+      const innerR = Math.max(0, (prog - 0.15)) * splashR * 0.6;
+      ctx.strokeStyle = `rgba(255,220,120,${(shockA * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.4;
+      ctx.beginPath(); ctx.arc(0, 0, innerR, 0, Math.PI * 2); ctx.stroke();
+      // 3) Epicenter core — bright flash at the impact point. Fades faster
+      //    than the shockwave so the center reads as the brief peak.
+      const coreA = a * (1 - prog) * (1 - prog);  // ease-out quadratic
+      ctx.fillStyle = `rgba(255,255,220,${coreA.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(0, 0, 5 * coreA + 1, 0, Math.PI * 2); ctx.fill();
+      // 4) Directional smoke puffs — short dark lines fanning outward at fixed
+      //    cardinal-ish angles (NOT radial like a mine's spokes). 4 puffs,
+      //    each a thick short stroke; they read as gunpowder venting.
+      ctx.strokeStyle = `rgba(60,40,28,${(a * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 3 * a + 0.6;
+      for (let i = 0; i < 4; i++) {
+        const g = (i / 4) * Math.PI * 2 + Math.PI / 4;   // offset 45° so they don't align with axes
+        const r0 = splashR * 0.18 + prog * 4;
+        const r1 = splashR * 0.42 + prog * 8;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0);
+        ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1);
+        ctx.stroke();
+      }
       break;
     }
     case 'mine': {                                  // the biggest explosion
