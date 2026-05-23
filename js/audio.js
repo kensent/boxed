@@ -202,6 +202,13 @@ const Audio = (() => {
     iai() {
       tone(1200, 0.50, 'sine', 0.08, { glideTo: 2400, attack: 0.30 });
     },
+    // Berserker — raw flesh + blood. Primal growl inhaling for the rampage launch.
+    // Low sawtooth gliding UP under a body-noise rumble that filter-sweeps open
+    // as the coil tightens. Distinct material from Priest's bell `chargeUp`.
+    rampageCoil() {
+      tone(70, 0.45, 'sawtooth', 0.14, { glideTo: 160, attack: 0.30 });
+      noise(0.45, 0.07, 'lowpass', 280, { filterGlideTo: 600 });
+    },
 
     // ----- release / strike beats for charged + channel abilities ----------
 
@@ -385,6 +392,23 @@ const Audio = (() => {
     burn() {
       noise(0.08, 0.09, 'highpass', 2400, { filterGlideTo: 3600 });
       noise(0.05, 0.05, 'bandpass', 1200);
+    },
+    // Archer SHATTER burst — the moment the cushion of embedded arrows releases
+    // all at once. Distinct from a per-arrow `impact arrow` crack: a wider crack
+    // + a falling low whoosh as the energy disperses outward. Louder + longer
+    // than any single arrow hit because it's the climax of the cycle.
+    shatterBurst() {
+      noise(0.20, 0.34, 'bandpass', 2200, { filterGlideTo: 600 });
+      tone(900, 0.20, 'triangle', 0.18, { glideTo: 280 });
+      tone(1600, 0.16, 'sine', 0.10, { glideTo: 700 });
+    },
+    // Reaper WAKE step-in tick — soft bone hiss as the crescent's trail bites
+    // the enemy. Gated by per-target `wakeHitCd` (~0.2s) so it never machine-
+    // guns; soft enough not to dominate over the crescent throw + impact.
+    // Same exception as `burn` — a continuous-damage tick treated as sizzle.
+    wakeTick() {
+      noise(0.06, 0.08, 'bandpass', 1400, { filterGlideTo: 700 });
+      tone(190, 0.07, 'triangle', 0.06, { glideTo: 110 });
     },
 
     // ===== Arena ============================================================

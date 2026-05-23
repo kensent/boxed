@@ -78,7 +78,7 @@ function fireAbility(f, enemy) {
       f.aimTimer = f.windupTime;
       f.aimAbility = 'tackle';
       f.dashStartX = f.x; f.dashStartY = f.y;              // launch anchor (visual)
-      sfx('chargeUp', null, f.x);                          // rising primal growl
+      sfx('rampageCoil', null, f.x);                       // primal growl inhaling for the launch
       break;
     }
     case 'sword': {

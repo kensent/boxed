@@ -1684,8 +1684,10 @@ function step(dt) {
       // rather than at the arrow's strike point.
       const hitAng = Math.atan2(p.vy, p.vx);
       if (shattered) {
+        // Dedicated burst voice — wider crack + falling whoosh, distinct from
+        // a single arrow impact. Marks the climax of the SHATTER cycle.
         spawnImpact(target.x, target.y, 'arrow', 0, 1);
-        sfx('impact', { kind: 'arrow', big: 1 }, target.x);
+        sfx('shatterBurst', null, target.x);
       } else {
         const big = Math.min(1, dmgOut / 260);
         spawnImpact(p.x, p.y, p.kind, hitAng, big);
@@ -1732,6 +1734,9 @@ function step(dt) {
     const target = h.team === 'red' ? blue : red;
     if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {
       damage(target, h.dmg, 'hazard');
+      // Soft per-tick bone hiss — same exception as `burn`: continuous damage
+      // gets a sizzle cue, not a sharp crack. The wakeHitCd gate caps the rate.
+      sfx('wakeTick', null, target.x);
       target.wakeHitCd = WAKE_HIT_GAP;
     }
     return true;

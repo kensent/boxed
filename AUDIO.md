@@ -98,17 +98,24 @@ The three beats apply to all ability-driven sounds. Ranged and melee differ in t
 windup character; the crack and tail are universal.
 
 - **Windup texture** — builds before the hit. Melee: a body-sound lean (short
-  noise burst or low fundamental gliding up). Ranged-charge (Cannoneer/Priest/
-  Ronin): a rising tone that tightens, matching the visual charge ring. Instant
-  casts/throws: a brief pre-release flutter or shimmer, 50–100 ms.
+  noise burst or low fundamental gliding up). Charged abilities (Cannoneer
+  `chargeBig`, Priest `chargeUp`, Ronin `iai`, Berserker `rampageCoil`):
+  a rising tone that tightens, matching the visual charge ring. Each is its own
+  material (gunpowder rumble, holy bell, drawn-steel hum, primal flesh growl —
+  never share a sound, principle 1). Instant casts/throws: a brief pre-release
+  flutter or shimmer, 50–100 ms.
 - **Impact crack** — the moment of contact. This is the loudest, shortest element:
   a sharp transient whose character matches the material. Steel cracks bright;
   bone cracks hollow; flesh cracks wet and low; void makes no crack — it absorbs
   (a reverse-envelope silence-notch). For melee, the windup (swing) and the crack
-  (contact) are *two triggers* a beat apart: the dashers (Berserker/Knight/Duelist/
-  Reaper) swing at launch and crack on connect — so a whiff sounds the swing with
-  no crack. Jester (teleport) and Ronin (iai) fold the crack into their single
-  strike sound, so they don't double up. See the force-shape mirror below.
+  (contact) are *two triggers* a beat apart: the dashers (Berserker/Knight/
+  Duelist) swing at launch and crack on connect — so a whiff sounds the swing
+  with no crack. Jester (teleport) and Ronin (iai) ALSO crack on connect — their
+  per-hit impact sound layers on top of the strike sound for a clearer "hit
+  landed" beat, even though the strike sound already telegraphs the cut. (This
+  walks back the original "they don't double up" rule — playtesting showed the
+  strike sound alone was thin enough that the kill hit could feel silent under
+  the K.O. cinematic.) See the force-shape mirror below.
 - **Resonance tail** — what the material does after impact. Steel rings down with
   a decaying harmonic. Bone settles with a short rattle. Arcane energy shimmers
   up then fades. Void closes with a sub-bass thud. The tail is where material
@@ -122,10 +129,22 @@ primitive per kind, mirroring `spawnImpact`/`drawImpact`. Volume scales with the
 hit's magnitude (`big`, 0..1):
 
 - **Melee** — flesh thud (Berserker) · flat steel bash (Knight) · thin puncture
-  (Duelist) · dry bone arc (Reaper). Jester/Ronin: no separate crack (see above).
+  (Duelist) · steel whisper-crack (Ronin) · ceramic puncture (Jester). Reaper is
+  no longer melee (CRESCENT THROW is a returning projectile — its crack lives
+  in the projectile mirror below as "bone arc").
 - **Projectile / trap / minion** — arrow puncture · cannon concussion · hex wet
-  splat · coin ding · orb rune-pop · lightning zap · hook clink · bone clack ·
-  mine casing-crack + pressure. Each plays at its `spawnImpact` site so kind is known.
+  splat · coin ding · orb rune-pop · lightning zap · hook clink · bone clack
+  (Reaper crescent + Necromancer skeleton burst) · mine casing-crack + pressure.
+  Each plays at its `spawnImpact` site so kind is known.
+
+The **SHATTER burst** (Archer's cushion releasing at 5 stacks) gets a *dedicated*
+sound (`shatterBurst`) — a wider crack + falling whoosh, not just a louder per-
+arrow impact. It's the climax of the cycle, so it gets its own voice.
+
+The **WAKE step-in** (Reaper crescent trail biting an enemy) gets a soft `wakeTick`
+hiss per damage tick, same exception as Cannoneer's incendiary `burn` — continuous
+damage gated to a sizzle, never a sharp crack. Per-target `wakeHitCd` caps the
+rate so it never machine-guns.
 
 Continuous damage never ticks a *sharp* crack — that would machine-gun. Fog and
 drain stay crack-less (the drain beam drone covers its own channel; fog rides its

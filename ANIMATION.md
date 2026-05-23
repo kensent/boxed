@@ -66,23 +66,34 @@ Built from a deliberate blank-canvas teardown (the old animation + particle syst
 was deleted first); everything below is line/shape-drawn, no particle pool.
 
 ### Attack categories — "the fighter IS the weapon"
-Every fighter delivers its attack in one of four ways. The body itself reacts; we
-never float a separate weapon-effect around a static sprite.
+Every fighter delivers its attack in one of three ways. The body itself reacts;
+we never float a separate weapon-effect around a static sprite.
 
-- **Melee (6)** — berserker, knight, duelist, reaper, jester, ronin. Three beats:
+- **Melee (5)** — berserker, knight, duelist, jester, ronin. Three beats:
   *anticipation → strike → recovery*, expressed by deforming the BODY
-  (squash/stretch/lunge/spin), plus a bespoke impact **force-shape**. Dashers use a
-  shared hold-and-whip anticipation (`meleeWindupHold`): the body holds at its
+  (squash/stretch/lunge/spin), plus a bespoke impact **force-shape**. Dashers use
+  a shared hold-and-whip anticipation (`meleeWindupHold`): the body holds at its
   launch point, then whips forward (the sim launches instantly; this *reads* the
   wind-up). Jester is the exception (teleports, so the mask-snap is the strike).
-- **Ranged (9)** — a release **kick** along the firing axis + a bespoke launch
-  flash. **Recoil** (back) for a projectile discharged from an implement —
-  cannoneer, priest (staff-bolt), archer (bow). **Thrust** (forward) for a cast or
-  throw — wizard, necromancer, witch, gambler, hunter. (`fireKick`/`fireDir`.)
-- **Set-down (1)** — sapper places a mine and steps back (no launch).
+  Berserker is now a *charged* melee: the rampage has a real mechanical windup
+  with charge ring + body tremble + radial coil-lines, then a wall-ricocheting
+  multi-pass strike. Knight is shelved (still selectable but excluded from
+  balance — see REDESIGN-PROPOSAL.md).
+- **Ranged (10)** — a release **kick** along the firing axis + a bespoke launch
+  flash (`fireKick`/`fireDir`). Three sub-shapes by gesture:
+  - *Recoil* (3) — cannoneer, priest (staff-bolt), archer (bow): projectile
+    discharges from an implement, body recoils BACKWARD.
+  - *Thrust* (6) — wizard, necromancer, witch, gambler, hunter, **sapper**: cast
+    or throw, body thrusts FORWARD. Sapper joined this group when STICK CHARGE
+    replaced the old drop-a-mine (it's now a thrown fused limpet).
+  - *Boomerang* (1) — **reaper**: the crescent is a returning projectile,
+    thrust on launch + the existing throw-gesture for the catch when it loops
+    back. Reaper moved out of melee when CRESCENT THROW replaced sweep.
 - **Channel (1)** — warlock: a **lock-on reach** when the drain latches + a
-  sustained **channel pulse** synced to the drain ticks. Generic grammar, reusable
-  by any future channeler.
+  sustained **channel pulse** synced to the drain ticks. Generic grammar,
+  reusable by any future channeler. (Set-down — Sapper's old mine-drop grammar —
+  is empty after Sapper moved to thrust; kept here as a note for any future
+  trap-style ability.)
 
 ### Force-shapes — the shape of the force at the point of contact
 One primitive per source (mirror of melee for projectiles/traps/minions, via the
@@ -94,10 +105,13 @@ rune-pop · hex splat · coin ding · hook clink · bone shards · mine explosio
 Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a heavy hit
 knocks the body back, a chip hit barely nudges (principle 5).
 
-### Charge telegraph — windup fighters (cannoneer, priest, ronin)
+### Charge telegraph — windup fighters (cannoneer, priest, ronin, berserker)
 A **charge ring** that fills like a clock, tightens inward, brightens, and flashes
 full at release. Per-fighter accent: cannoneer's aim-line, priest's orbiting
-gleams, ronin's coil + tremor. The kick + launch flash are the *release* of the ring.
+gleams, ronin's coil + tremor, **berserker's body tremble + radial coil-lines**.
+The kick + launch flash are the *release* of the ring. Berserker is the only
+melee fighter with a charge telegraph (the rampage windup); the other three are
+ranged delayed-strike abilities.
 
 ### State indicators — on the fighter, never a HUD badge
 Every status reads on the fighter itself; the **form** tells buff from debuff:
