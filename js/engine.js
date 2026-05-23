@@ -549,10 +549,12 @@ function makeFighter(t, team, x, y) {
     iaiAngle: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
-    // Archer PINCUSHION — each stack is { timer, angle } in world coords; the
-    // angle is the incoming arrow's tail direction (pre-rolled at hit time, so
-    // no RNG in draw). Each stack decays on its own timer (tempo, not clock).
-    pincushion: [],
+    // Archer PINCUSHION — each stack is { timer, angle, born } in world coords;
+    // angle is the incoming arrow's tail direction (pre-rolled at hit time, no
+    // RNG in draw). `born` is a brief landing-burst countdown for the visual
+    // pop when each arrow first sticks. pincushionFlash is the cluster pulse
+    // (all arrows brighten + thicken) triggered every time a new stack lands.
+    pincushion: [], pincushionFlash: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
     // Warlock drain channel state
@@ -977,13 +979,16 @@ function step(dt) {
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
 
     // PINCUSHION stacks decay (each on its own timer; iterate back-to-front so
-    // splices don't reshuffle the upcoming reads).
+    // splices don't reshuffle the upcoming reads). `born` is the landing-burst
+    // countdown (visual only — never read by the sim).
     if (f.pincushion && f.pincushion.length) {
       for (let i = f.pincushion.length - 1; i >= 0; i--) {
         f.pincushion[i].timer -= dt;
+        if (f.pincushion[i].born > 0) f.pincushion[i].born -= dt;
         if (f.pincushion[i].timer <= 0) f.pincushion.splice(i, 1);
       }
     }
+    if (f.pincushionFlash > 0) f.pincushionFlash -= dt;
 
     // Warlock: drain channel. Ticks f.dmg every 0.2s while the enemy stays in
     // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
@@ -1498,10 +1503,14 @@ function step(dt) {
         if (target.pincushion.length < p.pincushionCap) {
           // Tail angle = direction the arrow came FROM, so the shaft visually
           // sticks out where it hit. Pre-rolled in sim — render reads it back.
+          // `born` drives the landing-burst pop on this specific arrow; the
+          // target-wide `pincushionFlash` makes the whole cluster shudder.
           target.pincushion.push({
             timer: p.pincushionDur,
             angle: Math.atan2(-p.vy, -p.vx),
+            born: 0.18,
           });
+          target.pincushionFlash = 0.15;
         }
       }
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst

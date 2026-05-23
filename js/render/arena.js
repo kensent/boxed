@@ -1379,32 +1379,70 @@ function draw() {
   drawFighter(game.red);
   drawFighter(game.blue);
 
-  // Archer PINCUSHION — render each stuck arrow's shaft in world space, anchored
-  // at the body edge in the stored world angle. The angle is pre-rolled in the
-  // sim (incoming arrow's tail direction), so this draw is RNG-free. Fades over
-  // the last 0.3s of each stack's life. Skipped for dead fighters (the death
-  // ceremony owns the body at that point).
+  // Archer PINCUSHION — render the cushion: optional saturation halo at high
+  // stack counts, then each stuck arrow (shaft + white head triangle + green
+  // V-fletching) anchored at the body edge in its stored world angle. All
+  // angles are pre-rolled in the sim (no RNG in draw). Per-arrow landing burst
+  // pops outward when an arrow first sticks; the whole cluster brightens +
+  // thickens briefly each time a new stack lands (pincushionFlash). Skipped
+  // for dead fighters (the death ceremony owns the body at that point).
   [game.red, game.blue].forEach(f => {
     if (f.dead || !f.pincushion || !f.pincushion.length) return;
+    // Saturation halo — only when the cushion is dangerous (3+ stacks). Brighter
+    // and broader as it climbs to cap. A thin pulsing ring just outside the body,
+    // never a filled alpha disk (mobile GPU budget).
+    if (f.pincushion.length >= 3) {
+      const stacks = f.pincushion.length;
+      const base = 0.16 + (stacks - 3) * 0.06;          // 3=0.16, 4=0.22, 5=0.28
+      const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 110);
+      ctx.strokeStyle = `rgba(60,255,138,${(base * pulse).toFixed(3)})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, FIGHTER_SIZE + 7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // Cluster pulse (0..1) — fades to 0 as pincushionFlash drains. Drives the
+    // brief shaft-thicken + brighten across every arrow on a new stack landing.
+    const cluster = f.pincushionFlash > 0 ? f.pincushionFlash / 0.15 : 0;
     f.pincushion.forEach(s => {
       const fade = Math.min(1, s.timer / 0.3);
       const c = Math.cos(s.angle), si = Math.sin(s.angle);
-      const x0 = f.x + c * FIGHTER_SIZE * 0.85;        // anchor inside the body edge
-      const x1 = f.x + c * (FIGHTER_SIZE + 6);         // shaft tail (out of body)
-      const y0 = f.y + si * FIGHTER_SIZE * 0.85;
-      const y1 = f.y + si * (FIGHTER_SIZE + 6);
-      // shaft
-      ctx.strokeStyle = `rgba(220,210,180,${(0.85 * fade).toFixed(3)})`;
-      ctx.lineWidth = 1.1;
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-      // fletching: small notch at the tail, perpendicular to shaft
       const px = -si, py = c;
-      ctx.strokeStyle = `rgba(60,255,138,${(0.7 * fade).toFixed(3)})`;
-      ctx.lineWidth = 1.2;
+      const headR = FIGHTER_SIZE * 0.92;                // arrowhead at body edge
+      const tailR = FIGHTER_SIZE + 12;                  // shaft tail outside
+      const hx = f.x + c * headR, hy = f.y + si * headR;
+      const tx = f.x + c * tailR, ty = f.y + si * tailR;
+      // Shaft — thicker + brighter during cluster pulse
+      const shaftA = (0.92 * fade) * (1 + cluster * 0.3);
+      ctx.strokeStyle = `rgba(232,222,184,${Math.min(1, shaftA).toFixed(3)})`;
+      ctx.lineWidth = 1.5 + cluster * 0.8;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+      // Arrowhead — small white triangle pointing INTO the body
+      const baseX = hx - c * 2.4, baseY = hy - si * 2.4;
+      ctx.fillStyle = `rgba(255,255,255,${(0.85 * fade).toFixed(3)})`;
       ctx.beginPath();
-      ctx.moveTo(x1 + px * 1.6, y1 + py * 1.6);
-      ctx.lineTo(x1 - px * 1.6, y1 - py * 1.6);
+      ctx.moveTo(hx + c * 2.2, hy + si * 2.2);
+      ctx.lineTo(baseX + px * 2.0, baseY + py * 2.0);
+      ctx.lineTo(baseX - px * 2.0, baseY - py * 2.0);
+      ctx.closePath(); ctx.fill();
+      // Fletching — green V at the tail
+      const fA = (0.92 * fade) * (1 + cluster * 0.3);
+      ctx.strokeStyle = `rgba(60,255,138,${Math.min(1, fA).toFixed(3)})`;
+      ctx.lineWidth = 1.6 + cluster * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(tx + px * 2.8, ty + py * 2.8);
+      ctx.lineTo(tx - c * 2.6, ty - si * 2.6);
+      ctx.lineTo(tx - px * 2.8, ty - py * 2.8);
       ctx.stroke();
+      // Landing burst — a green ring expanding from the arrowhead, fading out
+      // over the first 0.18s of this arrow's life.
+      if (s.born > 0) {
+        const t = s.born / 0.18;                        // 1 at birth, 0 at end
+        const r = (1 - t) * 14 + 5;
+        ctx.strokeStyle = `rgba(60,255,138,${(t * 0.6).toFixed(3)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(hx, hy, r, 0, Math.PI * 2); ctx.stroke();
+      }
     });
   });
 
