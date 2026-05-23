@@ -1090,18 +1090,18 @@ function draw() {
   // bounce-chain. Each stone juts INTO the arena from the wall surface; the
   // (nx, ny) normal points inward. Pulse rate is time- + position-derived
   // (deterministic, never rng — GOTCHAS) so each stone glimmers on its own
-  // schedule. Stones fade in their last 0.5s of life.
+  // schedule. Stones don't fade — they persist at full alpha until evicted
+  // by cap overflow.
   [game.red, game.blue].forEach(f => {
     if (f.ability !== 'sigil' || !f.stones || !f.stones.length) return;
     f.stones.forEach(st => {
-      const fade = Math.min(1, st.life / 0.5);            // dim out in last 0.5s
       const ang = Math.atan2(-st.ny, -st.nx);             // local +x = into-arena
       ctx.save();
       ctx.translate(st.x, st.y);
       ctx.rotate(ang);
       // Stone body — angular granite chunk, flat against wall (-x side) and
       // jutting forward (+x = into the arena).
-      ctx.fillStyle = `rgba(116,104,86,${fade.toFixed(3)})`;
+      ctx.fillStyle = 'rgba(116,104,86,1)';
       ctx.beginPath();
       ctx.moveTo(-3, -3);
       ctx.lineTo(2, -4);
@@ -1112,16 +1112,16 @@ function draw() {
       ctx.closePath();
       ctx.fill();
       // Dark edge.
-      ctx.strokeStyle = `rgba(56,46,36,${(fade * 0.85).toFixed(3)})`;
+      ctx.strokeStyle = 'rgba(56,46,36,0.85)';
       ctx.lineWidth = 0.8;
       ctx.stroke();
       // Carved rune line.
-      ctx.strokeStyle = `rgba(70,58,46,${(fade * 0.7).toFixed(3)})`;
+      ctx.strokeStyle = 'rgba(70,58,46,0.7)';
       ctx.lineWidth = 0.7;
       ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(3, 0); ctx.stroke();
       // Amber rune-dot, time-pulsing.
       const pulse = 0.55 + Math.sin(performance.now() / 580 + st.x * 0.07 + st.y * 0.07) * 0.30;
-      ctx.fillStyle = `rgba(232,160,40,${(fade * pulse).toFixed(3)})`;
+      ctx.fillStyle = `rgba(232,160,40,${pulse.toFixed(3)})`;
       ctx.beginPath();
       ctx.arc(1, 0, 1.6, 0, Math.PI * 2);
       ctx.fill();

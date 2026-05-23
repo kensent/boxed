@@ -39,22 +39,25 @@ const FIGHTERS = [
     get active() { return `CAST ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
-  { id:'geomancer',name:'GEOMANCER', hp:1100, speed:82,  color:'#7a6852', accent:'#e8a020', shape:'menhir',
+  { id:'geomancer',name:'GEOMANCER', hp:1100, speed:120, color:'#7a6852', accent:'#e8a020', shape:'menhir',
     // STANDING STONES (passive) — every wall-bounce drives a runestone into
     // the wall at the contact point. Stones are inert markers, glowing
-    // amber; they decay over `stoneLifetime` and are evicted at `maxStones`
-    // (oldest first). The arena slowly accumulates a network of standing
-    // stones along its perimeter.
+    // amber; they persist at full alpha (no time decay) and are evicted at
+    // `maxStones` (oldest first). The arena gradually accumulates a network
+    // of standing stones along its perimeter.
     // SIGIL (active) — Geomancer slams his staff and for `sigilFlashDur`
-    // every planted stone links to its `linksPerStone` nearest neighbours
-    // via amber ley-lines drawn across the arena floor; any line the enemy
-    // (or a decoy) intersects at the cast frame deals `dmg` per crossing.
-    // dmg is per-line, so a single cast can stack 0..many of these.
-    ability:'sigil', cd:2.5, dmg:95,
-    maxStones: 8, stoneLifetime: 13, linksPerStone: 2,
+    // amber ley-lines are drawn between every pair of NODES, where the
+    // node set is (himself + every planted stone) — the kit's identity
+    // ("fighter IS one of his own stones") made mechanically true. Any line
+    // the enemy (or a decoy) intersects at the cast frame deals `dmg` per
+    // crossing. dmg is per-line; a single cast can stack 0..many.
+    // Speed 120 (above the median 100) — the kit's input is wall bounces,
+    // so faster movement = faster network buildup. No corner pre-seed.
+    ability:'sigil', cd:2.5, dmg:85,
+    maxStones: 8, linksPerStone: 2,
     sigilFlashDur: 0.6, lineWidth: 4,
-    get active() { return `SIGIL — slams the staff; every planted stone fires a ley-line to every other, burning anyone on the lines`; },
-    get passive() { return `STANDING STONES — each wall-bounce drives a runestone into the wall (max ${this.maxStones}); SIGIL connects them all`; },
+    get active() { return `SIGIL — slams the staff; amber ley-lines fire between him and every planted stone, burning anyone on the lines`; },
+    get passive() { return `STANDING STONES — each wall-bounce drives a runestone into the wall (max ${this.maxStones}); SIGIL connects them all to him`; },
   },
   { id:'sapper', name:'SAPPER',    hp:780,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
     // Internal ability id stays 'mine' — keys Sapper's BURST death + casing material.

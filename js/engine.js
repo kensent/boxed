@@ -619,32 +619,15 @@ function makeFighter(t, team, x, y) {
     // low roll (1-2) that halves the next cooldown.
     gamblerRoll: 0, gamblerShots: [], gamblerRefund: false, gamblerSpeedTimer: 0, loadedFx: 0,
     // Geomancer — STANDING STONES list and SIGIL cast state. `stones` is the
-    // live wall-embedded runestone roster (each { x, y, nx, ny, life, maxLife, born }).
-    // The roster is pre-seeded with 4 corner stones so the SIGIL network has a
-    // base topology from frame 1 — without this, Geo's first 2-3 casts whiff
-    // (only 0-1 stones planted) and she's dead before the kit comes online.
-    // Subsequent wall bounces add stones beyond the corner skeleton.
+    // live wall-embedded runestone roster (each { x, y, nx, ny, born }).
+    // Stones don't expire on a timer — f.maxStones cap-eviction (oldest
+    // first, in plantStone()) is the only removal mechanism. The kit's
+    // identity is "the fighter IS one of his own stones" — Geo himself is
+    // a node in the SIGIL network alongside these (see abilities.js).
     // sigilLines + sigilFlash drive the brief amber-line visual after a cast.
-    // sigilWhiff flags a no-stones cast that refunds the cd shortly.
-    stones: t.ability === 'sigil' ? makeCornerStones(t) : [],
-    sigilLines: [], sigilFlash: 0, sigilWhiff: false,
+    // sigilWhiff flags a no-network cast that refunds the cd shortly.
+    stones: [], sigilLines: [], sigilFlash: 0, sigilWhiff: false,
   };
-}
-
-// makeCornerStones(t) — four pre-seeded runestones at each arena corner so a
-// fresh Geomancer has a SIGIL network the moment she casts. Their normals
-// point inward (into the arena) so they render correctly. Lifetime matches the
-// template's stoneLifetime so they decay naturally with the rest of the network.
-function makeCornerStones(t) {
-  const PAD = FIGHTER_SIZE;
-  const W = ARENA - PAD;
-  const life = t.stoneLifetime;
-  return [
-    { x: PAD, y: PAD, nx:  1, ny:  1, life, maxLife: life, born: 0.25 },
-    { x: W,   y: PAD, nx: -1, ny:  1, life, maxLife: life, born: 0.25 },
-    { x: PAD, y: W,   nx:  1, ny: -1, life, maxLife: life, born: 0.25 },
-    { x: W,   y: W,   nx: -1, ny: -1, life, maxLife: life, born: 0.25 },
-  ];
 }
 
 function startFight() {
@@ -876,8 +859,9 @@ function bounce(f, w, h) {
 // plantStone(f, x, y, nx, ny) — drives a Geomancer runestone into the wall.
 // (nx, ny) points inward (away from the wall surface) so the renderer can
 // orient the stone correctly. Caps at f.maxStones (oldest evicted first).
+// Stones don't decay over time; cap-eviction is the only removal.
 function plantStone(f, x, y, nx, ny) {
-  f.stones.push({ x, y, nx, ny, life: f.stoneLifetime, maxLife: f.stoneLifetime, born: 0.25 });
+  f.stones.push({ x, y, nx, ny, born: 0.25 });
   if (f.stones.length > f.maxStones) f.stones.shift();
   sfx('stoneThump', null, x);
 }
@@ -1144,16 +1128,14 @@ function step(dt) {
     }
     if (f.shatterFlash > 0) f.shatterFlash -= dt;
 
-    // Geomancer STANDING STONES — decay each planted stone's life + born timer.
-    // Stones whose life hits zero get culled (the rune's hold on the wall fades).
-    // Iterate back-to-front for safe splice. Tick the sigil flash + clear lines
-    // once the flash ends so we don't render stale geometry.
+    // Geomancer STANDING STONES — tick each planted stone's born-burst
+    // (the small amber ring on plant); no lifetime decay (cap-eviction is
+    // the only removal mechanism, in plantStone()). Tick the sigil flash +
+    // clear lines once the flash ends so we don't render stale geometry.
     if (f.ability === 'sigil') {
       if (f.stones && f.stones.length) {
-        for (let i = f.stones.length - 1; i >= 0; i--) {
-          f.stones[i].life -= dt;
-          if (f.stones[i].born > 0) f.stones[i].born -= dt;
-          if (f.stones[i].life <= 0) f.stones.splice(i, 1);
+        for (const st of f.stones) {
+          if (st.born > 0) st.born -= dt;
         }
       }
       if (f.sigilFlash > 0) {

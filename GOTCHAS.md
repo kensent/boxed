@@ -144,8 +144,16 @@
   the enemy body — the per-line dmg (`f.dmg`) is tuned around that count.
   The `linksPerStone` template prop survives unused; it's there if a future
   topology wants to clamp the network density.
-- **Geomancer is pre-seeded with 4 corner stones at fight start.** Without
-  this seed, her first 2-3 casts whiff (only 0-1 stones planted from the
-  early bounces) and she dies before the SIGIL network exists. Corner stones
-  give the kit a "skeleton" topology from frame 1, and wall bounces add to it.
-  See `makeCornerStones()` in `engine.js`.
+- **Geomancer is a node in his own SIGIL network.** The kit's identity ("the
+  fighter IS one of his own stones") is mechanically true — the SIGIL link
+  set is built from `[self, ...wall-stones]`, so once the FIRST wall-stone
+  is planted, there's already a `self → stone` line. This is the reason
+  the kit boots up viably without a corner-stones pre-seed (the earlier
+  shipped version had 4 corner stones pre-planted; that's gone — speed bumped
+  to 120 instead, so first bounces arrive ~1s into the fight).
+- **Geomancer stones don't expire on a timer.** `maxStones` cap-eviction
+  (oldest first, in `plantStone()`) is the only removal mechanism. Stones
+  render at full alpha; no fade-out. An earlier version had a 13s
+  `stoneLifetime` decay — removed because the cap was always hit first in
+  practice, and the decay's fade-out was visual noise rather than mechanical
+  signal.

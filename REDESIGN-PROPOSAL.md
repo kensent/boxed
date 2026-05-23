@@ -350,17 +350,21 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 >
 > **PASSIVE — STANDING STONES.** Each wall-bounce drives a granite runestone
 > into the wall at the contact point (deterministic; no rng — the bounce IS
-> the input). Stones are inert markers, glowing amber, decaying over
-> `stoneLifetime` (oldest evicted at `maxStones`). The arena slowly accumulates
-> a perimeter network. **Pre-seeded with 4 corner stones at fight start** so
-> the SIGIL has a base topology from frame 1 — without this, Geo's first 2-3
-> casts whiff (only 0-1 stones planted) and she dies before the network exists.
+> the input). Stones are inert markers, glowing amber; they persist at full
+> alpha (no time decay) and are evicted only when the `maxStones` cap is hit
+> (oldest first). The arena gradually accumulates a perimeter network.
+> Speed bumped to 120 (above the 100 median) so the bounce cadence stays
+> brisk — the kit's input is wall hits, so faster movement = faster ramp-up.
 >
 > **ACT — SIGIL.** Instant cast (no windup): Geo slams the staff and, for
-> `sigilFlashDur`, amber ley-lines are drawn between **every pair** of planted
-> stones. Any line crossed by the enemy body (or a decoy) at the cast frame
-> deals `f.dmg` per crossing. Decoys hit by lines are consumed. The number of
-> lines is **all-pairs**, not nearest-neighbour — see the topology note below.
+> `sigilFlashDur`, amber ley-lines are drawn between **every pair of nodes**
+> in the network, where the node set is `[self, ...stones]`. The fighter
+> himself is a node — the kit's "fighter IS one of his own stones" identity,
+> mechanically true. So the first wall-bounce already creates a damaging
+> `self → stone` line; the network grows organically as more stones plant.
+> Any line crossed by the enemy body (or a decoy) at the cast frame deals
+> `f.dmg` per crossing. Decoys hit by lines are consumed. The topology is
+> **all-pairs**, not nearest-neighbour — see the topology note below.
 >
 > **Topology — all-pairs, not nearest-neighbour.** The first prototype linked
 > each stone to its 2 nearest. Sounded clean, but stones plant on walls — the
@@ -397,27 +401,33 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 > scattered around a dim amber rune-mark scorched into the ground at the
 > stone's centre, fading last.
 >
-> **Numbers:** hp 1100, dmg 95, cd 2.5, maxStones 8, stoneLifetime 13,
-> sigilFlashDur 0.6, lineWidth 4, linksPerStone 2 (unused; reserved).
-> **~52% overall.** Spread 12.2 points (Cannoneer 57% top → Jester 44% bottom).
+> **Numbers (current):** hp 1100, dmg 85 (per line crossing), cd 2.5,
+> speed 120, maxStones 8, sigilFlashDur 0.6, lineWidth 4, linksPerStone 2
+> (unused; reserved). **~51% overall.** Spread 12 points (Ronin 56.5% top →
+> Jester 44.4% bottom).
 >
-> **Matchup texture (sim-validated).** STRONG: Jester 99% (decoys are absorbed
-> as line crossings — the kit reads Jester's identity as free damage), Duelist
-> 72% (no parry against a sigil — the lines aren't a projectile to reflect
-> nor a melee to absorb), Archer 63%. EVEN: Witch 51%, Necromancer 44%
-> (skeletons act as soft decoys but don't actually block lines effectively).
-> WEAK: Hunter 22% (hooks Geo and stuns mid-cast, hard counter), Wizard 21%
-> (Wizard's mana shield + orb chip wins the early game before stones build),
-> Cannoneer 31% (one-shot windup can KO before Geo gets a sigil off).
+> **Matchup texture (sim-validated, after the self-node + speed-bump pass).**
+> STRONG: Jester 99% (decoys are absorbed as line crossings), Duelist 86%
+> (no parry against a field cast — even sharper than before; the self-lines
+> emanating from Geo's body cross the dueling lunge path), Archer 72%,
+> Geomancer leads several middle-tier matchups. EVEN: Necromancer 51%,
+> Witch 41% (the witch's mark + chip-by-chip wins close fights). WEAK:
+> Ronin 25% (line-cut overshoots Geo cleanly; FOCUS chains end the fight),
+> Warlock 35% (sustained drain outlasts the network), Cannoneer 36%
+> (one-shot windup KOs before the network matures), Wizard 3% (mana shield
+> + orb chip dominates the early game — Wizard is now Geo's hardest
+> counter, replacing Hunter from the previous pass).
 >
 > **Implementation files touched:**
 > - `js/fighters.js` — entry replaces Knight's slot; props expose tunables.
 > - `js/engine.js` — `bounce()` extended to plant stones on each wall hit
->   per fighter; `makeCornerStones()` pre-seeds 4 corners; `makeFighter()`
->   initialises the live arrays; `step()` decays stones + ticks sigilFlash.
-> - `js/abilities.js` — `case 'sigil'`: computes all-pairs link set,
->   segment-circle test against enemy + decoys, damage applied as one
->   summed call. Helpers: `segIntersectsCircle()`, `computeSigilLinks()`.
+>   per fighter; `plantStone()` handles cap-eviction; `makeFighter()`
+>   initialises the live arrays (empty — no corner pre-seed); `step()`
+>   ticks the born-burst + sigilFlash (no lifetime decay).
+> - `js/abilities.js` — `case 'sigil'`: builds nodes = `[self, ...stones]`,
+>   computes all-pairs link set, segment-circle test against enemy + decoys,
+>   damage applied as one summed call. Helpers: `segIntersectsCircle()`,
+>   `computeSigilLinks()`.
 > - `js/render/sprites.js` — `case 'menhir'` body sprite (single granite
 >   stone with carved amber rune; rear-edge shadow for 3D form; subtle
 >   weathering crack). Replaced the original multi-piece `case 'pilgrim'`.

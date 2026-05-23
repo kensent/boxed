@@ -17,21 +17,21 @@ function segIntersectsCircle(x1, y1, x2, y2, cx, cy, r) {
   return Math.hypot(qx - cx, qy - cy) < r;
 }
 
-// computeSigilLinks(): all-pairs network — every stone links to every other.
-// Nearest-neighbour topology fails here because stones plant on walls, so a
-// stone's nearest neighbours are ADJACENT along the same wall — those links
-// hug the perimeter and never cross the arena interior where the enemy lives.
-// All-pairs guarantees cross-arena lines; for N=8 stones that's 28 edges, of
-// which an enemy in the middle is typically crossed by 4-8 (the kit's damage
-// budget tunes per-line dmg low so the per-cast total stays in band). The
-// linksPerStone param is unused in this topology; kept on the fighter object
-// in case future tunings want to clamp the network density. Returns
+// computeSigilLinks(): all-pairs network across the node set. Nodes are the
+// fighter himself (index 0) + every planted wall-stone. Nearest-neighbour
+// topology fails here because stones plant on walls, so a stone's nearest
+// neighbours are ADJACENT along the same wall — those links hug the perimeter
+// and never cross the arena interior where the enemy lives. All-pairs
+// guarantees cross-arena lines; the fighter-as-node contributes radial lines
+// FROM his position to each wall-stone (high-crossing-probability paths).
+// linksPerStone is unused in this topology; kept on the fighter object in
+// case future tunings want to clamp network density. Returns
 // [{x1,y1,x2,y2}, …].
-function computeSigilLinks(stones, _linksPerStone) {
+function computeSigilLinks(nodes, _linksPerStone) {
   const out = [];
-  for (let i = 0; i < stones.length; i++) {
-    for (let j = i + 1; j < stones.length; j++) {
-      out.push({ x1: stones[i].x, y1: stones[i].y, x2: stones[j].x, y2: stones[j].y });
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      out.push({ x1: nodes[i].x, y1: nodes[i].y, x2: nodes[j].x, y2: nodes[j].y });
     }
   }
   return out;
@@ -325,25 +325,30 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'sigil': {
-      // Geomancer SIGIL — instant cast. Build nearest-neighbour links between
-      // the currently-planted stones; any line that crosses the enemy body (or
-      // a decoy) at the cast frame deals f.dmg per crossing. The flash window
-      // (sigilFlashDur) is purely visual — damage is single-frame, deterministic.
-      // No windup: the staff slam IS the cast (Sapper-style instant cast).
-      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = 0;   // staff slam pose
+      // Geomancer SIGIL — instant cast. The fighter himself is a NODE in the
+      // network alongside the planted wall-stones (the kit's "fighter IS one
+      // of his own stones" identity, made mechanically true). All-pairs links
+      // are built between every node; any line that crosses the enemy body
+      // (or a decoy) at the cast frame deals f.dmg per crossing. The flash
+      // window (sigilFlashDur) is purely visual — damage is single-frame,
+      // deterministic. No windup: the staff slam IS the cast.
+      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = 0;
       sfx('sigilCrack', null, f.x);
       f.sigilLines = [];
       f.sigilFlash = f.sigilFlashDur;
       const stones = f.stones || [];
-      if (stones.length < 2) {
-        // Not enough stones to form even one ley-line — the slam still sounds,
-        // but no network exists yet. Flag for a short cd refund so the kit
-        // boots up gracefully on the first few bounces instead of burning the
-        // full cooldown on a no-op.
+      // Self is node 0; wall-stones follow. Self-lines emanate from the
+      // fighter's CURRENT position at cast time (captured in the link
+      // endpoints — they don't track him during the flash).
+      const nodes = [{ x: f.x, y: f.y }].concat(stones);
+      if (nodes.length < 2) {
+        // Only self, no stones yet (fight just started, no bounce yet). The
+        // slam still sounds, but there's no network. Flag for a short cd
+        // refund so the kit boots up gracefully on the first bounce.
         f.sigilWhiff = true;
         break;
       }
-      const links = computeSigilLinks(stones, f.linksPerStone);
+      const links = computeSigilLinks(nodes, f.linksPerStone);
       if (links.length === 0) { f.sigilWhiff = true; break; }
       // Hit detection — enemy body radius + half line thickness defines the
       // crossing zone. Each line is independently tested against the enemy
