@@ -168,9 +168,21 @@ const FIGHTERS = [
     active: 'SIPHON — channels, leeching the enemy\'s life',
     get passive() { return `ENERVATE — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
-  { id:'gambler', name:'GAMBLER',   hp:1000, speed:100, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
+  { id:'gambler', name:'GAMBLER',   hp:900, speed:110, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
+    // HP 1000 -> 900 + speed 100 -> 110 after the DOUBLES rework. dmg is
+    // restored to 50 (original). HP is the squishier lever at Gambler's low
+    // base (~1 wr per ~11 HP, vs the roster-average ~1 wr per 40 HP); speed
+    // compensates with mobility — faster bouncing makes him harder to predict
+    // (Priest's JUDGMENT lead, Cannoneer's BOMBARD straight shot), helping
+    // his survival ratio. Target: ~50% with a "fast glass cannon" profile
+    // instead of "average tanky chaos."
     ability:'wildcard', cd:1.5, dmg:50,
     active: 'WILDCARD — roll a die; higher pips, bigger coin attack',
-    passive: 'LOADED DICE — a low roll halves the next cooldown',
+    // DOUBLES (replaces LOADED DICE) — when consecutive WILDCARD rolls
+    // match the same face, the rolled pattern fires TWICE in the same
+    // cast (Dealer's Blessing). The second copy is fired with a small
+    // angular offset / phase shift so the coins diverge visually instead
+    // of stacking on the same trajectories.
+    passive: "DOUBLES — when two rolls in a row match the same face, the cast fires its coin pattern twice",
   },
 ];

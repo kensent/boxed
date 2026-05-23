@@ -1623,11 +1623,12 @@ function drawFighter(f) {
       ctx.fill();
     }
   }
-  // LOADED (Gambler) — a brief gold "lucky" pop the instant a low roll fires LOADED
-  // DICE (not a persistent state): a star + sparkle burst above the head, expanding
-  // and fading.
-  if (f.loadedFx > 0) {
-    const a = f.loadedFx / 0.45;
+  // DOUBLES (Gambler) — a brief gold "lucky" pop the instant DOUBLES fires
+  // (consecutive matched WILDCARD rolls trigger the Dealer's Blessing — the
+  // pattern fires twice): a star + sparkle burst above the head, expanding
+  // and fading. Not a persistent state, just a one-shot trigger marker.
+  if (f.doublesFx > 0) {
+    const a = f.doublesFx / 0.45;
     const cy = -(FIGHTER_SIZE + 8);
     ctx.fillStyle = `rgba(255,210,61,${a.toFixed(3)})`;
     drawStar(ctx, 0, cy, 4, 4 + (1 - a) * 3, 1.6);

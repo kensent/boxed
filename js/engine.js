@@ -615,9 +615,12 @@ function makeFighter(t, team, x, y) {
     drainTimer: 0, drainTickTimer: 0, drainTarget: null, drainElapsed: 0, drainWhiffed: false,
     // Gambler — WILDCARD die roll. gamblerRoll is the face shown (1-6) while
     // the die tumbles + after it settles; gamblerShots is a queue of timed
-    // coin shots (for the faces that fire over time); gamblerRefund flags a
-    // low roll (1-2) that halves the next cooldown.
-    gamblerRoll: 0, gamblerShots: [], gamblerRefund: false, gamblerSpeedTimer: 0, loadedFx: 0,
+    // coin shots (for the faces that fire over time). DOUBLES passive: track
+    // the previous cast's face on lastRoll so a matching consecutive roll
+    // (set in fireAbility) fires the pattern twice at resolveAim. doublesFx
+    // is the brief gold-pop visual cue when DOUBLES triggers.
+    gamblerRoll: 0, gamblerShots: [], gamblerSpeedTimer: 0,
+    lastRoll: 0, isDoubles: false, doublesFx: 0,
     // Geomancer — STANDING STONES list and SIGIL cast state. `stones` is the
     // live wall-embedded runestone roster (each { x, y, nx, ny, born }).
     // Stones don't expire on a timer — f.maxStones cap-eviction (oldest
@@ -1199,9 +1202,9 @@ function step(dt) {
       }
     }
 
-    // Gambler: LOADED DICE — counts down the rushed-cooldown window after a
-    // low roll, purely so the LOADED status badge knows when to show.
-    if (f.loadedFx > 0) f.loadedFx -= dt;
+    // Gambler: DOUBLES — counts down the brief gold-pop visual cue that
+    // fires when consecutive WILDCARD rolls match (Dealer's Blessing).
+    if (f.doublesFx > 0) f.doublesFx -= dt;
 
     // Ronin: IAI — windup (planted) → teleport-OVERSHOOT along the LOCKED direction
     // → line-cleave everything on the dash path. Clean cut: FOCUS refunds cd, skips

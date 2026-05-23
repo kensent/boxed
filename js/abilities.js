@@ -317,8 +317,16 @@ function fireAbility(f, enemy) {
       // Gambler: start the die roll. The sprite becomes a tumbling die during
       // the windup; the face it lands on (resolveAim) picks the attack pattern.
       // High rolls (5-6) get a longer, more dramatic settle.
-      f.gamblerRoll = 1 + Math.floor(rng() * 6);            // the face (1-6)
-      const dramatic = f.gamblerRoll >= 5;
+      // DOUBLES (passive): if the new roll matches the previous cast's face,
+      // set isDoubles so resolveAim fires the pattern TWICE (Dealer's
+      // Blessing). lastRoll updates after the check so each new cast compares
+      // against the most-recent prior face. First-cast-of-fight check guards
+      // against the initial lastRoll=0 default counting as a "match" with a 0.
+      const newRoll = 1 + Math.floor(rng() * 6);
+      f.isDoubles = (f.lastRoll > 0 && f.lastRoll === newRoll);
+      f.gamblerRoll = newRoll;
+      f.lastRoll = newRoll;
+      const dramatic = newRoll >= 5;
       f.aimTimer = dramatic ? 1.1 : 0.8;                    // tumble + settle
       f.aimAbility = 'wildcard';
       sfx('wildcard', null, f.x);
@@ -467,8 +475,13 @@ function resolveAim(f) {
   } else if (f.aimAbility === 'wildcard') {
     // The die has settled — the face (gamblerRoll, 1-6) picks the attack
     // pattern. Every face throws spinning gold COINS; higher faces are worth
-    // more on average (verified monotonic in the sim). COIN_DMG (top-level)
-    // is the single balance lever — per-coin damage.
+    // more on average (verified monotonic in the sim).
+    // DOUBLES (passive): when isDoubles is set (consecutive rolls matched
+    // the same face), firePattern is called TWICE — once at angOffset=0,
+    // once at a small angular offset so the doubled coins diverge instead
+    // of stacking on identical trajectories. Face 5 (Coin Nova) handles
+    // doubling by phase-shifting the second ring's angles by π/N so the
+    // 20 doubled coins interleave evenly around the circle.
     const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
     f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = ang; // coin throw (thrust)
     // The die has just settled on its face — a hard clack, brighter on a
@@ -487,65 +500,71 @@ function resolveAim(f) {
       sfx('coinThrow', null, f.x);
     };
     const roll = f.gamblerRoll;
-    if (roll === 1) {
-      // Lone Coin — one fast straight coin.
-      coin(0, 320, 0);
-    } else if (roll === 2) {
-      // Twin Toss — two coins, the second fired a beat after the first.
-      coin(0, 300, 0);
-      f.gamblerShots.push({ delay: 0.14, offset: 0, speed: 300, homing: 0 });
-    } else if (roll === 3) {
-      // Coin Spread — three coins in a simultaneous fan.
-      coin(-0.26, 290, 0); coin(0, 290, 0); coin(0.26, 290, 0);
-    } else if (roll === 4) {
-      // Seeking Coins — three homing coins in a tight spread, all hunting the
-      // enemy. The "inevitable" roll: slower coins, but they curve and chase.
-      coin(-0.12, 240, 150);
-      coin(0, 240, 150);
-      coin(0.12, 240, 150);
-    } else if (roll === 5) {
-      // Coin Nova — a full ring of coins bursts out, then each curves back
-      // and converges on the enemy (homing). Spectacle + guaranteed damage.
-      const N = 10;
-      for (let i = 0; i < N; i++) {
-        const a = (i / N) * Math.PI * 2;
-        game.projectiles.push({
-          x: f.x, y: f.y,
-          vx: Math.cos(a) * 200, vy: Math.sin(a) * 200,
-          team: f.team, dmg: f.dmg, life: 2.6,
-          kind: 'coin', size: 5, homing: 0, spin: 0,
-          cruise: 200,   // re-normalised each frame so the converge can't stall
-          // delayed homing — flies out free, then hunts after novaArm
-          novaArm: 0.32,
-        });
+    // firePattern(angOffset) — emits one copy of the rolled face's pattern.
+    // For doubles, called twice with different angOffsets so the second
+    // copy of the coins diverges from the first instead of overlapping.
+    const firePattern = (angOffset) => {
+      if (roll === 1) {
+        // Lone Coin — one fast straight coin.
+        coin(angOffset, 320, 0);
+      } else if (roll === 2) {
+        // Twin Toss — two coins, the second fired a beat after the first.
+        coin(angOffset, 300, 0);
+        f.gamblerShots.push({ delay: 0.14, offset: angOffset, speed: 300, homing: 0 });
+      } else if (roll === 3) {
+        // Coin Spread — three coins in a simultaneous fan.
+        coin(-0.26 + angOffset, 290, 0); coin(angOffset, 290, 0); coin(0.26 + angOffset, 290, 0);
+      } else if (roll === 4) {
+        // Seeking Coins — three homing coins in a tight spread, all hunting
+        // the enemy. The "inevitable" roll: slower coins, but they curve.
+        coin(-0.12 + angOffset, 240, 150);
+        coin(angOffset, 240, 150);
+        coin(0.12 + angOffset, 240, 150);
+      } else if (roll === 5) {
+        // Coin Nova — a full ring of coins bursts out, then each curves back
+        // and converges on the enemy (homing). On doubles the second call's
+        // angOffset is non-zero, so the ring rotates by that much (we pick
+        // π/N below at the call site so two doubled rings interleave).
+        const N = 10;
+        for (let i = 0; i < N; i++) {
+          const a = (i / N) * Math.PI * 2 + angOffset;
+          game.projectiles.push({
+            x: f.x, y: f.y,
+            vx: Math.cos(a) * 200, vy: Math.sin(a) * 200,
+            team: f.team, dmg: f.dmg, life: 2.6,
+            kind: 'coin', size: 5, homing: 0, spin: 0,
+            cruise: 200,   // re-normalised each frame so the converge can't stall
+            // delayed homing — flies out free, then hunts after novaArm
+            novaArm: 0.32,
+          });
+        }
+        // One throw sound for the whole ring burst — ten would be a noise wall.
+        sfx('coinThrow', null, f.x);
+        shake(5);
+      } else {
+        // Fortune's Barrage — a sustained storm of coins toward the enemy.
+        coin(angOffset, 330, 30);
+        for (let i = 1; i < 8; i++) {
+          f.gamblerShots.push({
+            delay: i * 0.07,
+            offset: (rng() - 0.5) * 0.3 + angOffset,
+            speed: 320 + rng() * 40,
+            homing: 30,
+          });
+        }
+        shake(8);
       }
-      // One throw sound for the whole ring burst — ten would be a noise wall.
-      sfx('coinThrow', null, f.x);
-      shake(5);
-    } else {
-      // Fortune's Barrage — a sustained storm of coins toward the enemy.
-      // 8 coins total (1 immediate + 7 queued): face 6 is the jackpot, but a
-      // 9-coin barrage made rolling 6 a near-auto-win, pulling the Gambler's
-      // overall rate too high. 8 keeps it the clear best roll without that.
-      coin(0, 330, 30);
-      for (let i = 1; i < 8; i++) {
-        f.gamblerShots.push({
-          delay: i * 0.07,
-          offset: (rng() - 0.5) * 0.3,
-          speed: 320 + rng() * 40,
-          homing: 30,
-        });
-      }
-      shake(8);
+    };
+    firePattern(0);
+    if (f.isDoubles) {
+      // Second copy of the pattern, offset so the doubled coins diverge.
+      // Face 5 uses π/10 so the two 10-coin rings interleave to 20 evenly;
+      // other faces just need a small angular spread to avoid stacking.
+      const dblOffset = (roll === 5) ? Math.PI / 10 : 0.10;
+      firePattern(dblOffset);
+      f.doublesFx = 0.45;   // brief gold-pop visual marking DOUBLES firing
     }
-    // Low roll (1-2) — LOADED DICE: halve the remaining cooldown so an
-    // unlucky roll comes back around faster. Applied here, at resolve, since
-    // the roll settles ~1s after the ability fired (cdTimer was already set).
-    if (roll <= 2) {
-      f.cdTimer = Math.min(f.cdTimer, f.cd * 0.5);
-      f.loadedFx = 0.45;   // brief "lucky" pop marking LOADED DICE firing
-    }
-    f.gamblerRefund = false;
+    f.isDoubles = false;
   }
   // RAMPAGE owns its own launch velocity (f.speed * rampageSpeedMult) — the
   // generic post-resolve normalization below would crush it back to base speed
