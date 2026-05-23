@@ -664,78 +664,94 @@ function startFight() {
   playVsIntro(redT, blueT);
 }
 
-// VS intro — slides both fighters in, slams a "VS", holds, then starts the fight.
+// VS intro — Shorts-tuned: 1.7s total, sequential name slams with arena
+// bouncing visibly beneath the overlay vignette. CSS owns the panel animation
+// timing (slide-in red at 0.0-0.30s, blue at 0.35-0.65s, VS clash at 0.85s,
+// fade 1.50-1.70s). This function fires the matching audio beats and runs the
+// cosmeticIntroLoop so fighters DVD around the arena during the hold.
+//
+// Determinism: the cosmetic loop integrates positions and reflects off walls
+// but never touches rng()/vrng(), never plants stones, never decrements any
+// ability timer. At the end of the intro we snap (x,y,vx,vy) back to the
+// values captured at intro start, so the real fight begins from the exact
+// seed-determined opening state. Anything else on the fighter (cdTimer,
+// dashTimer, etc.) was never modified, so it's already correct.
 function playVsIntro(redT, blueT) {
   const intro = document.getElementById('vs-intro');
   const myGame = game; // capture — if a new fight starts, this won't match
-  // Fill each side
-  const fillSide = (side, t) => {
+  // Fill each label: name + ability line. Ability line = active name ·
+  // passive name (the part of each string before the "—"). E.g.
+  // "RIPOSTE THRUST · EN GARDE".
+  const fillLabel = (side, t) => {
     document.getElementById('vs-name-' + side).textContent = t.name;
-    // Ability line = active name · passive name (the part of each string
-    // before the "—"). E.g. "RIPOSTE THRUST · EN GARDE".
     const actName = t.active.split('—')[0].trim();
     const pasName = t.passive.split('—')[0].trim();
     document.getElementById('vs-ability-' + side).textContent =
       actName + ' · ' + pasName;
-    document.getElementById('vs-stats-' + side).innerHTML =
-      'HP ' + t.hp + ' &nbsp; SPD ' + t.speed + '<br>DMG ' + t.dmg + ' &nbsp; CD ' + t.cd + 's';
-    drawVsEmblem(document.getElementById('vs-sprite-' + side), { ...t, side });
   };
-  fillSide('red', redT);
-  fillSide('blue', blueT);
+  fillLabel('red', redT);
+  fillLabel('blue', blueT);
   // Restart the slide/clash animations by re-adding the class
   intro.classList.remove('show');
   void intro.offsetWidth; // force reflow so the animation replays
   intro.classList.add('show');
-  sfx('select'); // whoosh-ish blip as the panels slam in
-  setTimeout(() => { if (game === myGame) sfx('start'); }, 420);
-  // Hold the intro ~2.4s total, then clear it and begin the fight.
+
+  // Audio beats — riser climbs across the label-fade-in, vsClash lands at
+  // the VS slam. Each setTimeout guards on (game === myGame) so a quick
+  // restart doesn't fire a stale beat into the new fight.
+  sfx('introRiser');
+  setTimeout(() => { if (game === myGame) sfx('vsClash'); }, 850);
+
+  // Start the cosmetic idle-bob loop so the arena visibly breathes beneath
+  // the overlay. We never touch velocity (which carries the deterministic
+  // launch angle); position is oscillated around the seeded start by a tiny
+  // amount, and snapped back exactly at intro end so the fight begins from
+  // the exact seed-determined opening state. The snap is sub-pixel-visible
+  // because the bob amplitude is small.
+  game.introSnap = {
+    rx: game.red.x, ry: game.red.y,
+    bx: game.blue.x, by: game.blue.y,
+  };
+  game.introCosmeticOn = true;
+  game.introT0 = performance.now();
+  cosmeticIntroLoop();
+
+  // End at 1.7s — restore start positions and hand off to loop().
   setTimeout(() => {
-    // Bail if the player restarted / went back during the intro.
     if (game !== myGame) return;
+    game.introCosmeticOn = false;
+    const s = game.introSnap;
+    game.red.x = s.rx; game.red.y = s.ry;
+    game.blue.x = s.bx; game.blue.y = s.by;
     intro.classList.remove('show');
     game.introPlaying = false;
     game.lastT = performance.now(); // reset so elapsed doesn't jump
     loop();
-  }, 2400);
+  }, 1700);
 }
 
-// Draws the actual fighter sprite onto an intro canvas, with a soft accent-ring
-// backing so it reads well at intro scale.
-function drawVsEmblem(cnv, t) {
-  const c = cnv.getContext('2d');
-  const W = cnv.width, H = cnv.height, cx = W / 2, cy = H / 2;
-  c.clearRect(0, 0, W, H);
-  // Team-colored ring (red / blue) — the border always means "which side",
-  // matching the in-fight sprite borders. The fighter's own accent still
-  // shows inside the sprite (stars, emblems), just not as the ring.
-  const teamColor = t.side === 'blue' ? '#2e9eff' : '#ff2e2e';
-  // Soft backing disc
-  const R = W * 0.42;
-  c.fillStyle = 'rgba(255,255,255,0.04)';
-  c.beginPath();
-  c.arc(cx, cy, R, 0, Math.PI * 2);
-  c.fill();
-  c.strokeStyle = teamColor;
-  c.lineWidth = 3;
-  c.globalAlpha = 0.6;
-  c.beginPath();
-  c.arc(cx, cy, R, 0, Math.PI * 2);
-  c.stroke();
-  c.globalAlpha = 1;
-  // Real sprite — drawShape draws in local space, so translate to center.
-  // Build a minimal fighter-like object: drawShape only reads size/color/accent/shape.
-  const spriteF = { color: t.color, accent: t.accent, shape: t.shape };
-  const spriteScale = (W * 0.28) / FIGHTER_SIZE;
-  c.save();
-  c.translate(cx, cy);
-  c.scale(spriteScale, spriteScale);
-  // Blue sits on the right of the VS — flip it so its forward edge faces inward.
-  if (t.side === 'blue') c.scale(-1, 1);
-  c.fillStyle = spriteF.color;
-  drawShape(c, spriteF);
-  c.restore();
+// Render-only intro motion: gentle idle bob around the seeded start
+// positions. Never touches velocity (which determines the fight's launch
+// direction) and never calls rng/vrng. Different phases + frequencies for
+// red and blue so the bob feels alive, not synchronised. Bails the instant
+// the game token changes (so a quick BACK doesn't keep rendering into a
+// dead game).
+function cosmeticIntroLoop() {
+  if (!game || !game.introCosmeticOn) return;
+  const myToken = game.token;
+  const t = (performance.now() - game.introT0) / 1000;
+  const s = game.introSnap;
+  const bobX = 1.5, bobY = 3;
+  game.red.x  = s.rx + Math.cos(t * 4.0)       * bobX;
+  game.red.y  = s.ry + Math.sin(t * 3.5)       * bobY;
+  game.blue.x = s.bx + Math.cos(t * 4.0 + 1.7) * bobX;
+  game.blue.y = s.by + Math.sin(t * 3.5 + 1.3) * bobY;
+  draw();
+  requestAnimationFrame(() => {
+    if (game && game.token === myToken && game.introCosmeticOn) cosmeticIntroLoop();
+  });
 }
+
 function stopGame() { if (game) game.over = true; }
 
 function updateHp() {

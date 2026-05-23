@@ -206,49 +206,65 @@
   .sprite-cell canvas { width: 64px; height: 64px; }
   .sprite-cell span { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #aaa; }
   .sprite-cell.spinning { background: #1c2230; }
-  /* ---- VS intro overlay ---- */
+  /* ---- VS intro overlay ----
+     Arena-as-reveal: the live arena (with fighters idle-bobbing in place)
+     is the centerpiece. Only floating labels above each fighter and a VS
+     badge in the middle sit over the canvas. The intro is a soft tint plus
+     these elements — no big side panels covering the arena. Total intro is
+     1.7s: labels fade in 0.10–0.50s, VS clash at 0.85s, fade 1.50–1.70s. */
   .vs-intro {
     position: absolute; inset: 0; z-index: 11;
     display: none;
     align-items: center; justify-content: center;
-    background: rgba(8,8,12,0.96);
+    background: radial-gradient(ellipse at center,
+      rgba(8,8,12,0.10) 0%,
+      rgba(8,8,12,0.35) 70%,
+      rgba(8,8,12,0.65) 100%);
     overflow: hidden;
+    animation: vsIntroFade 0.20s ease-in 1.50s both;
   }
+  @keyframes vsIntroFade { from { opacity: 1; } to { opacity: 0; } }
   .vs-intro.show { display: flex; }
-  .vs-side {
+  /* Floating fighter labels — anchored above each fighter's start position
+     (red at x=0.2, blue at x=0.8 in arena coords → CSS left:20%/80%). The
+     vertical anchor (top:22%) sits comfortably above the sprite's top edge
+     (sprite center is at top:50%, sprite is ~28% of arena height). */
+  .vs-label {
+    position: absolute;
+    top: 22%;
     display: flex; flex-direction: column; align-items: center;
-    width: 47%;
+    text-align: center; white-space: nowrap;
+    animation: vsLabelIn 0.40s cubic-bezier(0.2,0.9,0.3,1.2) 0.10s both;
   }
-  .vs-red  { animation: vsSlideL 0.45s cubic-bezier(0.2,0.9,0.3,1.2) both; }
-  .vs-blue { animation: vsSlideR 0.45s cubic-bezier(0.2,0.9,0.3,1.2) both; }
-  @keyframes vsSlideL { from { transform: translateX(-130%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes vsSlideR { from { transform: translateX(130%);  opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  .vs-sprite { width: 84px; height: 84px; }
+  .vs-red  { left: 20%; transform: translateX(-50%); }
+  .vs-blue { left: 80%; transform: translateX(-50%); }
+  @keyframes vsLabelIn {
+    from { opacity: 0; transform: translate(-50%, 14px); }
+    to   { opacity: 1; transform: translate(-50%, 0);     }
+  }
   .vs-name {
-    font-family: 'Bungee', sans-serif; font-size: 13px; letter-spacing: 1px;
-    margin-top: 4px;
+    font-family: 'Bungee', sans-serif; font-size: 16px; letter-spacing: 1px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.75);
   }
   .vs-red  .vs-name { color: var(--red); }
   .vs-blue .vs-name { color: var(--blue); }
   .vs-ability {
-    font-family: 'Bungee', sans-serif; font-size: 7px; letter-spacing: 0.3px;
-    opacity: 0.85; margin-top: 3px; text-align: center; white-space: nowrap;
-  }
-  .vs-stats {
-    font-family: 'JetBrains Mono', monospace; font-size: 8px;
-    opacity: 0.7; margin-top: 4px; line-height: 1.5; text-align: center;
+    font-family: 'Bungee', sans-serif; font-size: 8px; letter-spacing: 0.4px;
+    opacity: 0.9; margin-top: 3px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.85);
   }
   .vs-badge {
     position: absolute;
-    font-family: 'Bungee', sans-serif; font-size: 44px;
+    z-index: 2;
+    font-family: 'Bungee', sans-serif; font-size: 56px;
     color: #fff;
-    text-shadow: 0 0 12px rgba(255,255,255,0.5);
-    animation: vsClash 0.5s cubic-bezier(0.3,1.6,0.5,1) 0.42s both;
+    text-shadow: 0 0 14px rgba(255,255,255,0.6), 0 0 32px rgba(255,255,255,0.3);
+    animation: vsClash 0.45s cubic-bezier(0.3,1.6,0.5,1) 0.85s both;
   }
   @keyframes vsClash {
-    0%   { transform: scale(3.5) rotate(-12deg); opacity: 0; }
-    60%  { transform: scale(0.85) rotate(4deg); opacity: 1; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0%   { transform: scale(3.8) rotate(-14deg); opacity: 0; }
+    55%  { transform: scale(0.82) rotate(5deg);  opacity: 1; }
+    100% { transform: scale(1) rotate(0deg);     opacity: 1; }
   }
   .winner-overlay.show { display: flex; animation: fadein 0.3s; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
@@ -380,18 +396,14 @@
   <div class="arena-wrap" id="arena-wrap">
     <canvas id="canvas"></canvas>
     <div class="vs-intro" id="vs-intro">
-      <div class="vs-side vs-red" id="vs-red">
-        <canvas class="vs-sprite" id="vs-sprite-red" width="160" height="160"></canvas>
+      <div class="vs-label vs-red" id="vs-red">
         <div class="vs-name" id="vs-name-red">—</div>
         <div class="vs-ability" id="vs-ability-red"></div>
-        <div class="vs-stats" id="vs-stats-red"></div>
       </div>
       <div class="vs-badge" id="vs-badge">VS</div>
-      <div class="vs-side vs-blue" id="vs-blue">
-        <canvas class="vs-sprite" id="vs-sprite-blue" width="160" height="160"></canvas>
+      <div class="vs-label vs-blue" id="vs-blue">
         <div class="vs-name" id="vs-name-blue">—</div>
         <div class="vs-ability" id="vs-ability-blue"></div>
-        <div class="vs-stats" id="vs-stats-blue"></div>
       </div>
     </div>
     <div class="winner-overlay" id="winner-overlay">

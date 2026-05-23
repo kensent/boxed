@@ -527,6 +527,25 @@ const Audio = (() => {
       tone(440, 0.14, 'square', 0.16, { glideTo: 660, exact: true });
       setTimeout(() => tone(880, 0.18, 'square', 0.16, { exact: true }), 130);
     },
+    // VS intro beats — fired by playVsIntro at 0.00s (introRiser) and 0.85s
+    // (vsClash). The riser glides up to meet the clash so the release lands
+    // on a peak instead of a flat hold.
+    introRiser() {
+      // Pitched glide-up (sawtooth → triangle pair) + noise filter sweep.
+      // Total duration 0.85s — must end ON the vsClash beat.
+      tone(110, 0.85, 'sawtooth', 0.08, { glideTo: 520, exact: true });
+      tone(220, 0.85, 'triangle', 0.06, { glideTo: 1040, exact: true });
+      noise(0.85, 0.07, 'bandpass', 240, { filterGlideTo: 2200, exact: true });
+    },
+    vsClash() {
+      // The VS slam — bigger than 'start': wide noise crack (the impact) + a
+      // bell-like chord (the resonance). Death is the ceiling, so this sits
+      // below death/K.O. but above every other UI sound.
+      noise(0.18, 0.55, 'bandpass', 1400, { filterGlideTo: 280, exact: true });
+      tone(220, 0.40, 'square', 0.22, { glideTo: 110, exact: true });
+      tone(660, 0.32, 'triangle', 0.20, { exact: true });
+      tone(990, 0.28, 'sine', 0.16, { exact: true });
+    },
     win() {
       [523, 659, 784, 1046].forEach((f, i) =>
         setTimeout(() => tone(f, 0.30, 'triangle', 0.20, { exact: true }), i * 110));
