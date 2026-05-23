@@ -553,37 +553,37 @@ function drawShape(c, f, hinge = 0) {
       c.beginPath();
       c.arc(0, -s * 0.38, s * 0.20, 0, Math.PI * 2);
       c.fill();
-      // Scythe shaft — long dark wood line cutting diagonally from the back-
-      // bottom (butt) to the forward-top (where the blade attaches). Held
-      // across the body.
+      // Scythe shaft — diagonal from back-bottom (butt) to forward-top (where
+      // the blade attaches). Held diagonally across the body.
       c.strokeStyle = '#3a2010';
       c.lineWidth = 2.2;
       c.lineCap = 'round';
       c.beginPath();
-      c.moveTo(-s * 0.55, s * 0.65);
-      c.lineTo(s * 0.78, -s * 0.5);
+      c.moveTo(-s * 0.45, s * 0.75);
+      c.lineTo(s * 0.18, -s * 0.7);
       c.stroke();
-      // Scythe blade — bone-cream curve hooked at the top of the shaft, sweeping
-      // back over the hood like the iconic Grim Reaper silhouette.
+      // Scythe blade — bone-cream curve hooked at the top of the shaft and
+      // sweeping FORWARD (toward the enemy / +x direction). The tip extends
+      // past the body silhouette so the "the blade reaches out at the enemy"
+      // read is unmistakable. Iconic Grim-Reaper J-curve.
       c.strokeStyle = '#e8e0c8';
       c.lineWidth = 2.2;
       c.beginPath();
-      c.moveTo(s * 0.78, -s * 0.5);
-      c.quadraticCurveTo(s * 0.5, -s * 1.05, -s * 0.15, -s * 0.85);
+      c.moveTo(s * 0.18, -s * 0.7);
+      c.quadraticCurveTo(s * 0.95, -s * 1.05, s * 1.15, -s * 0.45);
       c.stroke();
-      // Crimson back-edge — Reaper's accent color along the dull side of the
-      // blade. "The blade is already bloodied" — material identity.
+      // Crimson back-edge — the dull (inner) side of the J-curve. Reaper's
+      // accent color: "the blade is already bloodied."
       c.strokeStyle = f.accent;
       c.lineWidth = 1.1;
       c.beginPath();
-      c.moveTo(s * 0.72, -s * 0.48);
-      c.quadraticCurveTo(s * 0.45, -s * 0.85, -s * 0.1, -s * 0.72);
+      c.moveTo(s * 0.22, -s * 0.6);
+      c.quadraticCurveTo(s * 0.78, -s * 0.85, s * 0.94, -s * 0.42);
       c.stroke();
-      // Counterweight bead at the butt of the shaft — small dark dot so the
-      // shaft has a clear "this end is the grip" terminator.
+      // Counterweight bead at the butt of the shaft.
       c.fillStyle = '#1a0e0e';
       c.beginPath();
-      c.arc(-s * 0.55, s * 0.65, 1.6, 0, Math.PI * 2);
+      c.arc(-s * 0.45, s * 0.75, 1.6, 0, Math.PI * 2);
       c.fill();
       break;
     }

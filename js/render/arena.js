@@ -998,44 +998,35 @@ function draw() {
     shaken = true;
   }
 
-  // Reaper WAKE hazard segments — dim crimson slash-scars along the scythe's
-  // arc. Each segment renders as a short blade-cut pattern (a primary diagonal
-  // gash + 2 shorter parallel nicks), with the angle derived deterministically
-  // from the segment's world position so the trail has organic variation
-  // without ever calling rng() in draw(). Overlapping segments form a visible
-  // damaging trail that reads as "the blade dragged through here."
+  // Reaper WAKE hazard segments — curved blade-cuts left along the scythe's
+  // arc. A scythe blade is CURVED, so its cut should be curved too. Each
+  // segment renders as a bold short arc (the main slash) plus a faint paired
+  // arc (the deeper-cut shadow underneath), at a deterministic per-segment
+  // angle from world (x, y) — no rng in draw(). Adjacent segments compose
+  // into a row of overlapping crimson scythe-cuts. No filled under-pool;
+  // earlier "circle blob" wasn't reading as a slash.
   (game.hazards || []).forEach(h => {
     const fade = h.timer / h.maxTimer;               // 1 → 0
-    // Deterministic per-segment angle from (x, y) — no rng().
     const ang = (h.x * 0.137 + h.y * 0.211) % (Math.PI * 2);
-    const cs = Math.cos(ang), sn = Math.sin(ang);
     const r = h.radius;
     ctx.save();
     ctx.translate(h.x, h.y);
-    // Soft crimson under-pool — faint, suggests blood seeping into the ground.
-    // Smaller than the old solid circle so the SHAPE on top reads, not a blob.
-    ctx.fillStyle = `rgba(120,0,0,${(fade * 0.22).toFixed(3)})`;
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.fill();
-    // Primary gash — the main blade-cut. Thicker, brighter.
-    ctx.strokeStyle = `rgba(200,20,20,${(fade * 0.85).toFixed(3)})`;
-    ctx.lineWidth = 2.2;
+    ctx.rotate(ang);
     ctx.lineCap = 'round';
+    // Bright primary slash — a short curved arc, the shape of a scythe-cut.
+    // Centred so the cut spans roughly 2r and dips down ~0.5r at its lowest.
+    ctx.strokeStyle = `rgba(220,30,30,${(fade * 0.95).toFixed(3)})`;
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
-    ctx.moveTo(-cs * r, -sn * r);
-    ctx.lineTo( cs * r,  sn * r);
+    ctx.arc(0, r * 0.6, r * 1.15, Math.PI * 1.22, Math.PI * 1.78);
     ctx.stroke();
-    // Two shorter parallel nicks — offset perpendicular to the gash, on each
-    // side. Read as "ragged scarring" not a clean swipe.
-    const px = -sn, py = cs;                          // perpendicular unit vector
-    ctx.strokeStyle = `rgba(170,10,10,${(fade * 0.65).toFixed(3)})`;
-    ctx.lineWidth = 1.3;
+    // Deeper shadow underneath — fainter, slightly smaller arc, gives the cut
+    // weight (a fresh wound has two layers: the bright outer edge + the dark
+    // depth). Same arc shape so it reads as one cut, not two.
+    ctx.strokeStyle = `rgba(110,0,0,${(fade * 0.55).toFixed(3)})`;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.moveTo(-cs * r * 0.55 + px * r * 0.42, -sn * r * 0.55 + py * r * 0.42);
-    ctx.lineTo( cs * r * 0.35 + px * r * 0.42,  sn * r * 0.35 + py * r * 0.42);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-cs * r * 0.35 - px * r * 0.42, -sn * r * 0.35 - py * r * 0.42);
-    ctx.lineTo( cs * r * 0.55 - px * r * 0.42,  sn * r * 0.55 - py * r * 0.42);
+    ctx.arc(0, r * 0.6 + 1.5, r * 1.05, Math.PI * 1.25, Math.PI * 1.75);
     ctx.stroke();
     ctx.restore();
   });
@@ -1367,43 +1358,42 @@ function draw() {
       ctx.restore();
     } else if (p.kind === 'crescent') {
       // Reaper HARVEST — a thrown scythe in flight. Long dark-wood shaft along
-      // the rotation axis + a curved bone blade hooked at the forward end of
-      // the shaft. Reads as the same scythe held by the sprite, just spinning
-      // through the air. The spin makes the whole tool rotate together (NOT a
-      // small disc — the elongated shaft makes the rotation read clearly).
+      // the rotation axis + a curved bone blade hooked at the FORWARD end of
+      // the shaft, pointing OUT past the front of the shaft (mirrors the sprite
+      // — the blade leads where the weapon is heading). Spin rotates the whole
+      // tool together; the elongated shape + forward-pointing blade makes the
+      // rotation read clearly as a scythe whirling, not a small spinning disc.
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.spin || 0);
       ctx.lineCap = 'round';
-      // Shaft — the long dark snath through the centre of the projectile.
-      // Slightly forward-biased so the blade end (front) sticks out more.
+      // Shaft — long dark snath along the rotation axis.
       ctx.strokeStyle = '#3a2010';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(-p.size * 1.8, 0);
-      ctx.lineTo( p.size * 0.5, 0);
+      ctx.moveTo(-p.size * 1.7, 0);
+      ctx.lineTo( p.size * 0.4, 0);
       ctx.stroke();
-      // Counterweight bead at the butt of the shaft — identifies the grip end.
+      // Counterweight bead at the butt of the shaft — grip end terminator.
       ctx.fillStyle = '#1a0e0e';
       ctx.beginPath();
-      ctx.arc(-p.size * 1.75, 0, 1.6, 0, Math.PI * 2);
+      ctx.arc(-p.size * 1.65, 0, 1.6, 0, Math.PI * 2);
       ctx.fill();
-      // Blade — bone curve hooked at the forward end of the shaft, swept back
-      // over the spin axis. The shape is unmistakably a scythe blade (J-curve),
-      // not a sickle (a sickle's blade would be tighter and have no long shaft).
+      // Blade — bone J-curve hooked at the FORWARD end of the shaft, sweeping
+      // up and continuing forward. Tip sits well past the shaft front so the
+      // "blade extends outward" read is unmistakable. Mirrors the sprite shape.
       ctx.strokeStyle = '#e8e0c8';
       ctx.lineWidth = 2.6;
       ctx.beginPath();
-      ctx.moveTo(p.size * 0.5, 0);
-      ctx.quadraticCurveTo(p.size * 0.45, -p.size * 1.2, -p.size * 0.55, -p.size * 1.1);
+      ctx.moveTo(p.size * 0.4, 0);
+      ctx.quadraticCurveTo(p.size * 1.4, -p.size * 0.55, p.size * 1.45, -p.size * 1.05);
       ctx.stroke();
-      // Crimson back-edge — the dull/back side of the blade, parallel to the
-      // cutting curve. Reaper's accent: bloodied edge.
+      // Crimson back-edge — the dull (inner) side of the J-curve.
       ctx.strokeStyle = '#aa0000';
       ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.moveTo(p.size * 0.4, 0);
-      ctx.quadraticCurveTo(p.size * 0.2, -p.size * 0.78, -p.size * 0.45, -p.size * 0.78);
+      ctx.moveTo(p.size * 0.45, -p.size * 0.05);
+      ctx.quadraticCurveTo(p.size * 1.05, -p.size * 0.45, p.size * 1.18, -p.size * 0.9);
       ctx.stroke();
       ctx.restore();
     } else if (p.kind === 'charge') {
