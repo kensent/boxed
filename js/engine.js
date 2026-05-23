@@ -1407,13 +1407,12 @@ function step(dt) {
       return true;
     }
     if (p.kind === 'crescent') {
-      // Reaper HARVEST — returning scythe boomerang. Outbound homes MILDLY at the
-      // enemy (a thrown blade); at max travel it turns and homes STRONGLY back to
-      // Reaper, despawning when caught (clears the in-flight flag + sets recovery cd).
-      // Turns back on HITTING the enemy, hitting a WALL, or at max travel if it
-      // whiffs everything; then homes home. Can clip the enemy again on the return —
-      // a short hitCd prevents an instant double at the turn. Execute-scaled.
-      // Bypasses the generic projectile logic below.
+      // Reaper HARVEST — returning scythe boomerang. The scythe OVERSHOOTS the
+      // enemy: it keeps flying through after a hit, only turning back when it
+      // reaches max travel or hits a wall. The return leg homes straight back
+      // to Reaper and can clip the enemy again on the way through (gated by
+      // hitCd so it never double-hits in a single frame). Bypasses the generic
+      // projectile logic below.
       const owner = p.team === 'red' ? red : blue;
       const target = p.team === 'red' ? blue : red;
       p.life -= dt;
@@ -1466,8 +1465,9 @@ function step(dt) {
           team: p.team,
         });
       }
-      // hit (gated by hitCd so it can't double-hit at the turn).
-      let hitNow = false;
+      // Hit (gated by hitCd so it can't double-hit on a single overshoot/return
+      // pass). The hit doesn't terminate the scythe's flight — it overshoots
+      // and can connect again on the return leg.
       // DOPPELGANGER: a closer decoy absorbs the crescent and ends its run.
       // The boomerang doesn't return — owner.crescentOut is cleared so Reaper
       // can throw a fresh one next cd cycle.
@@ -1486,11 +1486,13 @@ function step(dt) {
           target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = big * 13;
         }
         p.hitCd = 0.2;
-        hitNow = true;
       }
       if (p.phase === 'out') {
         p.traveled += p.cruise * dt;
-        if (hitNow || p.traveled >= p.maxTravel) p.phase = 'back';   // return ON HIT (or apex if it whiffed)
+        // Overshoot: enemy contact no longer flips to 'back' — the scythe keeps
+        // going past the hit until max travel (or a wall hit, handled in the
+        // wall-clamp block above). Whiff and connect both follow the same arc.
+        if (p.traveled >= p.maxTravel) p.phase = 'back';
       } else if (dist(p, owner) < FIGHTER_SIZE + p.size) {
         owner.crescentOut = false;
         owner.cdTimer = owner.cd;                            // post-catch recovery before the next throw

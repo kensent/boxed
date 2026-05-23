@@ -93,8 +93,12 @@ const FIGHTERS = [
   { id:'reaper',  name:'REAPER',    hp:750, speed:100, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
     // HP is the balance lever; dmg/cd tuned for pace. cd is the post-catch RECOVERY
     // (one crescent in flight at a time — the flight round-trip dominates the throw
-    // cycle; see abilities.js).
-    ability:'sweep', cd:1.0, dmg:180,
+    // cycle; see abilities.js). dmg 180 -> 135 to compensate for HARVEST's
+    // overshoot mechanic — the scythe now keeps flying past the enemy on hit
+    // (only turning at max travel or a wall), so a single cast can land BOTH
+    // an outbound and a return pass on the enemy. Pre-overshoot baseline ran
+    // at 54.6%; raw overshoot with dmg 180 went to 68.3% (multi-hit per cast).
+    ability:'sweep', cd:1.0, dmg:142,
     crescentSpeed: 360, crescentHoming: 40, crescentMaxTravel: 240,
     // WAKE passive — the crescent drops a small damaging hazard ("wake segment") along
     // its flight path every wakeRate seconds. Segments overlap into a visible arc-trail
