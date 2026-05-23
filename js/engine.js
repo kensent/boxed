@@ -34,11 +34,24 @@ const ARENA = 300;
 // reads camera state back, so balance is untouched. Grid + border are drawn
 // in-world (see drawArenaBackdrop) so they zoom with the camera on the kill.
 const CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
+// Pull-back / celebration phase length (seconds within the finish window).
+// The kill-cam holds on the loser for the first FINISH_WINDOW - CAM_PULLBACK
+// seconds (the death ceremony), then eases out to arena centre while the
+// winner does the base celebration. The overlay opens at finishTimer=0.
+const CAM_PULLBACK = 0.6;
 // Finish/kill-cam timing (real seconds): the body holds frozen until the kill-cam
 // arrives (or KILLCAM_MAX_PUSH elapses, a fallback), then the death plays over a
 // fixed DEATH_DUR — so every kill, melee or ranged, gets its full beat instead of
-// racing the clock. FINISH_WINDOW is the total before the winner overlay.
-const FINISH_WINDOW = 2.0, DEATH_DUR = 1.2, KILLCAM_MAX_PUSH = 0.8;
+// racing the clock. FINISH_WINDOW is the total before the outro auto-returns to
+// the select screen.
+// FINISH_WINDOW = death ceremony (DEATH_DUR after kill-cam arrival, with the
+// push-in taking up to KILLCAM_MAX_PUSH) + celebration phase (CAM_PULLBACK).
+// Bumped from 2.0 → 2.6 to add the 0.6s winner-celebration phase: the camera
+// pulls back to centre while the winner does a base celebration (glow ring +
+// radial team-colour mote burst) and the 'win' arpeggio plays — and THAT is
+// the outro. There is no winner-name overlay anymore (see main.js
+// showWinnerOverlay): the arena's final tableau is the closing image.
+const FINISH_WINDOW = 2.6, DEATH_DUR = 1.2, KILLCAM_MAX_PUSH = 0.8;
 const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;
@@ -55,16 +68,25 @@ function resizeCanvas() {
 
 // Update the camera target each drawn frame. During play the target is static
 // (centre, zoom 1) so this is a no-op after the first frame; on the kill it
-// becomes a smooth push-in onto the loser.
+// becomes a smooth push-in onto the loser, then a pull-back to centre so the
+// closing frame holds BOTH fighters (winner standing, loser's residue) instead
+// of a tight crop on just the corpse.
 function updateCamera() {
   if (!game) return;
   const r = game.red, b = game.blue;
   let tx, ty, tz;
   if (game.winner) {
-    // Kill-cam: push in on the loser's (frozen) death position so the K.O. frames
-    // the actual kill regardless of where the winner ended up.
     const loser = game.winner === r ? b : r;
-    tx = loser.x; ty = loser.y; tz = CAM_KILL;
+    // Pull-back phase: in the last CAM_PULLBACK seconds of the finish window,
+    // ease the camera back to the arena centre at zoom 1 so the WINNER name
+    // overlay lands over a wide frame, not a tight crop on the corpse.
+    if (game.finishTimer < CAM_PULLBACK) {
+      tx = ARENA / 2; ty = ARENA / 2; tz = 1;
+    } else {
+      // Kill-cam: push in on the loser's (frozen) death position so the K.O.
+      // frames the actual kill regardless of where the winner ended up.
+      tx = loser.x; ty = loser.y; tz = CAM_KILL;
+    }
   } else {
     // Live play: static at arena centre, zoom 1 (full 300x300 visible).
     tx = ARENA / 2; ty = ARENA / 2; tz = 1;
@@ -443,7 +465,6 @@ muteBtn.addEventListener('click', () => {
 function returnToSelect() {
   stopGame();
   document.getElementById('vs-intro').classList.remove('show');
-  document.getElementById('winner-overlay').classList.remove('show');
   document.getElementById('fight-screen').classList.remove('active');
   document.getElementById('select-screen').classList.add('active');
   document.getElementById('app-footer').classList.add('show');
@@ -641,7 +662,6 @@ function startFight() {
   syncSeedDisplay(); // reflect the seed used; pins it so RESTART replays it
   document.getElementById('select-screen').classList.remove('active');
   document.getElementById('fight-screen').classList.add('active');
-  document.getElementById('winner-overlay').classList.remove('show');
   document.getElementById('app-footer').classList.remove('show');
   resizeCanvas();
   camera.ready = false; // snap the follow-cam to the opening framing, don't ease from the last fight

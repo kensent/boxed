@@ -7,11 +7,15 @@ function endGame() {
   if (game.winner) return;
   game.winner = game.red.dead ? game.blue : game.red;
   // The outcome is decided — clear every hazard still in play so a stray
-  // projectile, mine, skeleton, or minion can't kill the victor during the
-  // slow-mo finish window. (Particles/wakes are cosmetic and stay.)
+  // projectile, mine, skeleton, hazard, or minion can't kill the victor
+  // during the (now wider) finish window. The new winner overlay is a
+  // transparent vignette over the arena, so a vanished-winner sprite
+  // (from drawFighter's dead-fighter early-return) would be visible and
+  // wreck the celebration — keep all post-mortem damage off.
   game.projectiles = [];
   game.mines = [];
   game.skeletons = [];
+  game.hazards = [];
   // Resolve any still-"open" debounced damage float (e.g. the killing blow's)
   // so it punches and floats off normally instead of freezing mid-burst.
   // Resolve open floats and clamp life so they expire before the loop stops.
@@ -40,59 +44,21 @@ function endGame() {
   //  shatter in draw(), not here at the kill instant.)
 }
 
+// End-of-fight handoff. The visual outro lives entirely in the arena
+// (kill-cam → death ceremony → camera pull-back + winner celebration with
+// the 'win' arpeggio). After that climax there's no winner-name card or
+// overlay element — the arena's final tableau (loser residue + winner
+// standing in the wide frame) is the closing image. We just hold for a
+// short beat and auto-return to the character-select screen.
+//
+// Token-guarded: if the player taps RESTART (which starts a new fight and
+// bumps the token) before the timer fires, this stale timer no-ops so it
+// can't yank them out of the new fight.
 function showWinnerOverlay() {
-  const ov = document.getElementById('winner-overlay');
-  const w = game.winner;
-  if (!ov || !w) return;
-  // Eyebrow + name use a CSS-var color (HTML); the canvas ring needs a real hex.
-  const teamColor = w.team === 'red' ? 'var(--red)' : 'var(--blue)';
-  const teamHex = w.team === 'red' ? '#ff2e2e' : '#2e9eff';
-  const name = document.getElementById('winner-name');
-  if (name) { name.textContent = w.name; name.style.color = teamColor; }
-  const loser = game.winner === game.red ? game.blue : game.red;
-  // const quoteEl = document.getElementById('winner-quote');
-  // if (quoteEl) {
-  //   const key = w.id + '_' + loser.id;
-  //   quoteEl.textContent = VICTORY_QUOTES[key] || VICTORY_QUOTES['_default_'] || '';
-  // }
-  const eyebrow = document.getElementById('winner-eyebrow');
-  if (eyebrow) eyebrow.style.color = teamColor;
-  // Draw the victor's actual sprite into the overlay canvas
-  const cnv = document.getElementById('winner-sprite');
-  if (cnv) {
-    const c = cnv.getContext('2d');
-    const W = cnv.width, H = cnv.height;
-    c.clearRect(0, 0, W, H);
-    // Team-colored ring — matches the in-fight and intro sprite borders.
-    c.strokeStyle = teamHex;
-    c.lineWidth = 4;
-    c.globalAlpha = 0.7;
-    c.beginPath();
-    c.arc(W / 2, H / 2, W * 0.42, 0, Math.PI * 2);
-    c.stroke();
-    c.globalAlpha = 1;
-    // Real sprite via the shared drawShape — sized for the overlay
-    const spriteF = { color: w.color, accent: w.accent, shape: w.shape };
-    const spriteScale = (W * 0.28) / FIGHTER_SIZE;
-    c.save();
-    c.translate(W / 2, H / 2);
-    c.scale(spriteScale, spriteScale);
-    c.fillStyle = spriteF.color;
-    drawShape(c, spriteF);
-    c.restore();
-  }
-  // Replay the staggered slam-in animations every time the overlay opens
-  ov.classList.remove('show');
-  void ov.offsetWidth;
-  ov.classList.add('show');
-  sfx('win');
-  // Auto-return to the character-select screen 3s after the overlay appears.
-  // Guarded by the fight token: if the player taps RESTART (which starts a new
-  // fight and bumps the token) before the timer fires, this stale timer no-ops
-  // so it can't yank them out of the new fight.
+  if (!game || !game.winner) return;
   const overlayToken = fightToken;
   setTimeout(() => {
     if (fightToken === overlayToken) returnToSelect();
-  }, 3000);
+  }, 1200);
 }
 

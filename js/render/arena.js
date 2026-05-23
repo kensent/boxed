@@ -206,6 +206,56 @@ function drawImpact(im) {
   ctx.restore();
 }
 
+// drawCelebration(winner, prog) — Phase 1 SHARED celebration grammar. Plays
+// during the final CAM_PULLBACK seconds of the finish window, anchored to the
+// winner's live position (sprite stays sim-driven; this layers effects on
+// top). Three beats over prog 0→1:
+//   (1) inner team-colour glow ring expands + fades from the body
+//   (2) a second offset pulse ring (double-pulse rhythm)
+//   (3) 8 team-colour motes burst radially and fade
+// Per-fighter "victory voices" are a Phase 2 follow-up; this base grammar
+// makes the outro stop feeling empty before that work is scoped.
+function drawCelebration(winner, prog) {
+  const teamHex = winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
+  ctx.save();
+  ctx.lineWidth = 2.2;
+  ctx.strokeStyle = teamHex;
+  // Inner pulse ring — starts at the fighter's radius, expands outward.
+  const r1 = FIGHTER_SIZE + 4 + prog * 32;
+  ctx.globalAlpha = (1 - prog) * 0.7;
+  ctx.beginPath();
+  ctx.arc(winner.x, winner.y, r1, 0, Math.PI * 2);
+  ctx.stroke();
+  // Second offset pulse — gives the celebration a double-tap rhythm so it
+  // doesn't read as a single one-shot burst.
+  if (prog > 0.3) {
+    const p2 = (prog - 0.3) / 0.7;
+    const r2 = FIGHTER_SIZE + 4 + p2 * 28;
+    ctx.globalAlpha = (1 - p2) * 0.5;
+    ctx.beginPath();
+    ctx.arc(winner.x, winner.y, r2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Radial mote burst — 8 motes, slight rotational drift so the shape feels
+  // alive rather than perfectly symmetric. Particles complete by prog≈0.85.
+  const N = 8;
+  const baseRot = prog * Math.PI * 0.35;
+  const burstT = Math.min(1, prog * 1.18);
+  ctx.fillStyle = teamHex;
+  ctx.globalAlpha = (1 - burstT) * 0.9;
+  for (let i = 0; i < N; i++) {
+    const angle = baseRot + (i / N) * Math.PI * 2;
+    const dist = FIGHTER_SIZE + 6 + burstT * 30;
+    const px = winner.x + Math.cos(angle) * dist;
+    const py = winner.y + Math.sin(angle) * dist;
+    ctx.beginPath();
+    ctx.arc(px, py, 2.0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
 // drawDeath(f, prog) — the per-fighter death "undoing": the loser's form comes apart
 // in its own voice over the K.O. window (prog 0→1). Three layers: (1) the sprite
 // transforms one last time (drawFighter skips dead fighters, so we draw it here),
@@ -1836,7 +1886,13 @@ function draw() {
       if (age < 0.16) scale = 2.6 - (age / 0.16) * 1.7;            // 2.6 → 0.9
       else if (age < 0.28) scale = 0.9 + ((age - 0.16) / 0.12) * 0.1; // settle to 1
       else scale = 1;
-      const alpha = game.finishTimer < 0.3 ? game.finishTimer / 0.3 : 1;
+      // K.O. is the death-ceremony beat — it should be GONE before the
+      // celebration phase begins. Full opacity during the death ceremony,
+      // fades out across the first half of the pull-back window
+      // (CAM_PULLBACK → 0.3s), fully clear by the time the celebration's
+      // glow/burst is reading.
+      const alpha = Math.max(0, Math.min(1,
+        (game.finishTimer - 0.3) / Math.max(0.01, CAM_PULLBACK - 0.3)));
       const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // leave camera space → screen space
@@ -1858,6 +1914,26 @@ function draw() {
       ctx.shadowBlur = 0;
       ctx.restore();
       ctx.globalAlpha = 1;
+    }
+
+    // === CELEBRATION ======================================================
+    // Plays during the final CAM_PULLBACK seconds of the finish window
+    // (after the death ceremony, while the kill-cam eases back to centre).
+    // The K.O. block above just left us in screen space (setTransform); the
+    // celebration draws in world space at winner.x/winner.y so re-apply the
+    // camera transform before calling drawCelebration. Also fire sfx('win')
+    // once on entry so the victory arpeggio sits across the pull-back and
+    // overlay-open (instead of triggering at overlay-open, which is now
+    // after the celebration so the arpeggio would land late).
+    if (game.finishTimer < CAM_PULLBACK) {
+      applyCamera();
+      const prog = Math.max(0, Math.min(1,
+        1 - game.finishTimer / CAM_PULLBACK));
+      drawCelebration(game.winner, prog);
+      if (!game.celebSfxFired) {
+        game.celebSfxFired = true;
+        sfx('win');
+      }
     }
   }
 
