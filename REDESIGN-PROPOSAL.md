@@ -13,14 +13,17 @@ These aren't fighter redesigns but they're load-bearing on everything:
   rampage, Ronin overshoot, etc.) the original 360 arena couldn't reliably
   put two random-bouncing fighters in contact. ARENA dropped to 300
   (~45% denser); every fighter was re-tuned around the new connection
-  rate, landing the roster in a ~12-point band.
+  rate, landing the roster in a ~10–12 point band.
 - **Closing-ring fog removed.** Shorts viewers want fights resolved on
   the fighters' merits, not by an arena hazard at 20s. Post-shrink fights
   resolve in 11-15s on their own, so fog was rarely doing real work. The
   headless 4000-tick guard remains as a stalemate safety net.
 - **Camera simplified.** The dynamic follow-cam (pan deadzone + comfort
   zoom) was disabled — the smaller arena already frames both fighters
-  statically at zoom 1.0. The kill-cam push-in on the loser is preserved.
+  statically at zoom 1.0. The kill-cam push-in on the loser is preserved,
+  and now holds the loser's INTACT sprite during the push-in (death
+  animation begins fresh from frame 0 the moment the cam arrives, instead
+  of starting voice-effect layers during the push-in).
 - **DOPPELGANGER substrate.** Jester's UNCANNY DODGE was replaced with
   decoys (see Jester's section). The supporting change is a *universal*
   "aim at nearest of {real, decoys}" rule routed through one helper
@@ -31,6 +34,15 @@ These aren't fighter redesigns but they're load-bearing on everything:
   melee hit Duelist takes" — a 80-dmg tax on anyone who touched him.
   Now `COUNTER` is purely defensive: the RIPOSTE thrust window parries
   melee hits (absorbed, no damage) and reflects projectiles. No proc.
+- **hitStop frame-freeze removed.** A few-ms sim pause on hits ≥120 dmg
+  was a "feel" mechanic that ran deterministically in the sim loop —
+  removed entirely (function, callsites, advance() handling). The visual
+  punch lives in the damage float + recoil + flash now.
+- **New balance tooling.** Per-matchup "tight fight" stats added (`balance.sh`
+  output now includes a per-matchup `tight#` and `tight avg time` table,
+  counting fights where the winner finished < 30% HP — drama indicator).
+  Picker UI gained a **HUNT A CLOSE FINISH** button alongside HUNT THE
+  UPSET and HUNT A TIGHT FIGHT.
 
 ---
 
@@ -171,27 +183,39 @@ during the prototype:
 ## BERSERKER → `RAMPAGE` *(shipped — wall-ricochet charge)*
 *Material: raw flesh + blood, wet thuds, primal low-end (unchanged).*
 
-> **IMPLEMENTED & VALIDATED (2026-05-23).** Built as proposed. Tunables:
-> `hp 920, speed 145, dmg 84, cd 1.7, rageBoost 0.33, rampageDur 1.1,
-> rampageSpeedMult 4, rampageHitGap 0.22` → **~48.7% overall, ~14.9s avg,
-> ~10% fog.**
+> **IMPLEMENTED & VALIDATED.** Built as proposed, plus a windup added later.
+> Current tunables: `hp 920, speed 145, dmg 82, cd 1.7, windupTime 0.5,
+> rageBoost 0.33, rampageDur 1.1, rampageSpeedMult 4, rampageHitGap 0.22`
+> → **~49% overall, ~14.4s avg**.
 > - **The big lesson — dmg × hits-per-rampage is a multiplier, not a sum.**
 >   Each rampage lands ~3-5 passes through the enemy at the small-arena
 >   geometry, so per-pass dmg moves the matchup at roughly **~1 win-rate
 >   point per 1 dmg** (much sharper than HP's ~1 pt per 40 hp rule of
->   thumb). Two-point dmg deltas matter; aim accordingly.
+>   thumb).
+> - **Windup added (the user wanted a coil-then-explode beat).** RAMPAGE was
+>   the only heavy attack in the roster with no telegraph; everyone else with
+>   big payoff (Priest pillar, Ronin iai, Cannoneer BOMBARD) has a visible
+>   coil. Added a 0.5s mechanical windup: body slows to 40% speed (NOT a
+>   full plant — still bounces, just visibly strains), crimson charge ring
+>   fills, body trembles in place, four radial coil-lines pulse inward.
+>   **Aim picks at RELEASE, not at cast** (Berserker's exception to the
+>   lock-at-cast convention — fits the "wild bruiser uncoils toward
+>   wherever the enemy is" identity, vs. Ronin's meditative cast-lock).
+> - **Custom windup audio: `rampageCoil`.** Originally reused Priest's
+>   `chargeUp` (holy bell rising tones) — material-identity collision per
+>   AUDIO.md principle 1. New: primal sawtooth growl 70→160Hz under a
+>   lowpass-noise body rumble. Distinct material from Priest.
 > - **Don't let the bruiser win by timeout.** First post-prototype defaults
->   (`hp 1050, dmg 100`) put Berserker at ~74% with 4% fog — a clean
->   smasher, just too strong. Cutting dmg to 75 dropped it to 49.7% but
->   pushed fog to 25% — Berserker was now winning via attrition, not
->   killing, which is character-wrong for the rampaging body. Trimming
->   hp to 920 alongside `dmg 84` brought the kill rate back up (fog 10%,
->   avg 14.9s) at a sensible 48.7% overall.
-> - **Matchup texture.** Smashes squishy/slow enemies (Priest 100,
->   Jester 94, Warlock 86, Ronin 80) and crashes into mitigation
->   (Knight 13, Sapper 36, Witch 20, Duelist 2 — COUNTER on each pass
->   stacks brutally). The big bruiser archetype: kicks down the doors
->   that aren't reinforced, breaks against the ones that are.
+>   (`hp 1050, dmg 100`) put Berserker at ~74% — clean smasher, too strong.
+>   Cutting dmg to 75 dropped to 49.7% but pushed fog to 25% — Berserker
+>   winning via attrition, character-wrong. Trimming hp to 920 + dmg 82
+>   landed it at ~49%. The 0.5s windup vulnerability is paid for by the +6
+>   dmg (76 → 82 after the windup was added).
+> - **Matchup texture.** Smashes squishy/slow enemies (Priest 100, Jester ~37,
+>   Warlock 83, Ronin 55) and crashes into mitigation (Sapper 27, Witch 21).
+>   Duelist matchup flipped from 2% to 63% when COUNTER stopped auto-thrusting
+>   on every melee hit (Berserker no longer eats free counter damage per
+>   rampage pass).
 
 **Active — RAMPAGE.** The charge no longer stops at the target. Berserker becomes a
 high-speed body that **ricochets off the walls** for a short window, dealing damage
@@ -290,8 +314,8 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 ## REAPER → `HARVEST` *(shipped — semi-ranged returning scythe; originally pitched as CRESCENT THROW)*
 *Material: hollow bone scythe, dry crack + crescent hiss (unchanged).*
 
-> **IMPLEMENTED & VALIDATED (2026-05-23).** Reaper went **semi-ranged** with a
-> returning crescent, **not** the orbiting field sketched below. Why the pivot:
+> **IMPLEMENTED & VALIDATED.** Reaper went **semi-ranged** with a returning
+> scythe, **not** the orbiting field sketched below. Why the pivot:
 > - A body-attached field on a *non-pursuing* Reaper hits the same **DVD
 >   slow-connection trap** that sank Knight — under autonomous RNG, a proximity
 >   effect only connects when the enemy randomly drifts close, which paces slowly.
@@ -301,38 +325,59 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 >   tank, so going semi-ranged is fine (unlike Knight).
 > - **Active — HARVEST** *(originally pitched as CRESCENT THROW; renamed so the
 >   name evokes Reaper's identity — death harvesting souls — rather than the
->   blade's lunar profile)*: one scythe in flight at a time — it homes *mildly*
->   at the enemy (a thrown blade, so a juke/wall-bounce can make it miss — that's the
->   counterplay), **turns back on hit, wall, or max travel**, beelines home to Reaper,
->   and is "caught"; a short recovery cd, then re-throw. Hits on both legs (a 0.2s
->   hit-cd prevents an instant double at the turn). The crescent also clears skeletons
->   (pierces them via the projectile path).
-> - **Passive — WAKE** *(replaced HARVEST execute after playtest — see below).* While
->   in flight, the crescent drops a small damaging hazard segment along its path every
->   `wakeRate` seconds; segments overlap into a visible **crimson arc trail** that
->   damages the enemy when they bounce through it. A per-target hit-cooldown
->   (`WAKE_HIT_GAP = 0.18s`) caps the chip rate so dense overlap can't double-dip.
+>   blade's lunar profile)*: one scythe in flight at a time. The scythe homes
+>   *mildly* at the enemy (a thrown blade, so a juke/wall-bounce can make the
+>   initial pass miss — that's the counterplay). It **OVERSHOOTS through hits**
+>   — landing damage doesn't end the throw; the scythe only turns back when it
+>   reaches `crescentMaxTravel` OR hits a wall. Then it beelines back to Reaper
+>   to be "caught"; a short recovery cd, then re-throw. Both legs can connect
+>   (a 0.2s hit-cd gates double-tap on a single overshoot). Cleaves skeletons
+>   via the projectile path.
+> - **DOPPELGANGER interaction:** the scythe **overshoots through decoys** too —
+>   one decoy absorbs one hit attempt (the decoy dies, hitCd guards the next
+>   frame), and the scythe continues its arc. Consistent shape with the enemy
+>   overshoot. Decoys no longer give Reaper a free early reset.
+> - **Passive — WAKE** *(replaced HARVEST execute after playtest).* While in
+>   flight, the scythe drops a small damaging hazard segment along its path
+>   every `wakeRate` seconds; segments overlap into a visible **crimson trail**
+>   that damages anything in range — enemy fighter AND enemy skeletons (added
+>   later — the wake didn't initially hit skeletons, which was a real
+>   Reaper-vs-Necromancer gap). A per-target hit-cooldown (`WAKE_HIT_GAP =
+>   0.18s`) caps the chip rate so dense overlap can't double-dip. Per damage
+>   tick, a soft `wakeTick` audio cue fires (same "sizzle, not crack"
+>   exception as Cannoneer's `burn`).
 > - **Why WAKE not HARVEST execute (the original sketch):** the execute was an
 >   *invisible* damage multiplier — each hit just slightly bigger as the enemy
->   weakened, with no visible "now we're harvesting" beat. Under the no-new-animation
->   directive, flash has to come from the *mechanic*. The boomerang's defining trait
->   is its **visible arcing path through space**, and WAKE weaponizes exactly that —
->   the path becomes a damage trail the arena fills with as Reaper plays. Distinct in
->   the roster (Sapper places point-traps at his own spot, Cannoneer drops point fire
->   pools, Witch shoots a bouncing point — no one else has a *projectile-path-as-hazard*).
->   And it's "exclusively right" for the boomerang shape: a point-projectile fighter
->   couldn't have this mechanic.
-> - **Glass-ish HP** kept (lowered from the original 1100). Rough balance vs the
->   current (mostly un-redesigned) roster: **HP 750, dmg 180, cd 1.0, wakeDmg 15,
->   wakeRadius 14, wakeLife 0.8s, wakeRate 0.04s, crescent speed 360 / homing 40 /
->   max-travel 240 → ~49% overall, ~13.0s avg, ~10% fog.** Authoritative tune is a
->   later `./balance.sh` pass.
-> - *Lever notes from the sweep:* **homing** is the hit/miss lever (not speed — a
->   faster crescent actually hits *more*); **HP** + **crescent dmg** are the
->   win-rate levers (wakeDmg barely moves it — a chip mechanic, not a primary lever);
->   **cd** is the throw-cadence/pace lever. Crescent and wake currently use **template
->   visuals** (small spinning crescent + filled-circle hazard segments); the bespoke
->   render + audio are deferred to the polish pass.
+>   weakened, with no visible "now we're harvesting" beat. The boomerang's
+>   defining trait is its **visible arcing path through space**, and WAKE
+>   weaponizes exactly that. Distinct in the roster (Sapper places point-traps,
+>   Cannoneer drops point splash, Witch shoots a bouncing point — no one else
+>   has a *projectile-path-as-hazard*).
+> - **Visual shipped (bespoke, not template anymore):**
+>   - *Sprite:* hooded Grim-Reaper figure clutching a scythe diagonally across
+>     the body — dark cloak silhouette + hollow hood-void + dark-wood shaft
+>     + bone J-curve blade hooked FORWARD over the hood (cutting edge points
+>     toward the enemy) + crimson back-edge accent. Replaced the old
+>     "three-bladed glaive rotor" that fit the dead SWEEP melee-spin.
+>   - *Projectile:* long dark shaft along the rotation axis + bone J-curve
+>     blade hooked at the FORWARD end (sprite-matching). Tip extends past
+>     the shaft front; the elongated shape makes the spin read as a scythe
+>     whirling, not a small disc.
+>   - *Wake:* clean crimson outlined ring + small inner dot per segment.
+>     Overlapping segments along the trajectory compose into the trail by
+>     themselves. (Previous attempts — solid blob, then paired curved
+>     slashes with per-segment rotation — both played as either featureless
+>     or visually noisy.)
+> - **Numbers:** hp 750, dmg 142, cd 1.0, crescentSpeed 360, crescentHoming 40,
+>   crescentMaxTravel 240, wakeRate 0.04, wakeRadius 14, wakeLife 0.8, wakeDmg
+>   15 → **~51% overall, ~11.4s avg.** The overshoot mechanic + WAKE-hits-
+>   skeletons combo had pushed Reaper to 68% at the pre-overshoot dmg of 180;
+>   trimmed to 142 to absorb the buff (closer-to-2-hits-per-cast average makes
+>   per-hit dmg come down).
+> - *Lever notes:* **homing** is the hit/miss lever (not speed — a faster
+>   crescent actually hits *more*); **HP** + **crescent dmg** are the win-rate
+>   levers (wakeDmg barely moves it — a chip mechanic, not a primary lever);
+>   **cd** is the throw-cadence/pace lever.
 >
 > *The orbiting-field write-up below is the original sketch, superseded by this.*
 
@@ -478,36 +523,51 @@ rising tick as each stack lands, climbing in pitch as the pincushion grows.
 ## RONIN → `IAI` *(shipped — overshoot line-cut + FOCUS-skips-windup chain)*
 *Material: fine drawn steel, whisper-crack, single clean note (unchanged).*
 
-> **IMPLEMENTED & VALIDATED (2026-05-23).** Built the proposal's "overshoot line-cut +
-> FOCUS chain" with two key refinements during playtest:
-> - **Opener:** Ronin plants for a 0.5s windup with the dash direction **locked at
->   cast** (enemy's random bounce during the windup is the counterplay — Priest-JUDGMENT-
->   style dodge). At windup end, teleport-overshoot a fixed `strikeDist` (200px) along
->   the locked direction; cleave skeletons + mines + enemy on the line. Clamped to the
+> **IMPLEMENTED & VALIDATED.** Built the proposal's "overshoot line-cut +
+> FOCUS chain" with several iterations of refinement during playtest:
+> - **Opener:** Ronin plants for a 0.5s windup with the dash direction **locked
+>   at cast** (enemy's random bounce during the windup is the counterplay —
+>   Priest-JUDGMENT-style dodge). At windup end, teleport-overshoot a fixed
+>   `strikeDist` along the locked direction; cleave skeletons + mines + enemy
+>   on the line. Decoys on the line are cleaved too, but FOCUS only chains on
+>   a REAL hit (slicing a phantom doesn't grant the refund). Clamped to the
 >   arena so the overshoot can't slide off-screen.
-> - **FOCUS** now **skips the windup *and* refunds the cooldown** — landing a cut puts
->   Ronin in flow, where the next iai fires *instantly* (re-aimed at the enemy's then-
->   current position). The chain breaks on a whiff: focus clears, next iai is a full
->   windup again. The counterplay during a chain is the cd-between-strikes (~1s of
->   enemy bouncing); during an opener it's the 0.5s windup itself.
-> - **Hidden slow-recovery dropped.** Originally the proposal called for a vulnerable
->   re-sheathe with reduced movement speed. Under the no-new-animation directive that
->   slow had no visible indicator → a hidden mechanic. The cooldown IS the visible
->   recovery (chain = ~1s gap; whiff = full 2.5s wait), so the speed-slow was redundant
->   and got cut. FOCUS still "skips the recovery" — that recovery is just the cd now.
-> - **Unified gold ring.** The pre-existing FOCUS aura and the windup charge ring were
->   two similar gold rings. Merged into ONE: fill level conveys state. *Empty* = idle.
->   *Filling 0→1* = opener winding up. *Held full* (no flash) = FOCUS, next strike pre-
->   charged. *Hidden during the strike window* — the slash trail does that beat. Cleaner
->   visual vocabulary aligned with the charge-telegraph grammar ("the focus state IS the
->   maintained charge"). `drawChargeRing` gained a `held` flag to suppress the release
->   flash for the held-full case.
-> - **Numbers:** hp 920, dmg 130, cd 2.5, windupTime 0.5, strikeDist 200, slashReach 26,
->   focusRefund 0.4 → **~50% overall, ~11.6s avg, ~1% fog.** Reuses existing iai visuals
->   (gold ring + slash trail). No new audio.
-> - *Matchup notes:* Duelist 1% is a real hard counter — Duelist's COUNTER procs on
->   every melee hit, and FOCUS chains stack the counter procs. Berserker (rampage) and
->   Sapper (mines on the line) also counter cleanly. Thematic; intended content.
+> - **FOCUS** **skips the windup AND refunds the cooldown** — landing a cut
+>   puts Ronin in flow, where the next iai fires *instantly* (re-aimed at the
+>   enemy's then-current position). The chain breaks on a whiff: focus
+>   clears, next iai is a full windup again. The counterplay during a chain
+>   is the cd-between-strikes (~1s of enemy bouncing); during an opener it's
+>   the 0.5s windup itself.
+> - **FOCUS plant (added later).** While focused — between landing one iai
+>   and casting the next chained one — Ronin now stops moving entirely
+>   (vx = vy = 0). The gold FOCUS ring + still body reads as the samurai's
+>   iai stance, not "wandering away from the enemy waiting for the cd." This
+>   was mechanically a stealth BUFF (lifted Ronin from 56% to 64.6% because
+>   the next iai's launch geometry became predictable from a fixed stance
+>   instead of drifty), absorbed by trimming dmg 130 → 118.
+> - **Hidden slow-recovery dropped.** Originally the proposal called for a
+>   vulnerable re-sheathe with reduced movement speed. Under the no-new-
+>   animation directive that slow had no visible indicator → a hidden
+>   mechanic. The cooldown IS the visible recovery (chain = ~1s gap; whiff =
+>   full 2.5s wait).
+> - **Unified gold ring.** The pre-existing FOCUS aura and the windup charge
+>   ring were two similar gold rings. Merged into ONE: fill level conveys
+>   state. *Empty* = idle. *Filling 0→1* = opener winding up. *Held full*
+>   (no flash) = FOCUS, next strike pre-charged. *Hidden during the strike
+>   window* — the slash trail does that beat. `drawChargeRing` gained a
+>   `held` flag to suppress the release flash for the held-full case.
+> - **Hit sound added.** Originally Ronin/Jester were going to "fold the
+>   crack into the strike sound" (one sound only). Playtest showed kill
+>   hits felt silent under the K.O. cinematic; added a `mat='iai'` case to
+>   the melee-hit dispatcher (steel whisper-crack + clean ring) so the
+>   iai cleave has a per-hit audio crack. AUDIO.md updated accordingly.
+> - **Numbers:** hp 920, dmg 118, cd 2.5, windupTime 0.5, strikeDist 175
+>   (trimmed from 200 after arena shrunk to 300 — 200 covered 67% of the
+>   smaller arena), slashReach 26, focusRefund 0.4 → **~55% overall**.
+> - *Matchup notes:* Duelist used to be a 1% hard counter because COUNTER
+>   auto-thrust on every melee hit, but COUNTER was simplified to a pure
+>   defensive passive (no return tax) — the Duelist matchup is now
+>   ~20-25%, still bad but not annihilating.
 >
 > *The original sketch below is preserved for reference — superseded by this.*
 
@@ -574,8 +634,19 @@ FOCUS chain, that click snaps straight into the next hum.
 >   matches what you see on direct contacts and rewards predictable targets cleanly.
 > - **Why no knockback (unchanged from the sketch):** that's Sapper's BLAST RADIUS.
 >   Cannoneer denies via explosion damage gradient; Sapper displaces.
-> - **Numbers:** hp 1030, dmg 400, cd 3.0, windupTime 1.0, splashRadius 55 → **~50%
->   overall, ~13.2s avg, ~6% fog.** Authoritative tune is a later `./balance.sh` pass.
+> - **Bespoke explosion visual (added later).** The old explosion shape was
+>   indistinguishable from Sapper's mine — both used radial spokes + outer
+>   ring. Replaced with concussion-wave grammar: a faint dashed edge ring at
+>   `splashRadius` (visualizes the EPICENTER falloff boundary — viewer can see
+>   the lethal zone), a bright shockwave ring expanding outward from center to
+>   edge, an inner secondary shock, a white-yellow core flash at the
+>   epicenter (ease-out fade), and four directional dark smoke puffs at 45°
+>   offsets (gunpowder venting, NOT radial spokes). Sapper's mine visual is
+>   unchanged. `spawnImpact` extended with an optional `radius` arg so the
+>   shell carries `splashRadius` through to the impact's edge-ring render.
+> - **Numbers:** hp 1030, dmg 400, cd 3.0, windupTime 1.0, splashRadius 55
+>   → **~55% overall**. Top-of-band; if it needs trimming, dmg or splashRadius
+>   are the levers.
 > - *Matchup notes:* Knight 95% (slow → easy direct hit), Sapper 96%, Warlock 87%
 >   (low DPS, planted Cannoneer can land hits). Hard-countered by Priest 1% (the
 >   predictive pillar deletes the planted Cannoneer during the long windup),

@@ -610,16 +610,19 @@ function drawDeath(f, prog) {
       ctx.beginPath(); ctx.arc(Math.cos(bladeFc)*blen, Math.sin(bladeFc)*blen, 2.5*a+0.3, 0, Math.PI*2); ctx.fill();
       break;
     }
-    case 'sweep': {  // Reaper — rotor decelerates and sinks, blood pool spreads beneath
+    case 'sweep': {  // Reaper — hooded body slumps and sinks, blood pool spreads beneath
       ctx.lineCap = 'round';
-      // 1) rotor decelerates (ease-out) and sinks — power leaving the blade (gone by 0.44)
+      // 1) body slumps (small forward lean) and sinks — power leaving the
+      // figure. Replaces the old "rotor decelerates" 1.75-turn spin that fit
+      // the dead three-bladed-glaive sprite; the hooded scythe-wielder reads
+      // wrong as a buzzsaw winding down. (Gone by prog 0.44.)
       if (prog < 0.44) {
         const sp  = prog / 0.44;
         const eOut = 1 - (1 - sp) * (1 - sp);     // quadratic ease-out: fast then slows
         ctx.save();
         ctx.globalAlpha = 1 - sp;
         ctx.translate(0, sp * sp * 18);            // sinks as it slows
-        ctx.rotate(eOut * Math.PI * 3.5);          // ~1¾ rotations, decelerating
+        ctx.rotate(eOut * 0.5);                    // small forward tilt (~28°), the slump
         drawShape(ctx, f);
         ctx.restore();
       }

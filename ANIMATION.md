@@ -98,12 +98,17 @@ we never float a separate weapon-effect around a static sprite.
 ### Force-shapes — the shape of the force at the point of contact
 One primitive per source (mirror of melee for projectiles/traps/minions, via the
 `game.impacts` list + `drawImpact`):
-circle (Berserker punch · cannonball) · flat bar (Knight bash) · line/lance
-(Duelist thrust + COUNTER) · arc/crescent (Reaper sweep — bleeds) · converging pair
-(Jester pinch) · long slash (Ronin iai) · arrow puncture · lightning zap · orb
-rune-pop · hex splat · coin ding · hook clink · bone shards · mine explosion.
-Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a heavy hit
-knocks the body back, a chip hit barely nudges (principle 5).
+circle (Berserker punch) · flat bar (Knight bash) · line/lance (Duelist thrust)
+· arc/crescent (Reaper bone-arc — used by the HARVEST scythe and BONE BURST)
+· converging pair (Jester pinch) · long slash (Ronin iai) · arrow puncture
+· concussion shockwave with falloff-edge ring (Cannoneer EPICENTER — visualizes
+the splashRadius boundary so the viewer can SEE the lethal zone, distinct grammar
+from Sapper's radial mine-spokes) · lightning zap · orb rune-pop · hex splat
+· coin ding · hook clink · bone shards · mine explosion (radial spokes + ring).
+The **SHATTER burst** (Archer's cushion releasing at 5 stacks) has its own
+expanding double-ring + arrow scatter, distinct from a per-arrow puncture.
+Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a heavy
+hit knocks the body back, a chip hit barely nudges (principle 5).
 
 ### Charge telegraph — windup fighters (cannoneer, priest, ronin, berserker)
 A **charge ring** that fills like a clock, tightens inward, brightens, and flashes
@@ -173,8 +178,10 @@ push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
   line), Warlock (void consumes itself → eye flares then snaps shut → near-black void
   stain; darkest residue in the roster)
 - **COLLAPSE** — Necromancer (skull rattles then falls → bone fragments + eye-wisps escape
-  → bone pile + purple glow), Reaper (rotor decelerates ease-out, sinks → blood arcs in
-  crescent shape → growing blood pool ellipse; only death with a spreading ground mark)
+  → bone pile + purple glow), Reaper (hooded body slumps ease-out, sinks → blood arcs in
+  crescent shape → growing blood pool ellipse; only death with a spreading ground mark.
+  Updated when the sprite went from a rotor-blade glaive to a hooded-figure scythe-
+  wielder — the slump replaces the old "rotor decelerates" beat.)
 - **CUT** — Ronin (slow ease-in swing → single clean gold slash, held then fading →
   blade at rest angle + gold tip)
 - **SCATTER** — Archer (bow springs then fades → bowstring snap flash + 6 arrows with
