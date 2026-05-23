@@ -20,9 +20,13 @@ const FIGHTERS = [
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
   },
-  { id:'berserker',name:'BERSERKER', hp:1050, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
-    // dmg is now PER PASS (RAMPAGE multi-hits) — placeholder, rebalance later (was 180 single-hit).
-    ability:'tackle', cd:1.7, dmg:100,
+  { id:'berserker',name:'BERSERKER', hp:920, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
+    // dmg is PER PASS (RAMPAGE multi-hits — see rampageHitGap below). Tuned for
+    // ~3-5 hits per rampage at the small-arena geometry; whole-rampage payoff
+    // is dmg × ~4, so this lever moves the matchup faster than it looks (~1 win
+    // point per 1 dmg). HP trimmed from the pre-tune 1050 so the bruiser
+    // FINISHES fights instead of riding the ring closer to a fog win.
+    ability:'tackle', cd:1.7, dmg:84,
     rageBoost: 0.33,
     rampageDur: 1.1, rampageSpeedMult: 4, rampageHitGap: 0.22,
     active: 'RAMPAGE — charges and ricochets off walls, hitting on each pass',

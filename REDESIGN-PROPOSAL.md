@@ -54,7 +54,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | Fighter | Verdict | New verb |
 |---|---|---|
 | **Priest** | redesign | `JUDGMENT` — predictive light pillar; landing it heals |
-| **Berserker** | redesign | `RAMPAGE` — becomes a wall-ricocheting charge |
+| **Berserker** | shipped | `RAMPAGE` — wall-ricocheting charge, hits per pass |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
 | **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
 | **Archer** | shipped | `VOLLEY` — fan of arrows per cast + SHATTER (cushion of embedded arrows bursts at 5 stacks for stacks×N damage) |
@@ -131,8 +131,30 @@ during the prototype:
 
 ---
 
-## BERSERKER → `RAMPAGE`
+## BERSERKER → `RAMPAGE` *(shipped — wall-ricochet charge)*
 *Material: raw flesh + blood, wet thuds, primal low-end (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Built as proposed. Tunables:
+> `hp 920, speed 145, dmg 84, cd 1.7, rageBoost 0.33, rampageDur 1.1,
+> rampageSpeedMult 4, rampageHitGap 0.22` → **~48.7% overall, ~14.9s avg,
+> ~10% fog.**
+> - **The big lesson — dmg × hits-per-rampage is a multiplier, not a sum.**
+>   Each rampage lands ~3-5 passes through the enemy at the small-arena
+>   geometry, so per-pass dmg moves the matchup at roughly **~1 win-rate
+>   point per 1 dmg** (much sharper than HP's ~1 pt per 40 hp rule of
+>   thumb). Two-point dmg deltas matter; aim accordingly.
+> - **Don't let the bruiser win by timeout.** First post-prototype defaults
+>   (`hp 1050, dmg 100`) put Berserker at ~74% with 4% fog — a clean
+>   smasher, just too strong. Cutting dmg to 75 dropped it to 49.7% but
+>   pushed fog to 25% — Berserker was now winning via attrition, not
+>   killing, which is character-wrong for the rampaging body. Trimming
+>   hp to 920 alongside `dmg 84` brought the kill rate back up (fog 10%,
+>   avg 14.9s) at a sensible 48.7% overall.
+> - **Matchup texture.** Smashes squishy/slow enemies (Priest 100,
+>   Jester 94, Warlock 86, Ronin 80) and crashes into mitigation
+>   (Knight 13, Sapper 36, Witch 20, Duelist 2 — COUNTER on each pass
+>   stacks brutally). The big bruiser archetype: kicks down the doors
+>   that aren't reinforced, breaks against the ones that are.
 
 **Active — RAMPAGE.** The charge no longer stops at the target. Berserker becomes a
 high-speed body that **ricochets off the walls** for a short window, dealing damage
