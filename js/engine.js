@@ -1232,6 +1232,12 @@ function step(dt) {
           if (!f.iaiHit) f.focused = false;
           f.iaiHit = false;
         }
+      } else if (f.focused) {
+        // FOCUS hold: planted between chained cuts while the refunded cd rolls
+        // over to the next iai. The gold ring + still body reads as "in flow,"
+        // not "wandering away from the enemy." Direction will re-aim at the
+        // current enemy position when the chained iai fires.
+        f.vx = 0; f.vy = 0;
       }
     }
 
