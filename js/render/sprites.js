@@ -990,10 +990,24 @@ function drawFighter(f) {
   ctx.save();
   ctx.translate(f.x, f.y);
 
+  // Berserker RAMPAGE windup tremble — the coiled body shivers in place as it
+  // builds, intensifying with progress. Deterministic from performance.now (no
+  // rng in draw, see GOTCHAS principle 7). Translate is small (≤~2 px) so the
+  // sprite still reads as planted at dashStartX/Y, just visibly straining.
+  if (f.aimTimer > 0 && f.aimAbility === 'tackle') {
+    const prog = 1 - f.aimTimer / f.windupTime;
+    const t = performance.now() / 1000;
+    ctx.translate(Math.sin(t * 36) * prog * 1.6, Math.cos(t * 44) * prog * 1.6);
+  }
+
   // Anticipation hold — per-fighter dash/wind-up timings (heavier fighters dwell
   // longer relative to their dash). Applies the hold translate to the whole body.
+  // Tackle's windup is now MECHANICAL (sim plants the body during aimTimer), so
+  // the visual hold here just adds a brief "whip" at launch (0.06s) rather than
+  // the full 0.16s — otherwise the planted look stretches past where the body
+  // actually starts moving.
   let windup = { active: false, ease: 1 };
-  if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, f.rampageDur, 0.16);
+  if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, f.rampageDur, 0.06);
   else if (f.ability === 'sword')    windup = meleeWindupHold(f, enemy, 0.26, 0.12);
   else if (f.ability === 'riposte')  windup = meleeWindupHold(f, enemy, 0.3, 0.10);
   else if (f.ability === 'sweep')    windup = meleeWindupHold(f, enemy, 0.25, 0.10);
@@ -1032,6 +1046,25 @@ function drawFighter(f) {
       const ga = (i / 3) * Math.PI * 2 + prog * 6;   // orbit (deterministic)
       ctx.fillStyle = `rgba(255,255,220,${(0.4 + prog * 0.5).toFixed(3)})`;
       ctx.beginPath(); ctx.arc(Math.cos(ga) * gr, Math.sin(ga) * gr, 1.5 + prog, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (f.aimTimer > 0 && f.aimAbility === 'tackle') {
+    const prog = 1 - f.aimTimer / f.windupTime;
+    // Berserker voice: a thick crimson ring filling around the coiled body, plus
+    // a few short radial "coil-lines" that pulse inward as the windup tightens.
+    // Body tremble is applied in the windup-hold branch above (separately so it
+    // also affects the sprite, not just the ring).
+    drawChargeRing('168,50,50', prog);
+    const t = performance.now() / 1000;
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + prog * 0.6;
+      const r0 = FIGHTER_SIZE + 14 - prog * 4;
+      const r1 = FIGHTER_SIZE + 6;
+      ctx.strokeStyle = `rgba(168,50,50,${(0.3 + prog * 0.5).toFixed(3)})`;
+      ctx.lineWidth = 1.3 + prog;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+      ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.stroke();
     }
   } else if (f.ability === 'iai' && !f.dead && f.iaiStrike <= 0 && (f.focused || f.iaiWindup > 0)) {
     // Ronin voice: ONE gold ring, level conveys state. Filling 0→1 during the opener

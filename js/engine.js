@@ -874,11 +874,15 @@ function step(dt) {
       if (rageActive && !f.rageWasActive) sfx('bloodrage', null, f.x); // fires once on activation
       f.rageWasActive = rageActive;
       const targetSpeed = rageActive ? f.baseSpeed * (1 + f.rageBoost) : f.baseSpeed;
-      // Renormalize current velocity to new speed when not dashing
+      // Renormalize current velocity to target speed when not dashing. During the
+      // RAMPAGE windup, scale to 0.4x so the body still bounces (DVD identity
+      // preserved) but visibly strains — the coil reads as slowed motion + tremble
+      // + charge ring, not a planted halt.
       if (f.dashTimer <= 0) {
+        const windupScale = (f.aimTimer > 0 && f.aimAbility === 'tackle') ? 0.4 : 1;
         const sp = Math.hypot(f.vx, f.vy) || 1;
-        f.vx = f.vx / sp * targetSpeed;
-        f.vy = f.vy / sp * targetSpeed;
+        f.vx = f.vx / sp * targetSpeed * windupScale;
+        f.vy = f.vy / sp * targetSpeed * windupScale;
       }
       f.speed = targetSpeed;
     }

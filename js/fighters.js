@@ -24,12 +24,13 @@ const FIGHTERS = [
     // dmg is PER PASS (RAMPAGE multi-hits — see rampageHitGap below). Tuned for
     // ~3-5 hits per rampage at the small-arena geometry; whole-rampage payoff
     // is dmg × ~4, so this lever moves the matchup faster than it looks (~1 win
-    // point per 1 dmg). Re-tuned 84 -> 76 after arena shrink to 300 — tighter
-    // space means more ricochet hits per cast, so per-pass dmg comes down.
-    ability:'tackle', cd:1.7, dmg:76,
+    // point per 1 dmg). Iteration: 100 (pre-shrink) -> 84 (post-shrink) -> 76
+    // (further trim) -> 82 (compensate for 0.5s windup vulnerability).
+    ability:'tackle', cd:1.7, dmg:82,
+    windupTime: 0.5,
     rageBoost: 0.33,
     rampageDur: 1.1, rampageSpeedMult: 4, rampageHitGap: 0.22,
-    active: 'RAMPAGE — charges and ricochets off walls, hitting on each pass',
+    get active() { return `RAMPAGE — ${this.windupTime}s coil, then charges and ricochets off walls, hitting on each pass`; },
     get passive() { return `BLOODRAGE — +${Math.round(this.rageBoost * 100)}% speed under 50% hp`; },
   },
   { id:'wizard',  name:'WIZARD',    hp:850,  speed:95,  color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',

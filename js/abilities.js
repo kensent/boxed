@@ -19,7 +19,7 @@ function fireAbility(f, enemy) {
   // resolution point so the sound lands on the actual shot/strike; cast/drain
   // play inside their switch cases; wildcard plays when the die starts tumbling.
   if (f.ability !== 'lightning' && f.ability !== 'cannon' && f.ability !== 'iai'
-      && f.ability !== 'drain' && f.ability !== 'cast' && f.ability !== 'wildcard') {
+      && f.ability !== 'tackle' && f.ability !== 'drain' && f.ability !== 'cast' && f.ability !== 'wildcard') {
     sfx(f.ability, null, f.x);
   } else if (f.ability === 'iai') {
     sfx('iai', null, f.x); // rising tension hum during the windup
@@ -66,17 +66,19 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'tackle': {
-      // RAMPAGE — launch at ramming speed toward the enemy, then ricochet off the
-      // walls for the rampage window. The dashTimer holds the speed-management code
-      // off so the ramming speed persists and bounce() pinballs it; step() deals
-      // damage and caroms off the enemy on each contact (per-pass i-frame). Body
-      // holds at the launch point, then whips forward.
-      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
-      f.vx = Math.cos(ang) * f.speed * f.rampageSpeedMult;
-      f.vy = Math.sin(ang) * f.speed * f.rampageSpeedMult;
-      f.dashTimer = f.rampageDur;
-      f.rampageHitCd = 0;
-      f.dashStartX = f.x; f.dashStartY = f.y; // visual anchor for the wind-up hold
+      // RAMPAGE — windup, then launch at ramming speed and ricochet off the walls
+      // for the rampage window. Aim is picked at RELEASE (in resolveAim), not at
+      // cast: the windup is a coil-telegraph but the launch goes wherever the
+      // enemy actually is when Berserker uncoils. That fits the "wild bruiser"
+      // identity (the explosive moment of release is the aim event) and avoids
+      // a 0.5s lead-the-enemy gap. Body keeps moving during the windup, just
+      // slowed to 40% (see the speed-renormalize branch in step()'s Berserker
+      // block) — bouncing still happens; the strain reads as tremble + charge
+      // ring rather than a dead stop.
+      f.aimTimer = f.windupTime;
+      f.aimAbility = 'tackle';
+      f.dashStartX = f.x; f.dashStartY = f.y;              // launch anchor (visual)
+      sfx('chargeUp', null, f.x);                          // rising primal growl
       break;
     }
     case 'sword': {
@@ -340,6 +342,20 @@ function resolveAim(f) {
         }
       }
     }
+  } else if (f.aimAbility === 'tackle') {
+    // RAMPAGE — windup over: pick the aim NOW (release time) and launch at
+    // ramming speed. Berserker uncoils toward wherever the enemy actually is,
+    // so the windup is pure telegraph (no lead-the-enemy gap). The dashTimer
+    // holds step()'s speed-management code off so the velocity persists; bounce()
+    // pinballs it off walls; step()'s rampage branch handles per-pass damage +
+    // carom. Uses pickTarget so DOPPELGANGER decoys count for the aim choice.
+    const launchAim = pickTarget(f, target);
+    const ang = Math.atan2(launchAim.y - f.y, launchAim.x - f.x);
+    f.vx = Math.cos(ang) * f.speed * f.rampageSpeedMult;
+    f.vy = Math.sin(ang) * f.speed * f.rampageSpeedMult;
+    f.dashTimer = f.rampageDur;
+    f.rampageHitCd = 0;
+    sfx('tackle', null, f.x);     // primal launch
   } else if (f.aimAbility === 'cannon') {
     // BOMBARD — fire a heavy shell STRAIGHT at the picked target's CURRENT position
     // (no lead, no smart math: dumb heavy artillery, unlike Priest's predictive
@@ -442,7 +458,13 @@ function resolveAim(f) {
     }
     f.gamblerRefund = false;
   }
+  // RAMPAGE owns its own launch velocity (f.speed * rampageSpeedMult) — the
+  // generic post-resolve normalization below would crush it back to base speed
+  // and there'd be no ricochet. Skip it for tackle; the rampage's dashTimer
+  // also gates step()'s own re-normalization until the dash ends.
+  const wasTackle = f.aimAbility === 'tackle';
   f.aimAbility = null;
+  if (wasTackle) return;
   // restore speed
   const sp = Math.hypot(f.vx, f.vy) || 1;
   f.vx = f.vx / sp * f.speed;
