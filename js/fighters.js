@@ -15,7 +15,7 @@ const FIGHTERS = [
   { id:'priest',  name:'PRIEST',    hp:800,  speed:110, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
     // Internal ability id stays 'lightning' — it keys Priest's DISSOLVE death,
     // charge telegraph, fire-recoil, and audio. The ability itself is now JUDGMENT.
-    ability:'lightning', cd:1.6, dmg:105,
+    ability:'lightning', cd:1.6, dmg:112,
     windupTime: 0.45, healOnHit: 18, pillarRadius: 34,
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
@@ -24,15 +24,15 @@ const FIGHTERS = [
     // dmg is PER PASS (RAMPAGE multi-hits — see rampageHitGap below). Tuned for
     // ~3-5 hits per rampage at the small-arena geometry; whole-rampage payoff
     // is dmg × ~4, so this lever moves the matchup faster than it looks (~1 win
-    // point per 1 dmg). HP trimmed from the pre-tune 1050 so the bruiser
-    // FINISHES fights instead of riding the ring closer to a fog win.
-    ability:'tackle', cd:1.7, dmg:84,
+    // point per 1 dmg). Re-tuned 84 -> 76 after arena shrink to 300 — tighter
+    // space means more ricochet hits per cast, so per-pass dmg comes down.
+    ability:'tackle', cd:1.7, dmg:76,
     rageBoost: 0.33,
     rampageDur: 1.1, rampageSpeedMult: 4, rampageHitGap: 0.22,
     active: 'RAMPAGE — charges and ricochets off walls, hitting on each pass',
     get passive() { return `BLOODRAGE — +${Math.round(this.rageBoost * 100)}% speed under 50% hp`; },
   },
-  { id:'wizard',  name:'WIZARD',    hp:700,  speed:95,  color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
+  { id:'wizard',  name:'WIZARD',    hp:850,  speed:95,  color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
     ability:'cast', cd:2.0, dmg:100,
     orbsPerCast: 2, orbCap: 4, shieldReduction: 0.20,
     get active() { return `CAST ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
@@ -44,7 +44,7 @@ const FIGHTERS = [
     active: 'SHIELD BASH — dash in and slam on reach',
     get passive() { return `PLATE ARMOR — −${this.armorFlat} dmg per hit (min 10)`; },
   },
-  { id:'sapper', name:'SAPPER',    hp:720,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
+  { id:'sapper', name:'SAPPER',    hp:780,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
     // Internal ability id stays 'mine' — keys Sapper's BURST death + casing material.
     ability:'mine', cd:1.4, dmg:200,
     throwSpeed: 300, fuseTime: 1.5,
@@ -62,7 +62,7 @@ const FIGHTERS = [
     active: 'VOLLEY — a fan of arrows on every cast, fired while moving',
     get passive() { return `SHATTER — each landed arrow embeds in the enemy; the ${this.shatterAt}th bursts the whole cushion for ${this.shatterPerStack} damage per arrow`; },
   },
-  { id:'jester',  name:'JESTER',    hp:750,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
+  { id:'jester',  name:'JESTER',    hp:820,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
     ability:'blink', cd:2.5, dmg:130,
     // DOPPELGANGER replaces UNCANNY DODGE: every hit Jester takes spawns a
     // stationary phantom decoy at her current position. Decoys are valid
@@ -106,7 +106,12 @@ const FIGHTERS = [
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
     ability:'iai', cd:2.5, dmg:130,
     windupTime: 0.5,
-    strikeDist: 200, slashReach: 26, focusRefund: 0.4,
+    // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
+    // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%
+    // coverage) lands him back in the band. Slightly above the old ratio is OK
+    // because the smaller arena also means the windup-locked direction is more
+    // likely to predict where the enemy actually ends up.
+    strikeDist: 175, slashReach: 26, focusRefund: 0.4,
     get active() { return `IAI — ${this.windupTime}s windup, then a heavy line-cut through the enemy and beyond`; },
     passive: 'FOCUS — landing a cut skips the next windup AND refunds the cooldown — chained cuts strike instantly',
   },
@@ -127,7 +132,7 @@ const FIGHTERS = [
     active: 'SIPHON — channels, leeching the enemy\'s life',
     get passive() { return `ENERVATE — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
-  { id:'gambler', name:'GAMBLER',   hp:910,  speed:100, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
+  { id:'gambler', name:'GAMBLER',   hp:1000, speed:100, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
     ability:'wildcard', cd:1.5, dmg:50,
     active: 'WILDCARD — roll a die; higher pips, bigger coin attack',
     passive: 'LOADED DICE — a low roll halves the next cooldown',
