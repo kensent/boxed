@@ -78,11 +78,13 @@ const FIGHTERS = [
     get passive() { return `SHATTER — each landed arrow embeds in the enemy; the ${this.shatterAt}th bursts the whole cushion for ${this.shatterPerStack} damage per arrow`; },
   },
   { id:'jester',  name:'JESTER',    hp:820,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
-    // cd 2.5 -> 2.0 + dmg 130 -> 110 to lift Jester from the bottom of the
-    // band (44.7%). Identity is harassment, not assassination, so more
-    // frequent blinks + lower per-stab damage fits the kit shape. DPS goes
-    // from 52 -> 55; the bigger win is presence (every 2.0s instead of 2.5s).
-    ability:'blink', cd:2.0, dmg:110,
+    // cd 2.5 -> 2.0 -> 2.1 + dmg 130 -> 110 (across two passes). Identity
+    // is harassment, not assassination, so more frequent blinks + lower
+    // per-stab damage fits the kit shape. The 2.0 cd lifted Jester from
+    // 44.7% to 53.9% (top of band after Cannoneer trim); 2.1 pulls back
+    // slightly — Jester is very cd-sensitive (~1 wr per ~1.5% cd change;
+    // 2.0 → 2.2 over-corrected to 40%). 2.1 targets ~50%.
+    ability:'blink', cd:2.1, dmg:110,
     // DOPPELGANGER replaces UNCANNY DODGE: every hit Jester takes spawns a
     // stationary phantom decoy at her current position. Decoys are valid
     // targets for every enemy ability (uniform "aim nearest" targeting); a
@@ -93,14 +95,14 @@ const FIGHTERS = [
     get passive() { return `DOPPELGANGER — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
   },
   { id:'cannoneer',name:'CANNONEER',hp:1030, speed:85,  color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
-    // dmg 400 -> 360 + splashMinFrac 0.4 floor on EPICENTER falloff. The
-    // previous setup ran Cannoneer at 56% (top of band); the linear-to-zero
-    // falloff also meant "close miss" landed for 0 damage, which felt bad.
-    // New shape: center still hits hard (360), edge deals 40% (144) instead
-    // of nothing — near-misses are rewarded, but max damage is lower so
-    // overall win rate drops back into band.
-    // (340 + 0.3 floor over-corrected to 47%; 360 + 0.4 targets ~52%.)
-    ability:'cannon', cd:3.0, dmg:360,
+    // dmg 360 -> 340 (keeping splashMinFrac 0.4). The 400 dmg + 0 floor
+    // ran Cannoneer at 56.3%; switching to 360 + 0.4 floor (added edge
+    // rewards) landed him at 54.3%, still slightly top-heavy. This trim
+    // pulls center damage further down while keeping the near-miss floor.
+    // History: 400 + 0 = 56.3%, 360 + 0.4 = 54.3%, 340 + 0.4 targets ~50%.
+    // (Earlier 340 + 0.3 floor over-corrected to 47%; the higher floor
+    // is what keeps near-misses meaningful here.)
+    ability:'cannon', cd:3.0, dmg:340,
     windupTime: 1.0, splashRadius: 55, splashMinFrac: 0.4,
     get active() { return `BOMBARD — ${this.windupTime}s windup, then a heavy shell that splashes on landing`; },
     get passive() { return `EPICENTER — damage peaks at the blast center, falling off to ${Math.round(this.splashMinFrac * 100)}% at the splash edge`; },
@@ -134,13 +136,12 @@ const FIGHTERS = [
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
-    // dmg 130 -> 118 -> 112 — the 118 figure landed ~52% in a 15-fighter
-    // roster but climbed to 56.7% in the 16-fighter roster (Geomancer's
-    // wall-bouncer kit feeds Ronin a 77% favourable matchup, pulling his
-    // overall average up). Trimming to 112 to compensate.
-    // 130 ran at 64.6%, 110 over-corrected to 47.7%, 118 ran ~52% (15-roster)
-    // / 56.7% (16-roster), 112 targets ~53% in the 16-roster.
-    ability:'iai', cd:2.5, dmg:112,
+    // dmg 130 -> 118 -> 112 -> 106 -> 110 (across passes); cd unchanged 2.5.
+    // The trim-and-bump dance: 112 ran 53.7% (top of band), so trimmed
+    // to 106 (overshot to 48.1%); then bumped back to 110. cd is sharply
+    // sensitive at Ronin (~1 wr per 1% cd change — earlier 2.5→2.7
+    // experiments over-corrected by ~10 wr), so kept at 2.5.
+    ability:'iai', cd:2.5, dmg:110,
     windupTime: 0.5,
     // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
     // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%
