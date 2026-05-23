@@ -1408,15 +1408,29 @@ function step(dt) {
         p.fuse -= dt;
         if (p.fuse <= 0) {
           damage(stuckTo, p.dmg, 'projectile');
+          // BLAST RADIUS splash — enemy skeletons (Necromancer's army) within
+          // owner.blastRadius of the detonation eat full charge dmg. The
+          // in-flight charge passes through skeletons harmlessly (handled in
+          // the generic projectile-skeleton loop); only this detonation hits
+          // them. So Sapper has to LAND the stick to thin the army, rather
+          // than mowing skeletons down with throws.
+          game.skeletons = game.skeletons.filter(sk => {
+            if (sk.team === p.team) return true;             // friendly
+            if (dist(p, sk) < sk.size + owner.blastRadius) {
+              sk.hitCd = MELEE_SKEL_IFRAME;
+              if (damageSkeleton(sk, p.dmg)) return false;
+            }
+            return true;
+          });
           // The explosion's visual + sound ALWAYS fire — even on a lethal detonation
           // (a kill should still BOOM, with the impact landing before the kill-cam
           // pushes in). Only the knockback is gated on a live target.
           spawnImpact(p.x, p.y, 'mine', 0, 1);
           sfx('impact', { kind: 'mine', big: 1 }, p.x);
           if (!stuckTo.dead) {
-            // BLAST RADIUS — the explosion shoves the body AWAY FROM the stick point
-            // (so a charge on the back blasts them forward; on the chest blasts them
-            // back). Direction = opposite of the stick world angle.
+            // BLAST RADIUS knockback — the explosion shoves the body AWAY FROM
+            // the stick point (so a charge on the back blasts them forward; on
+            // the chest blasts them back). Direction = opposite of stick angle.
             stuckTo.vx = -Math.cos(worldAng) * 400;
             stuckTo.vy = -Math.sin(worldAng) * 400;
             stuckTo.blastTimer = 0.22;
@@ -1605,11 +1619,9 @@ function step(dt) {
     // Keep the render angle synced to actual travel direction (arrows store an angle
     // for sprite rotation; homing and reflection both change velocity over time).
     if (p.angle !== undefined) p.angle = Math.atan2(p.vy, p.vx);
-    // Orbs maintain constant 120 speed (homing only steers, doesn't accelerate)
+    // Orb spin (visual only); velocity renormalisation handled by the generic
+    // p.cruise block below (orbs spawn with cruise = f.orbSpeed).
     if (p.kind === 'orb') {
-      const sp = Math.hypot(p.vx, p.vy) || 0.001;
-      p.vx = p.vx / sp * 120;
-      p.vy = p.vy / sp * 120;
       p.spin = (p.spin || 0) + dt * 6;
     }
     // Hex: fast bouncing bolt, constant 280 speed, ticks spin for trail effect
@@ -1941,7 +1953,12 @@ function step(dt) {
   // need the full MELEE_SKEL_IFRAME to avoid draining every frame; fast
   // pass-through projectiles (coins, arrows, etc.) use a minimal 1-frame
   // guard so rapid volleys (e.g. Fortune's Barrage) can each land.
+  // Sapper 'charge' is excluded: a thrown STICK CHARGE in flight doesn't
+  // damage skeletons — only its delayed detonation does (handled inside
+  // the charge-stuck branch above). The charge is a fused bomb, not a
+  // flying impact, so passing through a skeleton mid-air is harmless.
   game.projectiles.forEach(p => {
+    if (p.kind === 'charge') return;
     game.skeletons = game.skeletons.filter(sk => {
       if (sk.team === p.team || sk.hitCd > 0) return true;
       if (dist(p, sk) < sk.size + p.size) {

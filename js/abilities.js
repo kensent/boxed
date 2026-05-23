@@ -150,11 +150,12 @@ function fireAbility(f, enemy) {
         const a = rng() * Math.PI * 2;
         game.projectiles.push({
           x: f.x, y: f.y,
-          vx: Math.cos(a) * 120, vy: Math.sin(a) * 120,
+          vx: Math.cos(a) * f.orbSpeed, vy: Math.sin(a) * f.orbSpeed,
           team: f.team, dmg: f.dmg, life: 9,
           kind: 'orb', size: 6, homing: 480,
           noEdgeDespawn: true,
           spin: 0,
+          cruise: f.orbSpeed,   // step()'s generic re-normaliser uses this
         });
       }
       if (toSpawn > 0) {

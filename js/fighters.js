@@ -33,9 +33,15 @@ const FIGHTERS = [
     get active() { return `RAMPAGE — ${this.windupTime}s coil, then charges and ricochets off walls, hitting on each pass`; },
     get passive() { return `BLOODRAGE — +${Math.round(this.rageBoost * 100)}% speed under 50% hp`; },
   },
-  { id:'wizard',  name:'WIZARD',    hp:850,  speed:95,  color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
+  { id:'wizard',  name:'WIZARD',    hp:800,  speed:100, color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
+    // HP 850 -> 800 to compensate for the orbSpeed offensive buff below;
+    // orb travel speed is the chosen lever (rather than dmg/cd/shieldReduction)
+    // because the kit's flavour is homing pressure, and faster orbs = harder
+    // to dodge between wall bounces. Tune orbSpeed up if Wizard is below band,
+    // down if above. Was hardcoded 120 in step() and the spawn; now a named
+    // prop that flows from spawn (`cruise`) through the existing renormaliser.
     ability:'cast', cd:2.0, dmg:100,
-    orbsPerCast: 2, orbCap: 4, shieldReduction: 0.20,
+    orbsPerCast: 2, orbCap: 4, shieldReduction: 0.20, orbSpeed: 180,
     get active() { return `CAST ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
@@ -62,9 +68,9 @@ const FIGHTERS = [
   { id:'sapper', name:'SAPPER',    hp:780,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
     // Internal ability id stays 'mine' — keys Sapper's BURST death + casing material.
     ability:'mine', cd:1.4, dmg:200,
-    throwSpeed: 300, fuseTime: 1.5,
+    throwSpeed: 300, fuseTime: 1.5, blastRadius: 30,
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
-    passive: 'BLAST RADIUS — the detonation knocks the enemy back',
+    passive: 'BLAST RADIUS — the detonation knocks the enemy back and damages nearby skeletons',
   },
   { id:'archer',  name:'ARCHER',    hp:730,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
     // VOLLEY fan per cast + SHATTER: arrows embed visibly; the shatterAt-th arrow
@@ -164,8 +170,12 @@ const FIGHTERS = [
     passive: 'CRIPPLING HOOK — a hooked enemy is briefly stunned',
   },
   { id:'warlock', name:'WARLOCK',   hp:570,  speed:100, color:'#2a0e2e', accent:'#c050ff', shape:'cowl',
-    ability:'drain', cd:2.2, dmg:40,
-    slowRate: 0.6, drainHealRate: 0.35,
+    // drainHealRate 0.35 -> 0.50 (constant 50% lifesteal per tick); cd
+    // 2.2 -> 2.6 to compensate the heal buff; slowRate unchanged at 0.6.
+    // Each drain tick heals dmg * 0.5 (constant). Identity shift: fewer
+    // casts but more lifesteal per cast — chunkier drain channels.
+    ability:'drain', cd:2.6, dmg:40,
+    slowRate: 0.6, drainHealRate: 0.50,
     active: 'SIPHON — channels, leeching the enemy\'s life',
     get passive() { return `ENERVATE — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
