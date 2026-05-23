@@ -93,7 +93,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Priest** | shipped | `JUDGMENT` — predictive light pillar; landing it heals (re-tuned dmg/cd/heal after the arena shrink) |
 | **Berserker** | shipped | `RAMPAGE` — wall-ricocheting charge, hits per pass |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
-| **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
+| **Reaper** | shipped | `HARVEST` — returning scythe (semi-ranged boomerang) + WAKE: the arc leaves a damaging trail |
 | **Archer** | shipped | `VOLLEY` — fan of arrows per cast + SHATTER (cushion of embedded arrows bursts at 5 stacks for stacks×N damage) |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
 | **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
@@ -287,7 +287,7 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 
 ---
 
-## REAPER → `CRESCENT THROW` *(shipped — semi-ranged, not the orbiting field)*
+## REAPER → `HARVEST` *(shipped — semi-ranged returning scythe; originally pitched as CRESCENT THROW)*
 *Material: hollow bone scythe, dry crack + crescent hiss (unchanged).*
 
 > **IMPLEMENTED & VALIDATED (2026-05-23).** Reaper went **semi-ranged** with a
@@ -299,7 +299,9 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 >   space** (reliable damage wants a projectile or a dash), so distinct *melee* verbs
 >   are scarce. A thrown projectile reaches reliably → fast fights. Reaper isn't a
 >   tank, so going semi-ranged is fine (unlike Knight).
-> - **Active — CRESCENT THROW:** one crescent in flight at a time — it homes *mildly*
+> - **Active — HARVEST** *(originally pitched as CRESCENT THROW; renamed so the
+>   name evokes Reaper's identity — death harvesting souls — rather than the
+>   blade's lunar profile)*: one scythe in flight at a time — it homes *mildly*
 >   at the enemy (a thrown blade, so a juke/wall-bounce can make it miss — that's the
 >   counterplay), **turns back on hit, wall, or max travel**, beelines home to Reaper,
 >   and is "caught"; a short recovery cd, then re-throw. Hits on both legs (a 0.2s

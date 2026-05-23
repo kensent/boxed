@@ -404,7 +404,7 @@ const Audio = (() => {
     },
     // Reaper WAKE step-in tick — soft bone hiss as the crescent's trail bites
     // the enemy. Gated by per-target `wakeHitCd` (~0.2s) so it never machine-
-    // guns; soft enough not to dominate over the crescent throw + impact.
+    // guns; soft enough not to dominate over the HARVEST throw + impact.
     // Same exception as `burn` — a continuous-damage tick treated as sizzle.
     wakeTick() {
       noise(0.06, 0.08, 'bandpass', 1400, { filterGlideTo: 700 });

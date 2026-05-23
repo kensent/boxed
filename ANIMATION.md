@@ -88,7 +88,7 @@ we never float a separate weapon-effect around a static sprite.
     replaced the old drop-a-mine (it's now a thrown fused limpet).
   - *Boomerang* (1) — **reaper**: the crescent is a returning projectile,
     thrust on launch + the existing throw-gesture for the catch when it loops
-    back. Reaper moved out of melee when CRESCENT THROW replaced sweep.
+    back. Reaper moved out of melee when HARVEST replaced sweep.
 - **Channel (1)** — warlock: a **lock-on reach** when the drain latches + a
   sustained **channel pulse** synced to the drain ticks. Generic grammar,
   reusable by any future channeler. (Set-down — Sapper's old mine-drop grammar —

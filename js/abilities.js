@@ -19,11 +19,15 @@ function fireAbility(f, enemy) {
   // resolution point so the sound lands on the actual shot/strike; cast/drain
   // play inside their switch cases; wildcard plays when the die starts tumbling.
   if (f.ability !== 'lightning' && f.ability !== 'cannon' && f.ability !== 'iai'
-      && f.ability !== 'tackle' && f.ability !== 'drain' && f.ability !== 'cast' && f.ability !== 'wildcard') {
+      && f.ability !== 'tackle' && f.ability !== 'drain' && f.ability !== 'cast'
+      && f.ability !== 'sweep' && f.ability !== 'wildcard') {
     sfx(f.ability, null, f.x);
   } else if (f.ability === 'iai') {
     sfx('iai', null, f.x); // rising tension hum during the windup
   }
+  // Reaper sweep: sfx fires INSIDE the case only when a crescent actually
+  // throws — the whiff branch (a crescent already in flight) retries every
+  // 0.1s and would loop the cast sound. Same pattern as drain/cast.
   // Wizard's cast sound is played inside the 'cast' case instead, so it only
   // sounds when orbs actually spawn (not when the 3-orb cap blocks the cast).
   switch (f.ability) {
@@ -196,7 +200,7 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'sweep': {
-      // Reaper CRESCENT THROW — hurl a returning crescent (boomerang). One in flight
+      // Reaper HARVEST — hurl a returning scythe (boomerang). One in flight
       // at a time: while one is out, flag a quick retry instead of throwing a second.
       // Outbound homes mildly to the enemy (a thrown blade); it turns at max travel
       // and homes back to Reaper, getting "caught". Hits once per leg, execute-scaled
@@ -213,6 +217,7 @@ function fireAbility(f, enemy) {
       });
       f.crescentOut = true;
       f.sweepWhiff = false;
+      sfx('sweep', null, f.x);   // only on a real throw (whiff retries are silent)
       f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw gesture (thrust)
       break;
     }

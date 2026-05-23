@@ -1407,7 +1407,7 @@ function step(dt) {
       return true;
     }
     if (p.kind === 'crescent') {
-      // Reaper CRESCENT THROW — returning boomerang. Outbound homes MILDLY at the
+      // Reaper HARVEST — returning scythe boomerang. Outbound homes MILDLY at the
       // enemy (a thrown blade); at max travel it turns and homes STRONGLY back to
       // Reaper, despawning when caught (clears the in-flight flag + sets recovery cd).
       // Turns back on HITTING the enemy, hitting a WALL, or at max travel if it

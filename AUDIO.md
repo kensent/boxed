@@ -130,7 +130,7 @@ hit's magnitude (`big`, 0..1):
 
 - **Melee** — flesh thud (Berserker) · flat steel bash (Knight) · thin puncture
   (Duelist) · steel whisper-crack (Ronin) · ceramic puncture (Jester). Reaper is
-  no longer melee (CRESCENT THROW is a returning projectile — its crack lives
+  no longer melee (HARVEST is a returning projectile — its crack lives
   in the projectile mirror below as "bone arc").
 - **Projectile / trap / minion** — arrow puncture · cannon concussion · hex wet
   splat · coin ding · orb rune-pop · lightning zap · hook clink · bone clack

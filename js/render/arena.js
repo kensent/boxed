@@ -998,17 +998,46 @@ function draw() {
     shaken = true;
   }
 
-  // Reaper WAKE hazard segments — dim crimson scar along the boomerang's arc. Many
-  // overlapping segments form a visible damaging trail. Soft fill + outline (small
-  // radius keeps the alpha-fill cheap on mobile). Only hazard kind currently in use
-  // (Cannoneer's fire pool was retired when EPICENTER became the passive).
+  // Reaper WAKE hazard segments — dim crimson slash-scars along the scythe's
+  // arc. Each segment renders as a short blade-cut pattern (a primary diagonal
+  // gash + 2 shorter parallel nicks), with the angle derived deterministically
+  // from the segment's world position so the trail has organic variation
+  // without ever calling rng() in draw(). Overlapping segments form a visible
+  // damaging trail that reads as "the blade dragged through here."
   (game.hazards || []).forEach(h => {
     const fade = h.timer / h.maxTimer;               // 1 → 0
-    ctx.fillStyle = `rgba(170,0,0,${(fade * 0.32).toFixed(3)})`;
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `rgba(200,20,20,${(fade * 0.7).toFixed(3)})`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.stroke();
+    // Deterministic per-segment angle from (x, y) — no rng().
+    const ang = (h.x * 0.137 + h.y * 0.211) % (Math.PI * 2);
+    const cs = Math.cos(ang), sn = Math.sin(ang);
+    const r = h.radius;
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    // Soft crimson under-pool — faint, suggests blood seeping into the ground.
+    // Smaller than the old solid circle so the SHAPE on top reads, not a blob.
+    ctx.fillStyle = `rgba(120,0,0,${(fade * 0.22).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2); ctx.fill();
+    // Primary gash — the main blade-cut. Thicker, brighter.
+    ctx.strokeStyle = `rgba(200,20,20,${(fade * 0.85).toFixed(3)})`;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-cs * r, -sn * r);
+    ctx.lineTo( cs * r,  sn * r);
+    ctx.stroke();
+    // Two shorter parallel nicks — offset perpendicular to the gash, on each
+    // side. Read as "ragged scarring" not a clean swipe.
+    const px = -sn, py = cs;                          // perpendicular unit vector
+    ctx.strokeStyle = `rgba(170,10,10,${(fade * 0.65).toFixed(3)})`;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(-cs * r * 0.55 + px * r * 0.42, -sn * r * 0.55 + py * r * 0.42);
+    ctx.lineTo( cs * r * 0.35 + px * r * 0.42,  sn * r * 0.35 + py * r * 0.42);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-cs * r * 0.35 - px * r * 0.42, -sn * r * 0.35 - py * r * 0.42);
+    ctx.lineTo( cs * r * 0.55 - px * r * 0.42,  sn * r * 0.55 - py * r * 0.42);
+    ctx.stroke();
+    ctx.restore();
   });
 
   // Priest JUDGMENT — windup target reticle at the locked predicted spot (world
@@ -1337,17 +1366,38 @@ function draw() {
       }
       ctx.restore();
     } else if (p.kind === 'crescent') {
-      // Reaper thrown scythe — a spinning crescent (template visual, not the final art).
+      // Reaper HARVEST — a spinning scythe. Curved blade with a sharp tapered
+      // tip at one end, a heavier heel at the other, and a perpendicular handle
+      // stub bisecting the arc (so it reads as a real tool, not just a circle).
+      // Bone-cream outer edge (the cutting edge) + crimson inner accent
+      // (already-bloodied blade). Spin makes it cycle through the rotation.
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.spin || 0);
       ctx.lineCap = 'round';
+      // Crimson back-edge (the duller side of the blade, behind the cutting arc)
       ctx.strokeStyle = '#aa0000';
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(0, 0, p.size, Math.PI * 0.3, Math.PI * 1.7); ctx.stroke();
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(0, 0, p.size, Math.PI * 0.25, Math.PI * 1.55); ctx.stroke();
+      // Bone-cream cutting edge — bright outer stroke, the visible "blade"
+      ctx.strokeStyle = '#e8e0c8';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.arc(0, 0, p.size + 1.2, Math.PI * 0.25, Math.PI * 1.55); ctx.stroke();
+      // Sharp tapered TIP at one end of the arc — extends past the curve as a small
+      // point so the rotation reads (you can see "which end is the point").
+      const tipA = Math.PI * 0.25;
+      const tipX = Math.cos(tipA) * (p.size + 1.2);
+      const tipY = Math.sin(tipA) * (p.size + 1.2);
+      const tipOX = Math.cos(tipA - 0.35) * (p.size + 4.5);
+      const tipOY = Math.sin(tipA - 0.35) * (p.size + 4.5);
+      ctx.strokeStyle = '#f4ecd4';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(tipOX, tipOY); ctx.stroke();
+      // Handle stub — perpendicular short line through the centre, identifying
+      // the blade as a tool with a grip (you'd swing this).
       ctx.strokeStyle = '#1a0e0e';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(0, 0, p.size - 2, Math.PI * 0.3, Math.PI * 1.7); ctx.stroke();
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(-p.size * 0.45, 0); ctx.lineTo(p.size * 0.65, 0); ctx.stroke();
       ctx.restore();
     } else if (p.kind === 'charge') {
       // Sapper thrown charge — dark casing with a blinking red fuse-tip. p.angle is

@@ -101,7 +101,7 @@ const FIGHTERS = [
     // and damage the enemy if they bounce through it; per-target wakeHitCd (in engine.js)
     // caps the tick rate so dense overlap can't double-dip.
     wakeRate: 0.04, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
-    active: 'CRESCENT THROW — hurls a returning scythe; strikes coming and going',
+    active: 'HARVEST — hurls a returning scythe; strikes coming and going',
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
