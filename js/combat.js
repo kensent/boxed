@@ -57,11 +57,14 @@ function damage(target, dmg, srcKind, src) {
       team: target.team,
     });
   }
-  // (Cannoneer's old Powder Store invuln-on-windup was removed — its passive
-  // is now SIEGE ROUNDS, an offensive armor-piercing trait handled below.)
-  // Duelist: parry window fully absorbs PROJECTILES (reflection handled in the
-  // projectile loop). Melee hits fall through to COUNTER instead.
-  if (target.ability === 'riposte' && target.parryTimer > 0 && srcKind === 'projectile') {
+  // Duelist COUNTER — the RIPOSTE thrust's active window IS the parry. During
+  // it: melee hits are absorbed (no damage, no return tax) and projectiles are
+  // reflected back at their shooter (existing in-flight reflect in the
+  // projectile loop). There is NO separate counter-thrust proc — the thrust
+  // itself is Duelist's response, and its damage comes from the offensive
+  // contact during the dash, not a reactive thrust on incoming hits.
+  if (target.ability === 'riposte' && target.parryTimer > 0
+      && (srcKind === 'projectile' || (!srcKind && src && !src.dead))) {
     target.negateFlash = 0.25;
     sfx('parry', null, target.x);
     return;
@@ -173,15 +176,8 @@ function damage(target, dmg, srcKind, src) {
     target.dead = true;
     endGame();  // death sound fires when the kill-cam arrives + body shatters (draw)
   }
-  // Duelist: COUNTER — melee hits trigger an automatic counter-thrust back at the attacker.
-  // srcKind='counter' on the reply prevents infinite loops (Duelist vs Duelist).
-  if (!target.dead && target.ability === 'riposte' && !srcKind && src && !src.dead) {
-    target.counterAnim = 0.16;
-    target.counterDir = Math.atan2(src.y - target.y, src.x - target.x);
-    sfx('counter', null, target.x);
-    damage(src, 80, 'counter');
-    // Same puncture lance as the riposte (smaller), landing on the attacker.
-    if (!src.dead) spawnImpact(src.x, src.y, 'puncture', target.counterDir, 0.4);
-  }
+  // (Duelist's COUNTER auto-thrust is now gated on the parry window — see the
+  // melee-parry block at the top of this function. Outside the parry window,
+  // melee hits land clean with no counter response.)
   return dmg;
 }

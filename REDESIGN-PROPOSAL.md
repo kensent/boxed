@@ -760,12 +760,14 @@ casing-crack + pressure boom (its existing `mine` impact) on detonation.
 >   the armed-ring render, the invuln-window render, the dodge-recharge tick,
 >   and the dodge-intercept in damage() are gone. armedRing() helper deleted
 >   (was Jester-only).
-> - **Known follow-up — Duelist COUNTER.** The Jester-Duelist matchup is the
->   one place DOPPELGANGER doesn't fully resolve. COUNTER's "free thrust on
->   every melee hit taken" still cascades on Jester's blink-stab. Per the
->   earlier-session design discussion, COUNTER should become parry-conditional
->   (only fires when RIPOSTE's parry window catches something). That's a
->   separate commit.
+> - **Follow-up — Duelist COUNTER redesigned (done).** Duelist's COUNTER moved
+>   from "free thrust on every melee hit taken" to "the thrust window parries
+>   melee hits and reflects projectiles" — purely defensive, no auto-counter
+>   damage. Jester-Duelist matchup barely moved (0 -> 1%) because Duelist's
+>   own RIPOSTE offense + 950 HP still outpace Jester's 130-dmg blink-stab
+>   cycle; the cascade wasn't the only thing winning that fight. The bigger
+>   benefit was structural — Duelist's "every melee hit pays a tax" inflation
+>   is gone.
 
 ---
 
@@ -780,10 +782,14 @@ These eight each own a unique verb. Brief rationale so the judgment is on record
   *(moved out of the keep list — UNCANNY DODGE was eating too much value from the
   redesigned roster's big single-hit moves; replaced with DOPPELGANGER, see the
   dedicated section above.)*
-- **Duelist** — reflect projectiles + auto-counter on melee. The reactive punisher;
-  mechanically the richest melee. *(COUNTER currently still fires on every melee
-  hit taken; queued for parry-conditional redesign — see Jester section's
-  follow-up note.)*
+- **Duelist** — `RIPOSTE THRUST` (active) + `COUNTER` (passive). *(Redesigned
+  2026-05-23: COUNTER moved from "free auto-thrust on every melee hit taken" to a
+  purely defensive passive describing what the thrust window does — melee hits
+  during the window are parried (absorbed, no damage), projectiles reflected.
+  No separate counter-thrust proc; the thrust itself is the response. Cleaner
+  narrative — RIPOSTE = offense, COUNTER = defense, one move does both. Removed
+  the "every melee touch pays a 80-dmg tax" cascade that was inflating Duelist
+  to 58.7%; new equilibrium ~55%.)*
 - **Necromancer** — the only summoner; board presence + explode-on-death adds a
   second layer.
 - **Witch** — wall-bouncing bolt (unpredictable angles) + a setup→payoff damage mark.
