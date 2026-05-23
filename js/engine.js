@@ -11,10 +11,16 @@ let game = null;
 // token and stops the moment a newer fight has begun, killing stale RAF chains.
 let fightToken = 0;
 
-// The simulation always runs in a fixed 360x360 reference space, so a fight
-// is device-independent (and the headless hunt reproduces exactly). The
-// renderer scales this reference space to whatever the actual canvas size is.
-const ARENA = 360;
+// The simulation runs in a fixed ARENA×ARENA reference space, so a fight is
+// device-independent (and the headless hunt reproduces exactly). The renderer
+// scales this reference space to whatever the actual canvas size is.
+// Shrunk from 360 to 300 (2026-05-23) to raise the connection rate for melee
+// abilities under autonomous DVD movement — fighters meet ~45% more often per
+// unit time, which lets dash/strike abilities reliably express their identity
+// without giving them homing pursuit (which would break the bounce). Also feeds
+// Berserker's ricochet count and Witch's hex bounce-relevance as side effects.
+// Re-introduces the Knight design space (a melee tank can now actually connect).
+const ARENA = 300;
 
 // --- Follow-camera ---------------------------------------------------------
 // A dynamic camera frames both fighters for Shorts. Zoom: holds CAM_COMFORT
@@ -429,9 +435,9 @@ document.getElementById('back-btn').addEventListener('click', returnToSelect);
 
 // buildGame(redT, blueT) — construct a fresh fight state. Used by both the
 // live startFight and the headless upset-hunt so they build identical games.
-// Arena is the fixed 360x360 square (the live canvas is always this arena).
+// Arena is the fixed ARENA×ARENA square (the live canvas is always this arena).
 function buildGame(redT, blueT) {
-  const w = 360, h = 360;
+  const w = ARENA, h = ARENA;
   fightToken++;
   return {
     w, h,
