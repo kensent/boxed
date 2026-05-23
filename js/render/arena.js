@@ -1309,16 +1309,13 @@ function draw() {
       ctx.beginPath(); ctx.arc(0, 0, p.size - 2, Math.PI * 0.3, Math.PI * 1.7); ctx.stroke();
       ctx.restore();
     } else if (p.kind === 'charge') {
-      // Sapper thrown charge — dark casing with a blinking red fuse-tip. When stuck,
-      // draw above the enemy's body (so the limpet reads as attached, not overlapping).
+      // Sapper thrown charge — dark casing with a blinking red fuse-tip. p.angle is
+      // the stick world-angle while stuck (point on the body edge → outward) or the
+      // velocity angle in flight; we rotate so the fuse-tip always points along it.
       // Template visual; bespoke art deferred to the polish pass.
       ctx.save();
-      if (p.stuck) {
-        ctx.translate(p.x, p.y - FIGHTER_SIZE * 0.7);
-      } else {
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle || 0);
-      }
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.angle || 0) + Math.PI / 2);   // local -y becomes p.angle direction
       ctx.fillStyle = '#3a2614';
       ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.20)';

@@ -1195,7 +1195,15 @@ function step(dt) {
       if (p.stuck) {
         const stuckTo = p.stuckTo;
         if (!stuckTo || stuckTo.dead) return false;
-        p.x = stuckTo.x; p.y = stuckTo.y;       // follow the body
+        // Charge rides the body in the enemy's LOCAL frame — when the enemy turns to
+        // face the thrower from a new side, the limpet rotates around with them
+        // (stuck-spot stays the same relative to the body). Facing is recomputed from
+        // world positions every frame so it's deterministic in headless replay.
+        const enemyFacing = Math.atan2(owner.y - stuckTo.y, owner.x - stuckTo.x);
+        const worldAng = enemyFacing + p.stickLocalAng;
+        p.x = stuckTo.x + Math.cos(worldAng) * FIGHTER_SIZE;
+        p.y = stuckTo.y + Math.sin(worldAng) * FIGHTER_SIZE;
+        p.angle = worldAng;
         p.fuse -= dt;
         if (p.fuse <= 0) {
           damage(stuckTo, p.dmg, 'projectile');
@@ -1205,10 +1213,11 @@ function step(dt) {
           spawnImpact(p.x, p.y, 'mine', 0, 1);
           sfx('impact', { kind: 'mine', big: 1 }, p.x);
           if (!stuckTo.dead) {
-            // BLAST RADIUS — knock the enemy along the throw line (away from thrower)
-            const ka = Math.atan2(stuckTo.y - owner.y, stuckTo.x - owner.x);
-            stuckTo.vx = Math.cos(ka) * 400;
-            stuckTo.vy = Math.sin(ka) * 400;
+            // BLAST RADIUS — the explosion shoves the body AWAY FROM the stick point
+            // (so a charge on the back blasts them forward; on the chest blasts them
+            // back). Direction = opposite of the stick world angle.
+            stuckTo.vx = -Math.cos(worldAng) * 400;
+            stuckTo.vy = -Math.sin(worldAng) * 400;
             stuckTo.blastTimer = 0.22;
           }
           return false;
@@ -1232,6 +1241,11 @@ function step(dt) {
           return true;
         }
         // Stick! The charge clamps to the target's body and the fuse starts.
+        // Lock the stick orientation in the ENEMY'S LOCAL FRAME so it rotates with
+        // the body as their facing changes (enemy always faces the owner).
+        const impactWorldAng = Math.atan2(p.y - tgt.y, p.x - tgt.x);
+        const enemyFacing = Math.atan2(owner.y - tgt.y, owner.x - tgt.x);
+        p.stickLocalAng = impactWorldAng - enemyFacing;
         p.stuck = true;
         p.stuckTo = tgt;
         p.vx = 0; p.vy = 0;
