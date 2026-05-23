@@ -529,61 +529,61 @@ function drawShape(c, f, hinge = 0) {
       break;
     }
     case 'sickles': {
-      // Reaper — a three-bladed glaive rotor around a hub. Reads as a spinning
-      // bladed weapon, matching the WHIRLING BLADES identity. Deliberately not
-      // a skull-and-blade (that silhouette belongs to Necromancer's scythe).
-      // Three identical blades, 120 deg apart, all curling the same way.
-      // s sets the rotor's drawn size. Kept close to the other sprites' extent
-      // so the Reaper doesn't read as larger than its actual size-16 hitbox
-      // (1.6 made the rotor ~40% bigger on screen than its neighbours).
-      const s = FIGHTER_SIZE * 1.2;
-      const drawBlade = () => {
-        // One rotor blade, hub -> out -> hooked tip -> back to hub. Built as a
-        // filled shape: thick near the hub, tapering, with a hooked point.
-        c.beginPath();
-        c.moveTo(s * 0.12, -s * 0.12);                              // hub, leading edge
-        // spine: sweep up and curl to the side into a hooked tip
-        c.quadraticCurveTo(s * 0.35, -s * 0.85, -s * 0.18, -s * 0.95);
-        // cutting edge: hooked tip back down to the hub
-        c.quadraticCurveTo(s * 0.05, -s * 0.55, -s * 0.12, -s * 0.1);
-        c.closePath();
-        c.fill();
-      };
-      // Three blades. Steel body with a brighter cutting edge.
-      for (let i = 0; i < 3; i++) {
-        c.save();
-        c.rotate((i * Math.PI * 2) / 3);
-        c.fillStyle = '#c4c4cc';
-        drawBlade();
-        c.restore();
-      }
-      // Bright edge highlight on each blade (drawn after, slightly inset).
-      for (let i = 0; i < 3; i++) {
-        c.save();
-        c.rotate((i * Math.PI * 2) / 3);
-        c.strokeStyle = '#ffffff';
-        c.lineWidth = 1.2;
-        c.lineCap = 'round';
-        c.beginPath();
-        c.moveTo(s * 0.1, -s * 0.18);
-        c.quadraticCurveTo(s * 0.3, -s * 0.78, -s * 0.16, -s * 0.9);
-        c.stroke();
-        c.restore();
-      }
-      // Centre hub — dark disc with the accent rim.
-      c.fillStyle = '#1a0808';
+      // Reaper — a hooded figure clutching a scythe diagonally across the body.
+      // The cloak silhouette + visible scythe reads as "death-dealer with a
+      // weapon to throw" rather than the old whirling-blades rotor (which fit
+      // the dead SWEEP melee-spin mechanic but mismatches HARVEST's thrown
+      // scythe identity). Identity tokens: dark cloak, hollow hood-void, long
+      // dark-wood shaft, bone cutting edge, crimson back-edge accent.
+      const s = FIGHTER_SIZE * 1.1;
+      // Cloak body — rounded teardrop tapering to the hood at the top. Forward
+      // (+x) is enemy-ward, so the silhouette is symmetric front-to-back; the
+      // scythe overlay below carries the orientation.
+      c.fillStyle = f.color;
       c.beginPath();
-      c.arc(0, 0, s * 0.26, 0, Math.PI * 2);
+      c.moveTo(-s * 0.55, s * 0.85);
+      c.quadraticCurveTo(-s * 0.85, 0, -s * 0.32, -s * 0.65);
+      c.quadraticCurveTo(0, -s * 1.0, s * 0.32, -s * 0.65);
+      c.quadraticCurveTo(s * 0.85, 0, s * 0.55, s * 0.85);
+      c.closePath();
       c.fill();
-      c.strokeStyle = f.accent;
-      c.lineWidth = 2;
+      // Hood void — a hollow socket where the face should be. No eyes, no
+      // features. Reaper doesn't have a face.
+      c.fillStyle = '#0a0000';
       c.beginPath();
-      c.arc(0, 0, s * 0.26, 0, Math.PI * 2);
+      c.arc(0, -s * 0.38, s * 0.20, 0, Math.PI * 2);
+      c.fill();
+      // Scythe shaft — long dark wood line cutting diagonally from the back-
+      // bottom (butt) to the forward-top (where the blade attaches). Held
+      // across the body.
+      c.strokeStyle = '#3a2010';
+      c.lineWidth = 2.2;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(-s * 0.55, s * 0.65);
+      c.lineTo(s * 0.78, -s * 0.5);
       c.stroke();
-      // Accent bead at the hub centre.
-      c.fillStyle = f.accent;
+      // Scythe blade — bone-cream curve hooked at the top of the shaft, sweeping
+      // back over the hood like the iconic Grim Reaper silhouette.
+      c.strokeStyle = '#e8e0c8';
+      c.lineWidth = 2.2;
       c.beginPath();
-      c.arc(0, 0, s * 0.09, 0, Math.PI * 2);
+      c.moveTo(s * 0.78, -s * 0.5);
+      c.quadraticCurveTo(s * 0.5, -s * 1.05, -s * 0.15, -s * 0.85);
+      c.stroke();
+      // Crimson back-edge — Reaper's accent color along the dull side of the
+      // blade. "The blade is already bloodied" — material identity.
+      c.strokeStyle = f.accent;
+      c.lineWidth = 1.1;
+      c.beginPath();
+      c.moveTo(s * 0.72, -s * 0.48);
+      c.quadraticCurveTo(s * 0.45, -s * 0.85, -s * 0.1, -s * 0.72);
+      c.stroke();
+      // Counterweight bead at the butt of the shaft — small dark dot so the
+      // shaft has a clear "this end is the grip" terminator.
+      c.fillStyle = '#1a0e0e';
+      c.beginPath();
+      c.arc(-s * 0.55, s * 0.65, 1.6, 0, Math.PI * 2);
       c.fill();
       break;
     }
@@ -1221,18 +1221,13 @@ function drawFighter(f) {
       bodyY = 0.85;
     }
   } else if (f.ability === 'sweep') {
-    // Reaper — the rotor SPINS UP: wound back, then a fast accelerating multi-
-    // rotation that bulges outward (centrifugal) and settles. The sprite itself
-    // is the buzzsaw — uniform scale + extra spin, not a directional lunge.
-    if (f.sweepTimer > 0) {
-      const sp = 1 - f.sweepTimer / 0.3;             // 0 → 1 over the spin
-      const smooth = sp * sp * (3 - 2 * sp);         // smoothstep: accelerate then settle
-      const SPIN = Math.PI * 2 * 2.5;                // 2.5 turns
-      const windBack = 0.5;                          // wound back before release
-      bodyRot = -windBack + smooth * (SPIN + windBack);
-      const s = 1 + 0.18 * Math.sin(sp * Math.PI);   // centrifugal bulge, returns to 1
-      bodyX = s; bodyY = s;
-    }
+    // Reaper — HARVEST is a ranged throw now (returning scythe), not the old
+    // melee buzz-spin. Body uses the universal `fireKick` thrust gesture (the
+    // thrown projectile carries its own visible spin in flight). The old
+    // sweepTimer-driven rotor-spin animation was dead code (sweepTimer is
+    // never set anymore) and depicting the hooded reaper sprite as a spinning
+    // buzzsaw would have been character-wrong anyway. Left empty so the
+    // default body-language path (face-the-enemy + fireKick recoil) carries.
   } else if (f.ability === 'iai') {
     // Ronin — THE IAI: a long tense draw-back, then an instant teleport-flash cut.
     // (The windup is a gameplay mechanic, not the 1-3 frame anticipation of #8 — so

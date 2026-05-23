@@ -1366,38 +1366,45 @@ function draw() {
       }
       ctx.restore();
     } else if (p.kind === 'crescent') {
-      // Reaper HARVEST — a spinning scythe. Curved blade with a sharp tapered
-      // tip at one end, a heavier heel at the other, and a perpendicular handle
-      // stub bisecting the arc (so it reads as a real tool, not just a circle).
-      // Bone-cream outer edge (the cutting edge) + crimson inner accent
-      // (already-bloodied blade). Spin makes it cycle through the rotation.
+      // Reaper HARVEST — a thrown scythe in flight. Long dark-wood shaft along
+      // the rotation axis + a curved bone blade hooked at the forward end of
+      // the shaft. Reads as the same scythe held by the sprite, just spinning
+      // through the air. The spin makes the whole tool rotate together (NOT a
+      // small disc — the elongated shaft makes the rotation read clearly).
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.spin || 0);
       ctx.lineCap = 'round';
-      // Crimson back-edge (the duller side of the blade, behind the cutting arc)
-      ctx.strokeStyle = '#aa0000';
-      ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(0, 0, p.size, Math.PI * 0.25, Math.PI * 1.55); ctx.stroke();
-      // Bone-cream cutting edge — bright outer stroke, the visible "blade"
+      // Shaft — the long dark snath through the centre of the projectile.
+      // Slightly forward-biased so the blade end (front) sticks out more.
+      ctx.strokeStyle = '#3a2010';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-p.size * 1.8, 0);
+      ctx.lineTo( p.size * 0.5, 0);
+      ctx.stroke();
+      // Counterweight bead at the butt of the shaft — identifies the grip end.
+      ctx.fillStyle = '#1a0e0e';
+      ctx.beginPath();
+      ctx.arc(-p.size * 1.75, 0, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      // Blade — bone curve hooked at the forward end of the shaft, swept back
+      // over the spin axis. The shape is unmistakably a scythe blade (J-curve),
+      // not a sickle (a sickle's blade would be tighter and have no long shaft).
       ctx.strokeStyle = '#e8e0c8';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath(); ctx.arc(0, 0, p.size + 1.2, Math.PI * 0.25, Math.PI * 1.55); ctx.stroke();
-      // Sharp tapered TIP at one end of the arc — extends past the curve as a small
-      // point so the rotation reads (you can see "which end is the point").
-      const tipA = Math.PI * 0.25;
-      const tipX = Math.cos(tipA) * (p.size + 1.2);
-      const tipY = Math.sin(tipA) * (p.size + 1.2);
-      const tipOX = Math.cos(tipA - 0.35) * (p.size + 4.5);
-      const tipOY = Math.sin(tipA - 0.35) * (p.size + 4.5);
-      ctx.strokeStyle = '#f4ecd4';
-      ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(tipOX, tipOY); ctx.stroke();
-      // Handle stub — perpendicular short line through the centre, identifying
-      // the blade as a tool with a grip (you'd swing this).
-      ctx.strokeStyle = '#1a0e0e';
-      ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.moveTo(-p.size * 0.45, 0); ctx.lineTo(p.size * 0.65, 0); ctx.stroke();
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(p.size * 0.5, 0);
+      ctx.quadraticCurveTo(p.size * 0.45, -p.size * 1.2, -p.size * 0.55, -p.size * 1.1);
+      ctx.stroke();
+      // Crimson back-edge — the dull/back side of the blade, parallel to the
+      // cutting curve. Reaper's accent: bloodied edge.
+      ctx.strokeStyle = '#aa0000';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(p.size * 0.4, 0);
+      ctx.quadraticCurveTo(p.size * 0.2, -p.size * 0.78, -p.size * 0.45, -p.size * 0.78);
+      ctx.stroke();
       ctx.restore();
     } else if (p.kind === 'charge') {
       // Sapper thrown charge — dark casing with a blinking red fuse-tip. p.angle is
