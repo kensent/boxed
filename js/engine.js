@@ -549,6 +549,10 @@ function makeFighter(t, team, x, y) {
     iaiAngle: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
+    // Archer PINCUSHION — each stack is { timer, angle } in world coords; the
+    // angle is the incoming arrow's tail direction (pre-rolled at hit time, so
+    // no RNG in draw). Each stack decays on its own timer (tempo, not clock).
+    pincushion: [],
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
     // Warlock drain channel state
@@ -971,6 +975,15 @@ function step(dt) {
 
     // Witch mark timer decay
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
+
+    // PINCUSHION stacks decay (each on its own timer; iterate back-to-front so
+    // splices don't reshuffle the upcoming reads).
+    if (f.pincushion && f.pincushion.length) {
+      for (let i = f.pincushion.length - 1; i >= 0; i--) {
+        f.pincushion[i].timer -= dt;
+        if (f.pincushion[i].timer <= 0) f.pincushion.splice(i, 1);
+      }
+    }
 
     // Warlock: drain channel. Ticks f.dmg every 0.2s while the enemy stays in
     // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
@@ -1473,7 +1486,24 @@ function step(dt) {
         }
         target.witchMarkTimer = p.markDuration;
       }
+      // Archer PINCUSHION — each existing stack on the target boosts the next
+      // arrow's damage. Stack-push happens AFTER damage() (we want stacks-before-
+      // hit to do the scaling, then the freshly landed arrow seeds its own stack).
+      if (p.kind === 'arrow' && target.pincushion) {
+        dmgOut = dmgOut * (1 + target.pincushion.length * p.pincushionMult);
+      }
       damage(target, dmgOut, 'projectile');
+      if (p.kind === 'arrow' && !target.dead) {
+        if (!target.pincushion) target.pincushion = [];
+        if (target.pincushion.length < p.pincushionCap) {
+          // Tail angle = direction the arrow came FROM, so the shaft visually
+          // sticks out where it hit. Pre-rolled in sim — render reads it back.
+          target.pincushion.push({
+            timer: p.pincushionDur,
+            angle: Math.atan2(-p.vy, -p.vx),
+          });
+        }
+      }
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
       // + sfx ALWAYS fire so the boom lands before the kill-cam push-in even on a
       // lethal hit; only the victim's recoil-shake needs the alive gate.

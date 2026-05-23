@@ -57,7 +57,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Berserker** | redesign | `RAMPAGE` — becomes a wall-ricocheting charge |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
 | **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
-| **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
+| **Archer** | shipped | `VOLLEY` — fan of arrows per cast + PINCUSHION ramp (decaying stacks of bonus damage on the target) |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
 | **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
 | **Sapper** | shipped | `STICK CHARGE` — thrown fused limpet bomb; sticks on contact, detonates after a fuse, BLAST RADIUS knockback |
@@ -308,8 +308,43 @@ bonus climbs; a bone settle when the ring collapses back.
 
 ---
 
-## ARCHER → `VOLLEY` + `PINCUSHION`
+## ARCHER → `VOLLEY` + `PINCUSHION` *(shipped — fan + stacking ramp)*
 *Material: wood + taut string, snap + thin whistle (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Built as proposed:
+> - **Active — VOLLEY:** every cast loosens a 3-arrow fan (no every-Nth gimmick).
+>   No windup. Spread 0.18 rad — close enough to all-connect at point-blank, just
+>   wide enough to graze at long range. Fires while moving (no dash, no stop).
+> - **Passive — PINCUSHION:** every arrow that lands on the enemy pushes a stack
+>   onto them with its own decay timer (0.9s). Each existing stack on the target
+>   raises the NEXT arrow's damage by `pincushionMult` (7%). Stacks decay individually
+>   (a tempo mechanic — sustained fire keeps the cushion fat, any break in the
+>   hit-stream lets it fall off). Hard cap at 5 stacks belt-and-braces, with the
+>   real cap implicit via fire-rate × duration (~4 sustained at perfect connect).
+> - **Stacks live on the target, params live on the projectile.** Each arrow
+>   carries `pincushionMult/Dur/Cap` so a Duelist-parried arrow still applies the
+>   same ramp when it lands on the original archer. Symmetric.
+> - **Visual — literal pincushion.** Stuck arrows render in WORLD space anchored
+>   at the body edge, each at the incoming arrow's tail-direction (pre-rolled in
+>   the sim — no RNG in draw). The arrow shaft sticks outward; fletching is a
+>   short green notch at the tail. Each shaft fades over the last 0.3s of its
+>   stack timer, so you can SEE the cushion thin out as the hit-stream breaks.
+> - **Numbers:** hp 730, speed 125, dmg 34 base per arrow, cd 0.7, volleyArrows 3,
+>   volleySpread 0.18, pincushionMult 0.07, pincushionDur 0.9, pincushionCap 5
+>   → **~51.5% overall, ~14.2s avg, ~8% fog.**
+> - **Matchup texture (intended).** Wins on attrition: Wizard 99, Hunter 86,
+>   Duelist 75, Knight 66 (the ramp breaks through PLATE ARMOR — flat -20 is
+>   brutal vs single arrows, but PINCUSHION-fed arrows above the floor stack
+>   real damage). Hard-countered as predicted: Priest 0 (predictive light pillar
+>   + heal-on-hit outpaces attrition), Berserker 16 (rampage in tight arena
+>   eats ranged), Jester 20 (dodge phases through one arrow per volley — the
+>   stacks fall off in the gaps).
+> - **Tuning history:** the first prototype (`dmg 40 / mult 0.12 / cap 8 / dur
+>   1.2 / cd 0.55`) ran at **83.7%** — pincushion ramped too hard. Halving the
+>   per-stack mult, dropping cap to 5, shortening duration to 0.9s, slowing the
+>   cd to 0.7, and rebasing damage to 34 landed inside the band on iteration two.
+>
+> *The original sketch below is preserved for reference — superseded by this.*
 
 **Constraint that shapes this.** Movement is autonomous RNG — Archer can't keep
 distance, kite, or "play the far corner." Anything keyed to spacing is dead on

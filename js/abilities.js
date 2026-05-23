@@ -38,19 +38,22 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'arrow': {
-      // No wind-up: fire immediately while moving
+      // VOLLEY — no windup, fan f.volleyArrows arrows in a narrow spread (no
+      // every-Nth gimmick). Each arrow carries the PINCUSHION params on the
+      // projectile so a parried-back arrow still applies the same ramp when it
+      // lands; stack count + scaling lives on the target.
       const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
-      f.shotCount = (f.shotCount || 0) + 1;
-      const isVolley = (f.shotCount % f.volleyEvery === 0);
-      if (isVolley) {
-        // volleyCount-arrow fan — same dmg per arrow, just more of them
-        const spread = 0.10;
-        for (let i = 0; i < f.volleyCount; i++) {
-          const a2 = ang + (i - (f.volleyCount - 1) / 2) * spread;
-          game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(a2)*290, vy:Math.sin(a2)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:a2 });
-        }
-      } else {
-        game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*290, vy:Math.sin(ang)*290, team:f.team, dmg:f.dmg, life:2.2, kind:'arrow', size:3, homing:0, angle:ang });
+      const spread = f.volleySpread;
+      for (let i = 0; i < f.volleyArrows; i++) {
+        const a2 = ang + (i - (f.volleyArrows - 1) / 2) * spread;
+        game.projectiles.push({
+          x: f.x, y: f.y, vx: Math.cos(a2) * 290, vy: Math.sin(a2) * 290,
+          team: f.team, dmg: f.dmg, life: 2.2,
+          kind: 'arrow', size: 3, homing: 0, angle: a2,
+          pincushionMult: f.pincushionMult,
+          pincushionDur: f.pincushionDur,
+          pincushionCap: f.pincushionCap,
+        });
       }
       f.fireKick = 0.12; f.fireKickMax = 0.12; f.fireDir = ang; // light bowstring snap-back
       break;

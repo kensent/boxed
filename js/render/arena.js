@@ -1379,6 +1379,35 @@ function draw() {
   drawFighter(game.red);
   drawFighter(game.blue);
 
+  // Archer PINCUSHION — render each stuck arrow's shaft in world space, anchored
+  // at the body edge in the stored world angle. The angle is pre-rolled in the
+  // sim (incoming arrow's tail direction), so this draw is RNG-free. Fades over
+  // the last 0.3s of each stack's life. Skipped for dead fighters (the death
+  // ceremony owns the body at that point).
+  [game.red, game.blue].forEach(f => {
+    if (f.dead || !f.pincushion || !f.pincushion.length) return;
+    f.pincushion.forEach(s => {
+      const fade = Math.min(1, s.timer / 0.3);
+      const c = Math.cos(s.angle), si = Math.sin(s.angle);
+      const x0 = f.x + c * FIGHTER_SIZE * 0.85;        // anchor inside the body edge
+      const x1 = f.x + c * (FIGHTER_SIZE + 6);         // shaft tail (out of body)
+      const y0 = f.y + si * FIGHTER_SIZE * 0.85;
+      const y1 = f.y + si * (FIGHTER_SIZE + 6);
+      // shaft
+      ctx.strokeStyle = `rgba(220,210,180,${(0.85 * fade).toFixed(3)})`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      // fletching: small notch at the tail, perpendicular to shaft
+      const px = -si, py = c;
+      ctx.strokeStyle = `rgba(60,255,138,${(0.7 * fade).toFixed(3)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x1 + px * 1.6, y1 + py * 1.6);
+      ctx.lineTo(x1 - px * 1.6, y1 - py * 1.6);
+      ctx.stroke();
+    });
+  });
+
   // Impact bursts — at the contact point, on top of the fighters they struck.
   game.impacts.forEach(drawImpact);
 

@@ -48,10 +48,14 @@ const FIGHTERS = [
     passive: 'BLAST RADIUS — the detonation knocks the enemy back',
   },
   { id:'archer',  name:'ARCHER',    hp:730,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
-    ability:'arrow', cd:0.9, dmg:70,
-    volleyEvery: 4, volleyCount: 4,
-    active: 'RAPID ARROWS — fires while moving, no windup',
-    get passive() { return `VOLLEY — every ${this.volleyEvery}th shot fans ${this.volleyCount} arrows`; },
+    // VOLLEY fan per cast (no every-Nth gimmick) + PINCUSHION stack ramp. Stacks
+    // decay so it's a tempo mechanic, not a runaway clock — fire-rate × duration
+    // self-caps the held stack count (and pincushionCap is the hard ceiling).
+    ability:'arrow', cd:0.7, dmg:34,
+    volleyArrows: 3, volleySpread: 0.18,
+    pincushionMult: 0.07, pincushionDur: 0.9, pincushionCap: 5,
+    active: 'VOLLEY — a fan of arrows on every cast, fired while moving',
+    get passive() { return `PINCUSHION — each landed arrow stacks +${Math.round(this.pincushionMult * 100)}% damage on the next; stacks decay`; },
   },
   { id:'jester',  name:'JESTER',    hp:750,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
     ability:'blink', cd:2.5, dmg:130,
