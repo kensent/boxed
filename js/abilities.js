@@ -352,15 +352,19 @@ function fireAbility(f, enemy) {
       if (links.length === 0) { f.sigilWhiff = true; break; }
       // Hit detection — enemy body radius + half line thickness defines the
       // crossing zone. Each line is independently tested against the enemy
-      // and every decoy; decoys hit by a line are consumed (DOPPELGANGER
-      // substrate — phantoms absorb the line in place of the real body).
+      // and every decoy; lines that hit fire their own damage() call (NOT
+      // a summed call) so the shield/parry/mark economy drains correctly
+      // per-line — Wizard's MANA SHIELD consumes one orb per line, Duelist
+      // RIPOSTE parries each line as a separate hit, etc. Decoys hit by a
+      // line are consumed (DOPPELGANGER substrate). BATCH_GAP merging
+      // still aggregates the float text into a single readable number.
       const hitR = FIGHTER_SIZE + (f.lineWidth || 4) * 0.5;
-      let realHits = 0;
       for (const link of links) {
         let hit = false;
         if (!enemy.dead && segIntersectsCircle(link.x1, link.y1, link.x2, link.y2,
                                                 enemy.x, enemy.y, hitR)) {
-          realHits++; hit = true;
+          damage(enemy, f.dmg, 'projectile');
+          hit = true;
         }
         if (enemy.decoys && enemy.decoys.length) {
           for (const d of enemy.decoys) {
@@ -374,11 +378,6 @@ function fireAbility(f, enemy) {
       }
       f.sigilLines = links;
       f.sigilWhiff = false;
-      if (realHits > 0) {
-        // One damage() call with the summed crossings — keeps feedback shape
-        // (shake, flash, float) sized to the total impact, not per-line spam.
-        damage(enemy, f.dmg * realHits, 'projectile');
-      }
       // Per-line chord chime — light staggered metallic chimes paint the
       // network in audio (more lines = denser chord). Routed through a single
       // sfx call so the headless guard stops the timer fan-out at the audio

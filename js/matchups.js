@@ -13,17 +13,17 @@
 // a fresh harness run shows as "unknown odds" instead of a misleading default).
 // ============================================================================
 const MATCHUPS = {
-  'priest_berserker':0, 'priest_wizard':84, 'priest_geomancer':78, 'priest_sapper':78, 'priest_archer':81,
+  'priest_berserker':0, 'priest_wizard':84, 'priest_geomancer':81, 'priest_sapper':78, 'priest_archer':81,
   'priest_jester':7, 'priest_cannoneer':15, 'priest_duelist':44, 'priest_necromancer':59, 'priest_reaper':62,
   'priest_ronin':2, 'priest_witch':71, 'priest_hunter':28, 'priest_warlock':73, 'priest_gambler':76,
-  'berserker_wizard':54, 'berserker_geomancer':28, 'berserker_sapper':27, 'berserker_archer':37, 'berserker_jester':63,
+  'berserker_wizard':54, 'berserker_geomancer':32, 'berserker_sapper':27, 'berserker_archer':37, 'berserker_jester':63,
   'berserker_cannoneer':28, 'berserker_duelist':57, 'berserker_necromancer':32, 'berserker_reaper':42, 'berserker_ronin':53,
-  'berserker_witch':20, 'berserker_hunter':54, 'berserker_warlock':84, 'berserker_gambler':36, 'wizard_geomancer':97,
+  'berserker_witch':20, 'berserker_hunter':54, 'berserker_warlock':84, 'berserker_gambler':36, 'wizard_geomancer':73,
   'wizard_sapper':92, 'wizard_archer':1, 'wizard_jester':79, 'wizard_cannoneer':66, 'wizard_duelist':34,
   'wizard_necromancer':22, 'wizard_reaper':59, 'wizard_ronin':31, 'wizard_witch':77, 'wizard_hunter':44,
-  'wizard_warlock':26, 'wizard_gambler':49, 'geomancer_sapper':59, 'geomancer_archer':72, 'geomancer_jester':99,
-  'geomancer_cannoneer':36, 'geomancer_duelist':86, 'geomancer_necromancer':51, 'geomancer_reaper':59, 'geomancer_ronin':25,
-  'geomancer_witch':41, 'geomancer_hunter':43, 'geomancer_warlock':35, 'geomancer_gambler':62, 'sapper_archer':58,
+  'wizard_warlock':26, 'wizard_gambler':49, 'geomancer_sapper':59, 'geomancer_archer':65, 'geomancer_jester':99,
+  'geomancer_cannoneer':36, 'geomancer_duelist':86, 'geomancer_necromancer':51, 'geomancer_reaper':53, 'geomancer_ronin':23,
+  'geomancer_witch':41, 'geomancer_hunter':39, 'geomancer_warlock':31, 'geomancer_gambler':58, 'sapper_archer':58,
   'sapper_jester':27, 'sapper_cannoneer':52, 'sapper_duelist':72, 'sapper_necromancer':91, 'sapper_reaper':52,
   'sapper_ronin':35, 'sapper_witch':60, 'sapper_hunter':53, 'sapper_warlock':51, 'sapper_gambler':68,
   'archer_jester':12, 'archer_cannoneer':48, 'archer_duelist':68, 'archer_necromancer':63, 'archer_reaper':53,

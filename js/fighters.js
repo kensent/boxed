@@ -53,7 +53,7 @@ const FIGHTERS = [
     // crossing. dmg is per-line; a single cast can stack 0..many.
     // Speed 120 (above the median 100) — the kit's input is wall bounces,
     // so faster movement = faster network buildup. No corner pre-seed.
-    ability:'sigil', cd:2.5, dmg:85,
+    ability:'sigil', cd:2.5, dmg:80,
     maxStones: 8, linksPerStone: 2,
     sigilFlashDur: 0.6, lineWidth: 4,
     get active() { return `SIGIL — slams the staff; amber ley-lines fire between him and every planted stone, burning anyone on the lines`; },
