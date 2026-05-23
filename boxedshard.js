@@ -60,8 +60,9 @@ const N = 500;
 const LONG_FIGHT_THRESHOLD = 30;
 // A "tight" fight is one where the winner barely survived — finished below this
 // fraction of their max HP. Captures the dramatic close-finish profile of a
-// matchup (per-fight, not the matchup's overall win rate).
-const TIGHT_HP_FRACTION = 0.3;
+// matchup (per-fight, not the matchup's overall win rate). Tightened from 0.3
+// to 0.2 — only fights where the winner is at < 20% HP count as truly close.
+const TIGHT_HP_FRACTION = 0.2;
 
 // Cache fighter templates by id once so the inner loop just looks up max HP.
 const FBYID = {};
