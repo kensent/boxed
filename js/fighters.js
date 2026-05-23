@@ -78,10 +78,15 @@ const FIGHTERS = [
     // HP is the balance lever; dmg/cd tuned for pace. cd is the post-catch RECOVERY
     // (one crescent in flight at a time — the flight round-trip dominates the throw
     // cycle; see abilities.js).
-    ability:'sweep', cd:1.0, dmg:140,
-    executeK: 1.5, crescentSpeed: 360, crescentHoming: 40, crescentMaxTravel: 240,
+    ability:'sweep', cd:1.0, dmg:180,
+    crescentSpeed: 360, crescentHoming: 40, crescentMaxTravel: 240,
+    // WAKE passive — the crescent drops a small damaging hazard ("wake segment") along
+    // its flight path every wakeRate seconds. Segments overlap into a visible arc-trail
+    // and damage the enemy if they bounce through it; per-target wakeHitCd (in engine.js)
+    // caps the tick rate so dense overlap can't double-dip.
+    wakeRate: 0.04, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
     active: 'CRESCENT THROW — hurls a returning scythe; strikes coming and going',
-    get passive() { return `HARVEST — strikes hit harder the lower the enemy's health`; },
+    passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
   { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
     ability:'iai', cd:3.6, dmg:350,

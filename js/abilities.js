@@ -186,7 +186,7 @@ function fireAbility(f, enemy) {
         team: f.team, dmg: f.dmg, life: 4,
         kind: 'crescent', size: 7, homing: f.crescentHoming, cruise: f.crescentSpeed,
         phase: 'out', traveled: 0, maxTravel: f.crescentMaxTravel,
-        hitCd: 0, spin: 0, angle: ang,
+        hitCd: 0, wakeTick: 0, spin: 0, angle: ang,
       });
       f.crescentOut = true;
       f.sweepWhiff = false;

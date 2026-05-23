@@ -56,7 +56,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Priest** | redesign | `JUDGMENT` — predictive light pillar; landing it heals |
 | **Berserker** | redesign | `RAMPAGE` — becomes a wall-ricocheting charge |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
-| **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + EXECUTE: hits scale up as the enemy weakens |
+| **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
 | **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
 | **Ronin** | redesign | `IAI` — committed line-dash *through* the enemy + recovery |
 | **Cannoneer** | redesign | `BOMBARD` — lobbed area shell: splash + lingering fire pool |
@@ -231,22 +231,38 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 >   space** (reliable damage wants a projectile or a dash), so distinct *melee* verbs
 >   are scarce. A thrown projectile reaches reliably → fast fights. Reaper isn't a
 >   tank, so going semi-ranged is fine (unlike Knight).
-> - **CRESCENT THROW:** one crescent in flight at a time — it homes *mildly* at the
->   enemy (a thrown blade, so a juke/wall-bounce can make it miss — that's the
->   counterplay), **turns back on hit** (or at max travel if it whiffs), beelines home
->   to Reaper, and is "caught"; a short recovery cd, then re-throw. Hits on both legs
->   (a 0.2s hit-cd prevents an instant double at the turn), each **execute-scaled**.
->   The crescent also clears skeletons (pierces them via the projectile path).
-> - **HARVEST execute kept exactly as sketched** — HP-percentage damage scaling, no
->   lifesteal (the Warlock overlap is gone).
-> - **Glass executioner** identity kept via HP (lowered from 1100). Rough balance vs
->   the current (mostly un-redesigned) roster: **HP 750, dmg 140, cd 1.0, execute
->   k 1.5, crescent speed 360 / homing 40 / max-travel 240 → ~50% overall, ~12.5s avg,
->   ~7% fog.** Authoritative tune is a later `./balance.sh` pass.
+> - **Active — CRESCENT THROW:** one crescent in flight at a time — it homes *mildly*
+>   at the enemy (a thrown blade, so a juke/wall-bounce can make it miss — that's the
+>   counterplay), **turns back on hit, wall, or max travel**, beelines home to Reaper,
+>   and is "caught"; a short recovery cd, then re-throw. Hits on both legs (a 0.2s
+>   hit-cd prevents an instant double at the turn). The crescent also clears skeletons
+>   (pierces them via the projectile path).
+> - **Passive — WAKE** *(replaced HARVEST execute after playtest — see below).* While
+>   in flight, the crescent drops a small damaging hazard segment along its path every
+>   `wakeRate` seconds; segments overlap into a visible **crimson arc trail** that
+>   damages the enemy when they bounce through it. A per-target hit-cooldown
+>   (`WAKE_HIT_GAP = 0.18s`) caps the chip rate so dense overlap can't double-dip.
+> - **Why WAKE not HARVEST execute (the original sketch):** the execute was an
+>   *invisible* damage multiplier — each hit just slightly bigger as the enemy
+>   weakened, with no visible "now we're harvesting" beat. Under the no-new-animation
+>   directive, flash has to come from the *mechanic*. The boomerang's defining trait
+>   is its **visible arcing path through space**, and WAKE weaponizes exactly that —
+>   the path becomes a damage trail the arena fills with as Reaper plays. Distinct in
+>   the roster (Sapper places point-traps at his own spot, Cannoneer drops point fire
+>   pools, Witch shoots a bouncing point — no one else has a *projectile-path-as-hazard*).
+>   And it's "exclusively right" for the boomerang shape: a point-projectile fighter
+>   couldn't have this mechanic.
+> - **Glass-ish HP** kept (lowered from the original 1100). Rough balance vs the
+>   current (mostly un-redesigned) roster: **HP 750, dmg 180, cd 1.0, wakeDmg 15,
+>   wakeRadius 14, wakeLife 0.8s, wakeRate 0.04s, crescent speed 360 / homing 40 /
+>   max-travel 240 → ~49% overall, ~13.0s avg, ~10% fog.** Authoritative tune is a
+>   later `./balance.sh` pass.
 > - *Lever notes from the sweep:* **homing** is the hit/miss lever (not speed — a
->   faster crescent actually hits *more*); **HP** is the clean win-rate lever (dmg
->   barely moved it — 60% even at half dmg); **cd** is the throw-cadence/pace lever.
->   Crescent currently uses a **template projectile render** (not final art).
+>   faster crescent actually hits *more*); **HP** + **crescent dmg** are the
+>   win-rate levers (wakeDmg barely moves it — a chip mechanic, not a primary lever);
+>   **cd** is the throw-cadence/pace lever. Crescent and wake currently use **template
+>   visuals** (small spinning crescent + filled-circle hazard segments); the bespoke
+>   render + audio are deferred to the polish pass.
 >
 > *The orbiting-field write-up below is the original sketch, superseded by this.*
 

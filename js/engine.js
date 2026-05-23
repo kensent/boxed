@@ -543,7 +543,7 @@ function makeFighter(t, team, x, y) {
     lastX: x, lastY: y,
     parryTimer: 0, counterAnim: 0, counterDir: 0,
     // Reaper
-    sweepTimer: 0, sweepHit: false, crescentOut: false,
+    sweepTimer: 0, sweepHit: false, crescentOut: false, wakeHitCd: 0,
     // Ronin
     iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focused: false,
     // Witch mark target timer (any fighter can carry the mark)
@@ -710,6 +710,11 @@ const MELEE_SKEL_IFRAME = 0.35;
 // can't blink, a stunned Duelist can't riposte. Must stay well under the hook
 // cooldown (1.5s) or it becomes a perma-lock. Balance lever.
 const CRIPPLE_STUN = 0.4;
+
+// Reaper WAKE: per-target cooldown between wake-trail damage ticks. Caps the chip
+// from overlapping wake segments — without this, a fighter standing in a dense arc
+// would be ticked once per segment per frame. Tunable.
+const WAKE_HIT_GAP = 0.18;
 
 // Damage-float debounce: a multi-hit burst keeps merging into one float as long
 // as hits arrive within this many ms of each other; once a gap this long passes
@@ -1163,6 +1168,8 @@ function step(dt) {
     if (f.slowTimer > 0) f.slowTimer -= dt;
     // Tick stun timer (Hunter's CRIPPLING HOOK)
     if (f.stunTimer > 0) f.stunTimer -= dt;
+    // Reaper WAKE per-target damage cooldown
+    if (f.wakeHitCd > 0) f.wakeHitCd -= dt;
   });
 
   // Apply (and release) the slow effect. A slowed fighter's velocity is
@@ -1188,9 +1195,10 @@ function step(dt) {
       // Reaper CRESCENT THROW — returning boomerang. Outbound homes MILDLY at the
       // enemy (a thrown blade); at max travel it turns and homes STRONGLY back to
       // Reaper, despawning when caught (clears the in-flight flag + sets recovery cd).
-      // Turns back on HITTING the enemy (or at max travel if it whiffs), then homes
-      // home. Can clip the enemy again on the return — a short hitCd prevents an
-      // instant double at the turn. Execute-scaled. Bypasses the generic logic below.
+      // Turns back on HITTING the enemy, hitting a WALL, or at max travel if it
+      // whiffs everything; then homes home. Can clip the enemy again on the return —
+      // a short hitCd prevents an instant double at the turn. Execute-scaled.
+      // Bypasses the generic projectile logic below.
       const owner = p.team === 'red' ? red : blue;
       const target = p.team === 'red' ? blue : red;
       p.life -= dt;
@@ -1213,13 +1221,35 @@ function step(dt) {
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.spin = (p.spin || 0) + dt * 14;
       p.angle = Math.atan2(p.vy, p.vx);
-      // hit (gated by hitCd so it can't double-hit at the turn); execute-scaled.
+      // Wall hit → return: clamp inside the arena and turn back (the blade can't fly
+      // past a wall). Return-leg homing is a beeline owner-to-owner, so it stays
+      // inside the arena naturally — only outbound needs this guard.
+      if (p.phase === 'out') {
+        if (p.x - p.size < 0)     { p.x = p.size;       p.phase = 'back'; }
+        else if (p.x + p.size > w) { p.x = w - p.size;   p.phase = 'back'; }
+        if (p.y - p.size < 0)     { p.y = p.size;       p.phase = 'back'; }
+        else if (p.y + p.size > h) { p.y = h - p.size;   p.phase = 'back'; }
+      }
+      // WAKE passive — drop a small hazard segment along the flight path every
+      // owner.wakeRate seconds (BOTH legs paint the arc). Gated against double-tick
+      // by the per-target wakeHitCd, not per-segment timing.
+      p.wakeTick = (p.wakeTick || 0) + dt;
+      if (p.wakeTick >= owner.wakeRate) {
+        p.wakeTick = 0;
+        game.hazards.push({
+          x: p.x, y: p.y,
+          radius: owner.wakeRadius,
+          timer: owner.wakeLife, maxTimer: owner.wakeLife,
+          dmg: owner.wakeDmg, kind: 'wake',
+          team: p.team,
+        });
+      }
+      // hit (gated by hitCd so it can't double-hit at the turn).
       let hitNow = false;
       if (!target.dead && p.hitCd <= 0 && dist(p, target) < FIGHTER_SIZE + p.size) {
-        const dmg = p.dmg * (1 + owner.executeK * (1 - target.hp / target.maxHp));
-        damage(target, dmg, 'projectile');
+        damage(target, p.dmg, 'projectile');
         if (!target.dead) {
-          const big = Math.min(1, dmg / 260), ha = Math.atan2(p.vy, p.vx);
+          const big = Math.min(1, p.dmg / 260), ha = Math.atan2(p.vy, p.vx);
           spawnImpact(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
           sfx('impact', { kind: 'bone', big: big }, p.x);
           target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = big * 13;
@@ -1367,7 +1397,7 @@ function step(dt) {
       // Cannoneer: INCENDIARY ROUND — cannon hits leave a burning impact zone.
       // tickCd 0.5 = a 0.5s ignition delay before the first burn tick.
       if (p.kind === 'cannon') {
-        game.hazards.push({ x: p.x, y: p.y, radius: 65, timer: 1.5, maxTimer: 1.5, tickCd: 0.5, team: p.team });
+        game.hazards.push({ x: p.x, y: p.y, radius: 65, timer: 1.5, maxTimer: 1.5, tickCd: 0.5, dmg: 10, kind: 'fire', team: p.team });
       }
       return false;
     }
@@ -1400,15 +1430,24 @@ function step(dt) {
   game.hazards = game.hazards.filter(h => {
     h.timer -= dt;
     if (h.timer <= 0) return false;
-    // After the 0.5s ignition delay, burn 1 hp every 0.2s for the zone's
-    // remaining ~1.0s (≈5 ticks if the target stays in the 40px zone).
-    h.tickCd -= dt;
-    if (h.tickCd <= 0) {
-      h.tickCd = 0.2;
-      const target = h.team === 'red' ? blue : red;
-      if (!target.dead && dist(h, target) < h.radius) {
-        damage(target, 10, 'hazard');
-        sfx('burn', null, h.x); // soft fire crackle per tick
+    const target = h.team === 'red' ? blue : red;
+    if (h.kind === 'wake') {
+      // Reaper WAKE — segments are dense and overlap, so we gate damage on the
+      // TARGET's wakeHitCd (not a per-segment cooldown). Net cap: one wake tick per
+      // WAKE_HIT_GAP seconds, regardless of how many segments overlap the target.
+      if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {
+        damage(target, h.dmg, 'hazard');
+        target.wakeHitCd = WAKE_HIT_GAP;
+      }
+    } else {
+      // Fire (Cannoneer INCENDIARY) — per-segment tickCd, fixed cadence with burn sfx.
+      h.tickCd -= dt;
+      if (h.tickCd <= 0) {
+        h.tickCd = 0.2;
+        if (!target.dead && dist(h, target) < h.radius) {
+          damage(target, h.dmg, 'hazard');
+          sfx('burn', null, h.x); // soft fire crackle per tick
+        }
       }
     }
     return true;

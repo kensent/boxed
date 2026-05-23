@@ -957,11 +957,22 @@ function draw() {
     shaken = true;
   }
 
-  // Cannoneer INCENDIARY hazard zones — a pulsing boundary ring + inward flame
-  // licks (line-drawn, no big alpha fill) so the danger area reads; fades with the
-  // zone's timer. Drawn behind everything else.
+  // Hazard zones — Cannoneer INCENDIARY (kind: 'fire') and Reaper WAKE (kind:
+  // 'wake'). Line-drawn so the danger area reads without a big alpha fill.
   (game.hazards || []).forEach(h => {
     const fade = h.timer / h.maxTimer;               // 1 → 0
+    if (h.kind === 'wake') {
+      // Reaper WAKE — a dim crimson scar along the boomerang's arc. Many overlapping
+      // segments form a visible damaging trail. Soft fill + outline (small radius, so
+      // the alpha-fill stays cheap on mobile).
+      ctx.fillStyle = `rgba(170,0,0,${(fade * 0.32).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(200,20,20,${(fade * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.stroke();
+      return;
+    }
+    // Cannoneer fire pool — pulsing ring + inward flame licks.
     const pulse = 0.6 + Math.sin(performance.now() / 120) * 0.4;
     ctx.strokeStyle = `rgba(255,140,26,${(fade * 0.45 * pulse + 0.12).toFixed(3)})`;
     ctx.lineWidth = 2;
