@@ -134,8 +134,9 @@
   `long%` (fights past 30s) as a stalemate-prone-matchup detector — see
   `boxedshard.js`'s `LONG_FIGHT_THRESHOLD`.
 - **Knight was retired and replaced by Geomancer.** Knight's melee-tank niche
-  was a hard design corner under autonomous DVD movement (see REDESIGN-PROPOSAL.md
-  for the failed prototypes). Geomancer ships in the same roster slot and
+  was a hard design corner under autonomous DVD movement — every prototype
+  hit one of: un-tunable reactive timing, off-brand ranged, off-brand
+  homing, or "just a dash." Geomancer ships in the same roster slot and
   *uses* the wall-bounce as its core mechanic (STANDING STONES plant on each
   hit, SIGIL fires ley-lines between every stone). `EXCLUDE_IDS` is now empty
   in both `boxedshard.js` and `boxedmerge.js`; `balance.sh` is at 8 shards × 15
@@ -164,3 +165,50 @@
   `stoneLifetime` decay — removed because the cap was always hit first in
   practice, and the decay's fade-out was visual noise rather than mechanical
   signal.
+
+## Tuning lever notes
+
+Patterns learned across the redesign + rebalance passes. None of these are
+mechanical rules; they're shapes to watch for when reaching for a tuning
+knob. Confirm via `./balance.sh` regardless.
+
+- **Recursive multi-hit abilities have a multiplier damage lever, not a
+  sum.** Berserker RAMPAGE (per-pass dmg × ~4 passes), Archer VOLLEY
+  (per-arrow dmg × 3-fan + SHATTER stacks), Geomancer SIGIL (per-line dmg
+  × ~4 crossings) all scale ~1 wr per 1 dmg, because each point applies
+  several times per cast. Reach for HP / cd to bring them into band;
+  damage moves the matchup faster than it looks (and going too low
+  collapses the kit — Gambler dmg 50 → 42 over-corrected by ~12 wr).
+- **Standstill windows are stealth buffs.** Adding or extending a
+  planted phase makes the launch geometry more predictable: enemies eat
+  cleaner cuts when the fighter is rooted (Ronin's FOCUS-plant lifted
+  him 56% → 64.6% silently; Berserker's coil makes his ramming direction
+  trivially predictable). Expect to compensate via a *different* lever
+  when adding/extending a standstill — usually HP or per-hit damage.
+- **Stacking-with-decay self-paces; don't add caps.** Archer's SHATTER
+  cushion has per-arrow decay (`embedDur`); the cushion can't build
+  forever because old arrows fall off as new ones land. Don't bolt on
+  an extra max-stack count or per-fight cap — the decay does that job.
+- **Per-fighter sensitivity is not uniform across the roster.** Pick the
+  lever that's *gentle* for the fighter, not the gentle lever
+  globally:
+  - **cd**: very sharp at Ronin (~1 wr per ~1% cd change) and Jester
+    (~1 wr per ~1% cd) — each blink/iai IS the damage event, so cadence
+    dominates. Tap 0.05s at a time.
+  - **speed**: sharp at Duelist (~0.6 wr per 1 speed — cast cadence
+    dominates output, idle movement is closing pressure between casts).
+  - **HP**: typically the gentle lever (~1 wr per ~40 HP at the 10× scale)
+    but *much* sharper for low-damage fighters: Gambler is ~1 wr per
+    ~11 HP, Priest is ~0.06 wr per HP (≈1 per 16). Use small HP
+    increments at the bottom of the damage range.
+- **Homing strength has a plateau-then-cliff curve.** Small changes do
+  nothing for a long way, then the projectile suddenly starts curving
+  hard enough to redirect mid-flight and the matchup spikes. Sweep
+  values; don't tap. Relevant for Wizard orbs, Reaper crescent,
+  Gambler coin nova, hex bolt, hook.
+- **Predictive aim breaks across velocity discontinuities.** Priest's
+  JUDGMENT locks at `enemy.x + enemy.vx * windupTime` at cast time.
+  Fighters whose velocity dramatically changes *during* the windup
+  (Berserker idle → rampage, blinked Jester) escape the pillar
+  geometrically — no amount of damage tuning closes this gap. Hard
+  counters here are content, not a bug to fix.

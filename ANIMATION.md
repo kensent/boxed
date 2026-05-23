@@ -78,7 +78,7 @@ we never float a separate weapon-effect around a static sprite.
   Berserker is now a *charged* melee: the rampage has a real mechanical windup
   with charge ring + body tremble + radial coil-lines, then a wall-ricocheting
   multi-pass strike. (Knight was retired and replaced by Geomancer — see
-  REDESIGN-PROPOSAL.md.)
+  the Knight bullet in GOTCHAS.md.)
 - **Ranged (10)** — a release **kick** along the firing axis + a bespoke launch
   flash (`fireKick`/`fireDir`). Three sub-shapes by gesture:
   - *Recoil* (3) — cannoneer, priest (staff-bolt), archer (bow): projectile
@@ -131,15 +131,15 @@ ranged delayed-strike abilities.
 Every status reads on the fighter itself; the **form** tells buff from debuff:
 - **Buff / ready / active = rings** (at most one per fighter, by ability): the
   Wizard's 4-segment mana-shield gauge, the Duelist parry window (cyan tight
-  ring, used as both projectile-parry and melee-parry-absorb — see the COUNTER
-  redesign in REDESIGN-PROPOSAL.md), the Berserker rampage-windup charge ring
+  ring, used as both projectile-parry and melee-parry-absorb in the same
+  COUNTER thrust window), the Berserker rampage-windup charge ring
   (crimson, with body tremble + radial coil-lines), the bloodrage pulse, the
   Ronin FOCUS gold aura, the negate-flash.
 - **Decoys (Jester DOPPELGANGER)** — phantom Jester sprites at 42% alpha with a
   faint outer halo, drawn in world space at the decoy positions. Not a ring on
-  the real Jester: they're separate bodies enemies can target. (See
-  REDESIGN-PROPOSAL.md for the universal "aim nearest" targeting rule that
-  makes decoys load-bearing across every ability path.)
+  the real Jester: they're separate bodies enemies can target. (See the
+  DOPPELGANGER substrate bullet in GOTCHAS.md for the universal "aim nearest"
+  targeting rule that makes decoys load-bearing across every ability path.)
 - **Embedded arrows (Archer SHATTER)** — literal arrow shafts stuck in the
   enemy's body, accumulating until the cushion bursts at 5 stacks. Each
   stuck arrow has its own decay timer; a green halo pulses around the

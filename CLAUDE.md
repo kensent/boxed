@@ -33,9 +33,6 @@ other on its own merits. Mobile-targeted.
   and merges. The shard count is hardcoded to the active roster size; update
   the loop in lockstep with `FIGHTERS` if a fighter is added or shelved.
   Just `./balance.sh`.
-- `REDESIGN-PROPOSAL.md` — the design + rebalance journal. Each shipped fighter
-  has an `IMPLEMENTED & VALIDATED` block with the final tunables and matchup
-  texture; the original sketches below are preserved for history.
 
 ## Workflow
 

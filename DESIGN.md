@@ -28,15 +28,82 @@
 
 16 active fighters: priest, berserker, wizard, geomancer, sapper, archer,
 jester, cannoneer, duelist, necromancer, reaper, ronin, witch, hunter,
-warlock, gambler. **Geomancer replaced Knight** — Knight's melee-tank niche
-was a hard design corner under autonomous DVD movement (see REDESIGN-PROPOSAL.md
-for the failed prototypes), and the wall-bouncing identity finally found its
-home in Geomancer (STANDING STONES plant on each wall hit, SIGIL fires
-ley-lines between all stones). The kit *uses* the bounce as its core mechanic
-instead of fighting against it.
+warlock, gambler. **Geomancer replaced Knight** — Knight's melee-tank
+niche was a hard design corner under autonomous DVD movement (every
+prototype hit one of: un-tunable reactive timing, off-brand ranged,
+off-brand homing, or "just a dash"). The wall-bouncing identity finally
+landed in Geomancer (STANDING STONES plant on each wall hit, SIGIL fires
+ley-lines between all stones); the kit *uses* the bounce as its core
+mechanic instead of fighting against it.
 
-Current healthy band is **~9 points wide** (Cannoneer ~54% top, Duelist
-~46% bottom) after the Geomancer add + per-line SIGIL + post-Knight
-rebalance. Geomancer lands at ~50%; the spread has tightened from ~12 to
-~9 across the SIGIL per-line switch, Ronin/Cannoneer trims, Jester lift,
-and Gambler DOUBLES rework.
+Healthy band lands ~4–10 points wide after a tune pass — every fighter
+within ±3–5 of 50% in the current balance. Tightening below ~4 points
+tends to be noise-floor luck rather than a real signal at N=500/matchup.
+
+## Design philosophy for the redesigns
+
+The redesign pass that produced the current roster ran on four framing
+principles in addition to the design principles above:
+
+1. **One load-bearing verb per fighter.** Each fighter's ACT names a
+   single distinctive mechanic — not a generic dash + stat block. The
+   verb carries the kit's identity (RAMPAGE, JUDGMENT, SIGIL, HARVEST).
+   If two fighters share verb-shape, one of them is wrong.
+2. **Weaponize the arena.** DVD bouncing is the defining input, not a
+   constraint to fight against. Kits that *use* the bounce (Geomancer
+   plants on each wall hit, Witch's hex ricochets, Berserker rampage
+   caroms off walls) feel grounded; kits that ignore it read generic.
+3. **Active/passive synergy.** The PASSIVE is not flavour text — it
+   shapes how the ACT lands. Berserker's BLOODRAGE accelerates the
+   rampage at low HP; Priest's DIVINE GRACE heals on landed pillars;
+   Geomancer's STANDING STONES are the network SIGIL fires through.
+   If the passive can be removed without changing the kit's character,
+   the passive isn't doing its job.
+4. **Outcomes are emergent, not authored.** No fighter is hand-tuned to
+   beat a specific opponent. The matchup table emerges from kit
+   interactions; the balance harness reads the table; tuning is gentle
+   (single stat, named tunable) not surgical (rewriting matchup logic).
+   Hard counters are part of the content — see principle 3 of the
+   Design principles above.
+
+## Mechanical grammars
+
+Reusable mechanic patterns that emerged across the roster. Each is named
+so a future fighter can be designed against one explicitly ("this kit
+uses the ricochet-state grammar"). Animation-side grammars (Melee /
+Ranged / Channel / Field — the body-language categories) live in
+ANIMATION.md; these are the *mechanical* grammars (what the ability
+DOES, not how it ANIMATES). Canonical fighters in parentheses.
+
+- **Ricochet-state** — the fighter becomes a temporary bouncing
+  projectile, dealing damage on each pass; the chaos of the wall-bounce
+  IS the attack. (Berserker RAMPAGE.)
+- **Predictive zone-strike** — a delayed AOE locks at the predicted
+  enemy position over a windup; the enemy's mid-windup velocity change
+  is the counterplay. (Priest JUDGMENT — predictive; Cannoneer BOMBARD
+  is the contrasting "dumb lob" variant, direct at current position.)
+- **Overshoot line-dash + chain-on-hit** — teleport-dash through the
+  enemy along a locked direction; landing a clean hit refunds the
+  cooldown for an instant follow-up. (Ronin IAI / FOCUS.)
+- **Returning boomerang + damaging trail** — a thrown projectile loops
+  back to the caster, leaving a damaging zone along its flight path.
+  (Reaper HARVEST + WAKE.)
+- **On-target stacking ramp + burst** — landed hits embed stacks on
+  the enemy that decay individually; reaching a stack threshold
+  detonates the whole cushion. (Archer SHATTER.)
+- **Sticky delayed burst** — a thrown projectile sticks on contact, a
+  fuse ticks down, the detonation deals damage + knockback in a splash
+  radius. (Sapper STICK CHARGE.)
+- **Wall-bounce-driven field network** — wall bounces plant nodes; the
+  ACT fires lines or effects between every pair of nodes (including
+  the fighter himself, if the kit's identity says so). (Geomancer SIGIL.)
+- **Roll-table chaos** — the ACT rolls a die; each face is a genuinely
+  different attack pattern; the passive twists the distribution.
+  (Gambler WILDCARD + DOUBLES.)
+- **Decoy substrate** — a passive spawns phantom copies of the fighter
+  that intercept incoming attacks. Every other fighter's aim and
+  projectile path routes through a uniform `pickTarget` rule that aims
+  at the nearest of `{real, ...decoys}`, so DOPPELGANGER counters
+  every kit symmetrically. (Jester DOPPELGANGER — substrate; only one
+  fighter uses it offensively but every other kit's targeting code
+  supports it.)

@@ -208,8 +208,8 @@ defender's material; a *passive ongoing state* generally doesn't (its visual
 carries it), with key transitions getting a one-shot cue:
 
 - **Defensive responses (audible).** Duelist parry = bright steel deflect
-  (`parry`, now fires for both projectile-reflect AND melee-parry-absorb during
-  the RIPOSTE thrust window; see REDESIGN-PROPOSAL.md COUNTER redesign) ·
+  (`parry`, fires for both projectile-reflect AND melee-parry-absorb during
+  the RIPOSTE thrust window) ·
   Wizard Mana Shield = glassy arcane absorb as an orb spends out (`shield`).
   The shield is gated off drain DoT so a continuous tick can't machine-gun it.
   Jester's old UNCANNY DODGE `negate` whiff is gone — DOPPELGANGER replaced
