@@ -117,8 +117,17 @@ during the prototype:
 - **DIVINE GRACE heals only on a connecting hit** — a judgment phased by Jester's
   dodge still strikes (pillar + sound) but grants no heal; a reduced (armor/shield)
   hit still counts.
-- Tunables: `windupTime 0.45`, `pillarRadius 34`, `healOnHit 28`, `dmg 180`.
-  Balance deferred per plan.
+- Tunables: `windupTime 0.45`, `pillarRadius 34`, `healOnHit 18`, `dmg 105`,
+  `cd 1.6`. Tuned down from the post-prototype defaults (`dmg 180`, `cd 1.4`,
+  `healOnHit 28`) which had Priest at **~86% overall** — the predictive aim
+  plus 128 dps plus 28-hp sustain blew everyone out. Current numbers land at
+  **48.1% overall**, ~13.5s avg, ~2% fog. Clean matchup texture: wins
+  attrition fights (Wizard 98, Archer 94, Sapper 90, Warlock 89), gets
+  hard-countered exactly as designed (Berserker 0, Knight 0, Jester 1,
+  Ronin 10 — vector-change punishers, the dodge phase, and the armor wall
+  that the math can't break through). The 0% vs Knight is geometric: 105
+  dmg − PLATE ARMOR's flat −20 = 85/hit vs 1110 HP = ~13 casts at ~2 s
+  each = 26 s to kill, longer than the fight allows.
 
 ---
 
