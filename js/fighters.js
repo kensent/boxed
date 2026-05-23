@@ -54,7 +54,7 @@ const FIGHTERS = [
     // decay slowly so a quiet archer doesn't carry a phantom cushion forever.
     ability:'arrow', cd:0.7, dmg:30,
     volleyArrows: 3, volleySpread: 0.18,
-    shatterAt: 5, shatterPerStack: 18, pincushionDur: 2.0,
+    shatterAt: 5, shatterPerStack: 18, embedDur: 2.0,
     active: 'VOLLEY — a fan of arrows on every cast, fired while moving',
     get passive() { return `SHATTER — each landed arrow embeds in the enemy; the ${this.shatterAt}th bursts the whole cushion for ${this.shatterPerStack} damage per arrow`; },
   },

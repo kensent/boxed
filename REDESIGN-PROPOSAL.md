@@ -333,17 +333,17 @@ bonus climbs; a bone settle when the ring collapses back.
 > - **Visual storytelling.** Each landed arrow keeps its shaft + white head +
 >   green V-fletching anchored at the body edge in world space. New stacks pop
 >   a landing burst (per-arrow `born` ring) and shudder the whole cluster
->   (`pincushionFlash`). At 3+ stacks a green saturation halo pulses around the
+>   (`embedFlash`). At 3+ stacks a green saturation halo pulses around the
 >   body — the "about to shatter" tell. On burst: an expanding double-ring
 >   (`shatterFlash`) over 0.3s and the embedded arrows scatter outward over
 >   0.4s as the cushion clears. All animations are pre-rolled in the sim —
 >   draw is RNG-free per principle 7.
 > - **Stacks decay individually (slow).** A quiet archer doesn't carry a
->   phantom cushion forever — each stack expires after `pincushionDur` (2.0s) so
+>   phantom cushion forever — each stack expires after `embedDur` (2.0s) so
 >   long droughts melt the cushion before it can chain. Connect-pressure-driven
 >   shatter rate.
 > - **Numbers:** hp 730, speed 125, dmg 30 base per arrow, cd 0.7, volleyArrows 3,
->   volleySpread 0.18, shatterAt 5, shatterPerStack 18, pincushionDur 2.0
+>   volleySpread 0.18, shatterAt 5, shatterPerStack 18, embedDur 2.0
 >   → **~52.2% overall, ~14.2s avg, ~9% fog.**
 > - **Matchup texture.** Wins on the burst breaking through tank mitigation:
 >   Wizard 99, Hunter 88, Duelist 76, Knight 72 (one SHATTER cuts past PLATE

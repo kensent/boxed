@@ -549,13 +549,13 @@ function makeFighter(t, team, x, y) {
     iaiAngle: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
-    // Archer SHATTER state — pincushion is the live cushion (each entry has a
-    // timer, world angle, and landing-burst `born`); pincushionFlash is the
+    // Archer SHATTER state — embedded is the live cushion (each entry has a
+    // timer, world angle, and landing-burst `born`); embedFlash is the
     // brief cluster shudder on a new landing. shattering is the post-burst
     // residue: arrows flying outward over 0.4s after a SHATTER trigger.
     // shatterFlash is the expanding ring at the moment of burst.
     // Everything here is visual or sim-state; never read by balance code.
-    pincushion: [], pincushionFlash: 0,
+    embedded: [], embedFlash: 0,
     shattering: [], shatterFlash: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
@@ -980,17 +980,17 @@ function step(dt) {
     // Witch mark timer decay
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
 
-    // PINCUSHION stacks decay (each on its own timer; iterate back-to-front so
+    // SHATTER stacks decay (each on its own timer; iterate back-to-front so
     // splices don't reshuffle the upcoming reads). `born` is the landing-burst
     // countdown (visual only — never read by the sim).
-    if (f.pincushion && f.pincushion.length) {
-      for (let i = f.pincushion.length - 1; i >= 0; i--) {
-        f.pincushion[i].timer -= dt;
-        if (f.pincushion[i].born > 0) f.pincushion[i].born -= dt;
-        if (f.pincushion[i].timer <= 0) f.pincushion.splice(i, 1);
+    if (f.embedded && f.embedded.length) {
+      for (let i = f.embedded.length - 1; i >= 0; i--) {
+        f.embedded[i].timer -= dt;
+        if (f.embedded[i].born > 0) f.embedded[i].born -= dt;
+        if (f.embedded[i].timer <= 0) f.embedded.splice(i, 1);
       }
     }
-    if (f.pincushionFlash > 0) f.pincushionFlash -= dt;
+    if (f.embedFlash > 0) f.embedFlash -= dt;
     // SHATTER residue — scattered arrows fly outward over 0.4s after a burst.
     if (f.shattering && f.shattering.length) {
       for (let i = f.shattering.length - 1; i >= 0; i--) {
@@ -1508,21 +1508,21 @@ function step(dt) {
       // the fly-outward scatter visual; the cushion resets.
       let shattered = false;
       if (p.kind === 'arrow' && !target.dead) {
-        if (!target.pincushion) target.pincushion = [];
-        target.pincushion.push({
-          timer: p.pincushionDur,
+        if (!target.embedded) target.embedded = [];
+        target.embedded.push({
+          timer: p.embedDur,
           angle: Math.atan2(-p.vy, -p.vx),
           born: 0.18,
         });
-        target.pincushionFlash = 0.15;
-        if (target.pincushion.length >= p.shatterAt) {
-          const stacks = target.pincushion.length;
+        target.embedFlash = 0.15;
+        if (target.embedded.length >= p.shatterAt) {
+          const stacks = target.embedded.length;
           dmgOut = stacks * p.shatterPerStack;
-          target.shattering = target.pincushion.map(s => ({
+          target.shattering = target.embedded.map(s => ({
             angle: s.angle,
             timer: 0.4,
           }));
-          target.pincushion = [];
+          target.embedded = [];
           target.shatterFlash = 0.3;
           shattered = true;
         }

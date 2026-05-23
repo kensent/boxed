@@ -51,7 +51,7 @@ function fireAbility(f, enemy) {
           kind: 'arrow', size: 3, homing: 0, angle: a2,
           shatterAt: f.shatterAt,
           shatterPerStack: f.shatterPerStack,
-          pincushionDur: f.pincushionDur,
+          embedDur: f.embedDur,
         });
       }
       f.fireKick = 0.12; f.fireKickMax = 0.12; f.fireDir = ang; // light bowstring snap-back

@@ -1379,20 +1379,20 @@ function draw() {
   drawFighter(game.red);
   drawFighter(game.blue);
 
-  // Archer PINCUSHION — render the cushion: optional saturation halo at high
+  // Archer SHATTER — render the cushion: optional saturation halo at high
   // stack counts, then each stuck arrow (shaft + white head triangle + green
   // V-fletching) anchored at the body edge in its stored world angle. All
   // angles are pre-rolled in the sim (no RNG in draw). Per-arrow landing burst
   // pops outward when an arrow first sticks; the whole cluster brightens +
-  // thickens briefly each time a new stack lands (pincushionFlash). Skipped
+  // thickens briefly each time a new stack lands (embedFlash). Skipped
   // for dead fighters (the death ceremony owns the body at that point).
   [game.red, game.blue].forEach(f => {
-    if (f.dead || !f.pincushion || !f.pincushion.length) return;
+    if (f.dead || !f.embedded || !f.embedded.length) return;
     // Saturation halo — only when the cushion is dangerous (3+ stacks). Brighter
     // and broader as it climbs to cap. A thin pulsing ring just outside the body,
     // never a filled alpha disk (mobile GPU budget).
-    if (f.pincushion.length >= 3) {
-      const stacks = f.pincushion.length;
+    if (f.embedded.length >= 3) {
+      const stacks = f.embedded.length;
       const base = 0.16 + (stacks - 3) * 0.06;          // 3=0.16, 4=0.22, 5=0.28
       const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 110);
       ctx.strokeStyle = `rgba(60,255,138,${(base * pulse).toFixed(3)})`;
@@ -1401,10 +1401,10 @@ function draw() {
       ctx.arc(f.x, f.y, FIGHTER_SIZE + 7, 0, Math.PI * 2);
       ctx.stroke();
     }
-    // Cluster pulse (0..1) — fades to 0 as pincushionFlash drains. Drives the
+    // Cluster pulse (0..1) — fades to 0 as embedFlash drains. Drives the
     // brief shaft-thicken + brighten across every arrow on a new stack landing.
-    const cluster = f.pincushionFlash > 0 ? f.pincushionFlash / 0.15 : 0;
-    f.pincushion.forEach(s => {
+    const cluster = f.embedFlash > 0 ? f.embedFlash / 0.15 : 0;
+    f.embedded.forEach(s => {
       const fade = Math.min(1, s.timer / 0.3);
       const c = Math.cos(s.angle), si = Math.sin(s.angle);
       const px = -si, py = c;
