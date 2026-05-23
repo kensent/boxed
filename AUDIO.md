@@ -221,9 +221,10 @@ carries it), with key transitions getting a one-shot cue:
   Skeleton dying alone = a soft bone crumble (`boneCrumble`); when its
   death-burst catches an enemy it escalates to `boneBurst`. The closing-ring
   `ringClose` swell is gone with the fog mechanic itself (no longer triggered).
-- **Silent states.** Stun, Witch's-mark, slow, FOCUS, LOADED — their visual forms
-  carry them; no standing audio. The one-shot flag driving the cue above
-  (`f.rageWasActive`) is audio-only — gameplay never reads it.
+- **Silent states.** Stun, Witch's-mark, slow, FOCUS, DOUBLES (formerly
+  LOADED) — their visual forms carry them; no standing audio. The
+  one-shot flag driving the cue above (`f.rageWasActive`) is audio-only —
+  gameplay never reads it.
 
 ### Two rules under all of it
 1. **Balance-safe.** `sfx()` is headless-guarded — it returns immediately when

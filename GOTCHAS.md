@@ -18,6 +18,13 @@
   (at the 10× scale), predictable and linear, no resonance risk. Damage and
   cooldowns are sharper. HP does NOT need to be a round number; tune to whatever
   integer the sim says (the Duelist's 950 is a deliberately tuned value).
+  **Sensitivity is non-uniform across the roster, though.** At low-damage
+  fighters like Gambler (per-coin dmg ~50), HP is much sharper — measured
+  ~1 wr per ~11 HP in the recent rebalance, vs the roster-average ~1 wr per
+  40 HP. Rule of thumb: the lower the fighter's per-hit damage, the more
+  each HP point matters in their fight duration. For fighters in that regime
+  (~50-80 base dmg) start with smaller HP increments and confirm via the
+  harness before committing big swings.
 - **Watch for cooldown resonance**: if a defensive recharge timer exactly
   matches an attacker's ability cadence, it creates a lockstep (e.g. a shield
   that's always up against one specific enemy). Keep defensive timers off

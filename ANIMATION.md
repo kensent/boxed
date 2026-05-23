@@ -146,8 +146,11 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   enemy at 3+ stacks (the "about to shatter" tell).
 - **Debuff / affliction = distinct non-ring forms** (so they never collide with
   the rings): stun **stars** (overhead), Witch's-mark **sigil** (on the body),
-  slow **drag-trail** (ghosts lagging behind). LOADED is a momentary
-  **"lucky" pop** (a trigger marker, not a state). The closing-ring fog-licks
+  slow **drag-trail** (ghosts lagging behind). DOUBLES (Gambler — formerly
+  LOADED DICE) is a momentary **"lucky" pop** above the head (a trigger
+  marker, not a state), reused for the new passive: the pop fires the
+  instant consecutive matched WILDCARD rolls trigger DOUBLES (Dealer's
+  Blessing — the rolled pattern fires twice). The closing-ring fog-licks
   indicator was removed with the fog mechanic itself.
 
 ### Death ceremony

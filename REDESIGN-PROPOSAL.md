@@ -122,7 +122,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Reaper** | shipped | `HARVEST` — returning scythe (semi-ranged boomerang) + WAKE: the arc leaves a damaging trail |
 | **Archer** | shipped | `VOLLEY` — fan of arrows per cast + SHATTER (cushion of embedded arrows bursts at 5 stacks for stacks×N damage) |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
-| **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
+| **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to `splashMinFrac` floor at edge so near-misses still chip) |
 | **Sapper** | shipped | `STICK CHARGE` — thrown fused limpet bomb; sticks on contact, detonates after a fuse, BLAST RADIUS knockback |
 | Wizard | keep | orbs are offense **and** shield |
 | **Jester** | shipped | `BLINK DAGGER` (unchanged) + `DOPPELGANGER` — every hit spawns a phantom decoy, uniform "aim nearest" routes enemy abilities into the decoy first |
@@ -131,7 +131,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | Witch | keep | wall-bouncing bolt + damage-amp mark |
 | Hunter | keep | reel the **enemy** in + stun |
 | Warlock | keep | channel tether: slow + leech |
-| Gambler | keep | six distinct dice patterns |
+| **Gambler** | passive reworked | `WILDCARD` (unchanged) + `DOUBLES` — consecutive matched rolls fire the pattern twice (replaces LOADED DICE, which was too close to Ronin's FOCUS) |
 
 ---
 
@@ -362,9 +362,13 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 > himself is a node — the kit's "fighter IS one of his own stones" identity,
 > mechanically true. So the first wall-bounce already creates a damaging
 > `self → stone` line; the network grows organically as more stones plant.
-> Any line crossed by the enemy body (or a decoy) at the cast frame deals
-> `f.dmg` per crossing. Decoys hit by lines are consumed. The topology is
-> **all-pairs**, not nearest-neighbour — see the topology note below.
+> Each line crossed by the enemy body (or a decoy) at the cast frame fires
+> its **own `damage()` call** for `f.dmg` — NOT a summed single hit. This
+> matters for shield/parry economy: Wizard's MANA SHIELD consumes one orb
+> per line (so a many-line cast drains the shield), Duelist RIPOSTE parries
+> each line as a separate hit, etc. Decoys hit by lines are consumed. The
+> topology is **all-pairs**, not nearest-neighbour — see the topology note
+> below.
 >
 > **Topology — all-pairs, not nearest-neighbour.** The first prototype linked
 > each stone to its 2 nearest. Sounded clean, but stones plant on walls — the
@@ -401,22 +405,23 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 > scattered around a dim amber rune-mark scorched into the ground at the
 > stone's centre, fading last.
 >
-> **Numbers (current):** hp 1100, dmg 85 (per line crossing), cd 2.5,
+> **Numbers (current):** hp 1100, dmg 80 (per line crossing), cd 2.5,
 > speed 120, maxStones 8, sigilFlashDur 0.6, lineWidth 4, linksPerStone 2
-> (unused; reserved). **~51% overall.** Spread 12 points (Ronin 56.5% top →
-> Jester 44.4% bottom).
+> (unused; reserved). **~50% overall.** Spread ~9 points (Cannoneer top,
+> Duelist bottom in the current pass).
 >
-> **Matchup texture (sim-validated, after the self-node + speed-bump pass).**
-> STRONG: Jester 99% (decoys are absorbed as line crossings), Duelist 86%
-> (no parry against a field cast — even sharper than before; the self-lines
-> emanating from Geo's body cross the dueling lunge path), Archer 72%,
-> Geomancer leads several middle-tier matchups. EVEN: Necromancer 51%,
-> Witch 41% (the witch's mark + chip-by-chip wins close fights). WEAK:
-> Ronin 25% (line-cut overshoots Geo cleanly; FOCUS chains end the fight),
-> Warlock 35% (sustained drain outlasts the network), Cannoneer 36%
-> (one-shot windup KOs before the network matures), Wizard 3% (mana shield
-> + orb chip dominates the early game — Wizard is now Geo's hardest
-> counter, replacing Hunter from the previous pass).
+> **Matchup texture (sim-validated, after per-line + tuning passes).**
+> STRONG: Jester 99% (decoys absorbed as line crossings — kit reads
+> Jester's identity as free damage), Duelist 86% (no parry against a
+> field cast — the self-lines from Geo's body cross the lunge path),
+> Archer 65%. EVEN: Necromancer 51%, Witch 41%, Sapper 59%. WEAK:
+> Ronin 23% (line-cut overshoots Geo cleanly; FOCUS chains end the
+> fight), Wizard 27% (mana shield + orb chip dominates the early game),
+> Warlock 31% (sustained drain outlasts the network), Cannoneer 37%
+> (one-shot windup KOs before the network matures), Priest 19%
+> (predictive pillar punishes Geo's slow stone ramp early game). The
+> per-line switch softened Wizard from a 3% auto-counter to 27%
+> (orbs drain per line instead of one orb per cast).
 >
 > **Implementation files touched:**
 > - `js/fighters.js` — entry replaces Knight's slot; props expose tunables.
@@ -426,8 +431,8 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 >   ticks the born-burst + sigilFlash (no lifetime decay).
 > - `js/abilities.js` — `case 'sigil'`: builds nodes = `[self, ...stones]`,
 >   computes all-pairs link set, segment-circle test against enemy + decoys,
->   damage applied as one summed call. Helpers: `segIntersectsCircle()`,
->   `computeSigilLinks()`.
+>   per-line `damage()` calls (one per crossing — drains shield/parry
+>   economy correctly). Helpers: `segIntersectsCircle()`, `computeSigilLinks()`.
 > - `js/render/sprites.js` — `case 'menhir'` body sprite (single granite
 >   stone with carved amber rune; rear-edge shadow for 3D form; subtle
 >   weathering crack). Replaced the original multi-piece `case 'pilgrim'`.
@@ -751,10 +756,18 @@ FOCUS chain, that click snaps straight into the next hum.
 >   lingering fire pool on impact — area denial. Playtest revealed the fire pool was
 >   tacked-on and the falloff curve on the splash explosion was the much more
 >   distinctive trait, so the passive shifted to **"damage peaks at the blast center,
->   scaling to nothing at the splash edge."** The fire pool was retired entirely (no
->   hazard zone lingers; the explosion is a single transient burst). Pairs perfectly
->   with the dumb lob: stationary/predictable targets eat full damage, fast/erratic
->   ones bounce off the line during flight and get chip damage.
+>   falling off to `splashMinFrac` at the splash edge."** The fire pool was retired
+>   entirely (no hazard zone lingers; the explosion is a single transient burst).
+>   Pairs perfectly with the dumb lob: stationary/predictable targets eat full
+>   damage, fast/erratic ones bounce off the line during flight and get chip damage.
+> - **EPICENTER floor added later.** The linear-to-zero falloff originally meant a
+>   "close miss" inside `splashRadius` dealt 0 — felt bad, especially since the
+>   enemy was visibly inside the lethal-zone ring. Added `splashMinFrac` (currently
+>   0.4) as a damage floor at the edge: `dmg * max(splashMinFrac, 1 - d/splashRadius)`.
+>   Near-misses now deal 40% of center damage instead of nothing, while
+>   center hits are unchanged. Cannoneer center damage trimmed `400 → 360` to
+>   compensate for the increased near-miss coverage (kept him in band: 54.3%
+>   after this rework vs ~56% with the harder edge).
 > - **Direct hit = full damage convention.** A shell that physically contacts the
 >   enemy mid-flight deals the full `f.dmg` (the card stat). Only LANDINGS (life-expire
 >   at the aim point, no contact) use the falloff curve. This means the card "DMG"
@@ -1008,6 +1021,70 @@ casing-crack + pressure boom (its existing `mine` impact) on detonation.
 
 ---
 
+## GAMBLER → `WILDCARD` + `DOUBLES` *(passive reworked — six-face dice plus a doubles jackpot)*
+*Material: ivory dice + gold coin, bright ivory click (unchanged).*
+
+> **IMPLEMENTED & VALIDATED.** Gambler's ACT (WILDCARD — roll 1-6 for one of
+> six distinct coin patterns) is unchanged. The PASSIVE was reworked because
+> the original LOADED DICE (low rolls halve the next cooldown) was
+> mechanically too close to Ronin's FOCUS (clean hits halve the next
+> cooldown) — both reduced the gap to the next ability and felt like the
+> same shape.
+>
+> **DOUBLES (new passive).** When two consecutive WILDCARD rolls land on the
+> same face, the rolled pattern fires **twice** in the same cast (Dealer's
+> Blessing). Trigger probability is exactly 1/6 per cast (~17%, the
+> probability that the next roll matches the previous one). Pure RNG-driven,
+> no agency, no cooldown manipulation. The second copy fires with a small
+> angular offset (face 5 uses π/N to interleave the doubled ring evenly
+> into 20 coins) so the doubled coins diverge instead of stacking on
+> identical trajectories.
+>
+> **Why "luck-based but not coin-flip".** Earlier iterations considered:
+> "double or nothing" per hit (50/50 hit-or-whiff), crit chance per coin,
+> dodge chance on incoming hits, low-roll re-roll, and conditional-luck
+> buffs. The DOUBLES design landed because (a) it doesn't add per-hit
+> binary randomness on top of the already-random dice (no double-stacking
+> variance), (b) the trigger is *emergent from the existing kit* (no new
+> state to track but `lastRoll`), and (c) the visual telegraph is the dice
+> themselves showing the same face twice — players see the trigger before
+> the bonus fires.
+>
+> **State + balancing.** Added `lastRoll` and `isDoubles` to the fighter
+> object; `fireAbility` checks the match and sets the flag; `resolveAim`
+> refactored its pattern code into a `firePattern(angOffset)` helper called
+> once normally and again on doubles with a per-face offset. DOUBLES alone
+> bumped Gambler from 44.8% to 54.7% (~+10 wr points). Rebalanced via HP +
+> speed instead of damage (Gambler's per-coin damage is the lowest in the
+> roster, ~50, so each dmg point is disproportionately sensitive: 50 → 42
+> over-cut him to 39%). Final tune:
+> - **HP 1000 → 900** (squishier; HP sensitivity is sharp at his low base —
+>   ~1 wr per ~11 HP, not the roster-average ~1 wr per 40 HP)
+> - **Speed 100 → 110** (mobility offsets HP loss — faster bouncing makes
+>   him harder to predict for predictive aim like Priest's JUDGMENT and
+>   Cannoneer's BOMBARD lead-shot)
+> - **Damage unchanged at 50**
+>
+> New identity: **"fast glass cannon"** instead of "average tanky chaos."
+> Lands at 50.5% overall.
+>
+> **Audio + visual.** Reused the existing gold-star "lucky pop" cue that
+> previously marked LOADED DICE firing; renamed `loadedFx` → `doublesFx`
+> throughout. No new SOUNDS entries; the dice settle and coin throws use
+> the existing `diceLand`/`diceLandBig`/`coinThrow` set.
+>
+> **Implementation files touched:**
+> - `js/fighters.js` — passive text updated; HP/speed tuned.
+> - `js/engine.js` — `makeFighter()` swaps `loadedFx`+`gamblerRefund` for
+>   `lastRoll`+`isDoubles`+`doublesFx`; `step()` decrements `doublesFx`.
+> - `js/abilities.js` — `fireAbility` wildcard case sets `isDoubles` from
+>   `lastRoll === newRoll`; `resolveAim` wildcard case refactored into
+>   `firePattern(angOffset)` called twice on doubles. LOADED DICE cd-halve
+>   block removed.
+> - `js/render/sprites.js` — `loadedFx` → `doublesFx`; comment updated.
+
+---
+
 # Keep — already distinct, no change
 
 These eight each own a unique verb. Brief rationale so the judgment is on record:
@@ -1032,8 +1109,10 @@ These eight each own a unique verb. Brief rationale so the judgment is on record
 - **Witch** — wall-bouncing bolt (unpredictable angles) + a setup→payoff damage mark.
 - **Hunter** — the only fighter that moves the *opponent* (reel-in) + a stun.
 - **Warlock** — the only channel; tether-slow + leech glass cannon.
-- **Gambler** — six genuinely distinct attack patterns off one roll, with loaded-dice
-  mitigation of bad luck. Novel by construction.
+- ~~**Gambler** — six genuinely distinct attack patterns off one roll, with
+  loaded-dice mitigation of bad luck.~~ *(moved out of the keep list — LOADED
+  DICE was mechanically too similar to Ronin's FOCUS (both halved the next
+  cooldown). Replaced with DOUBLES; see the dedicated section below.)*
 
 ---
 

@@ -35,5 +35,8 @@ home in Geomancer (STANDING STONES plant on each wall hit, SIGIL fires
 ley-lines between all stones). The kit *uses* the bounce as its core mechanic
 instead of fighting against it.
 
-Current healthy band is **~12 points wide** (Cannoneer 57% top, Jester 44%
-bottom) after the arena shrink + Geomancer add. Geomancer lands at ~52%.
+Current healthy band is **~9 points wide** (Cannoneer ~54% top, Duelist
+~46% bottom) after the Geomancer add + per-line SIGIL + post-Knight
+rebalance. Geomancer lands at ~50%; the spread has tightened from ~12 to
+~9 across the SIGIL per-line switch, Ronin/Cannoneer trims, Jester lift,
+and Gambler DOUBLES rework.
