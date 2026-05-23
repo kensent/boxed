@@ -304,9 +304,19 @@ function resolveAim(f) {
       }
     }
   } else if (f.aimAbility === 'cannon') {
-    // Straight line, fast, big, no homing. Muzzle flash + smoke.
-    const ang = Math.atan2(target.y - f.y, target.x - f.x);
-    game.projectiles.push({ x:f.x, y:f.y, vx:Math.cos(ang)*340, vy:Math.sin(ang)*340, team:f.team, dmg:f.dmg, life:1.8, kind:'cannon', size:7, homing:0, angle:ang });
+    // BOMBARD — fire a heavy shell STRAIGHT at the enemy's CURRENT position (no lead,
+    // no smart math: dumb heavy artillery, unlike Priest's predictive pillar). Shell
+    // expires at the aim point; if the enemy moved off it during flight, splash with
+    // DIRECT HIT falloff catches near-misses. The enemy's own movement IS the dodge.
+    const speed = 340;
+    const dx = target.x - f.x, dy = target.y - f.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const ang = Math.atan2(dy, dx);
+    game.projectiles.push({
+      x: f.x, y: f.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
+      team: f.team, dmg: f.dmg, life: Math.max(0.1, dist / speed),  // expire AT the aim point
+      kind: 'cannon', size: 7, homing: 0, angle: ang,
+    });
     sfx('cannon', null, f.x);
     shake(7); // muzzle kick
     f.fireKick = 0.2; f.fireKickMax = 0.2; f.fireDir = ang; // visual: heavy recoil + muzzle blast

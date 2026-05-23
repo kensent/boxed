@@ -59,7 +59,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
 | **Archer** | redesign | `VOLLEY` — burst-spread fire while moving + PINCUSHION stacks on the target |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
-| **Cannoneer** | redesign | `BOMBARD` — lobbed area shell: splash + lingering fire pool |
+| **Cannoneer** | shipped | `BOMBARD` — dumb heavy shell + EPICENTER falloff (max at center, scales to 0 at edge) |
 | **Sapper** | redesign | `STICK CHARGE` — thrown fused limpet bomb; guaranteed delayed burst + knockback |
 | Wizard | keep | orbs are offense **and** shield |
 | Jester | keep | teleport-behind + phase-dodge |
@@ -430,8 +430,40 @@ FOCUS chain, that click snaps straight into the next hum.
 
 ---
 
-## CANNONEER → `BOMBARD` (lobbed area shell)
+## CANNONEER → `BOMBARD` + `EPICENTER` *(shipped — dumb heavy lob, not predictive)*
 *Material: iron + gunpowder, percussive concussion, hard boom (unchanged).*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Built BOMBARD as a heavy splash shell as
+> the proposal sketched, with three meaningful course-corrections during playtest:
+> - **No predictive aim.** The original sketch had Cannoneer share Priest's "delayed
+>   strike at a predicted spot" grammar with opposite philosophy (forgiving splash vs
+>   surgical pillar). That made the two too structurally similar. Pivoted: **Cannoneer
+>   fires the shell STRAIGHT at the enemy's current position — no lead, no smart
+>   math.** The enemy's own movement during the ~1s flight is the dodge. This is a
+>   sharper contrast with Priest (smart aim vs dumb lob) and on-brand for "heavy
+>   artillery" (he doesn't predict, he just lobs heavy).
+> - **EPICENTER passive (replaced INCENDIARY ROUND).** The original passive was a
+>   lingering fire pool on impact — area denial. Playtest revealed the fire pool was
+>   tacked-on and the falloff curve on the splash explosion was the much more
+>   distinctive trait, so the passive shifted to **"damage peaks at the blast center,
+>   scaling to nothing at the splash edge."** The fire pool was retired entirely (no
+>   hazard zone lingers; the explosion is a single transient burst). Pairs perfectly
+>   with the dumb lob: stationary/predictable targets eat full damage, fast/erratic
+>   ones bounce off the line during flight and get chip damage.
+> - **Direct hit = full damage convention.** A shell that physically contacts the
+>   enemy mid-flight deals the full `f.dmg` (the card stat). Only LANDINGS (life-expire
+>   at the aim point, no contact) use the falloff curve. This means the card "DMG"
+>   matches what you see on direct contacts and rewards predictable targets cleanly.
+> - **Why no knockback (unchanged from the sketch):** that's Sapper's BLAST RADIUS.
+>   Cannoneer denies via explosion damage gradient; Sapper displaces.
+> - **Numbers:** hp 1030, dmg 400, cd 3.0, windupTime 1.0, splashRadius 55 → **~50%
+>   overall, ~13.2s avg, ~6% fog.** Authoritative tune is a later `./balance.sh` pass.
+> - *Matchup notes:* Knight 95% (slow → easy direct hit), Sapper 96%, Warlock 87%
+>   (low DPS, planted Cannoneer can land hits). Hard-countered by Priest 1% (the
+>   predictive pillar deletes the planted Cannoneer during the long windup),
+>   Berserker/Ronin/Jester (all dodge or shred). Wizard 29% (orbs + shield).
+>
+> *The original sketch below is preserved for reference — superseded by this.*
 
 The current cannon (1s windup, fast straight non-homing shot + incendiary zone) is
 *fine* — it already demands prediction. But it's a thinner version of the same

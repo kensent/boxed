@@ -957,37 +957,17 @@ function draw() {
     shaken = true;
   }
 
-  // Hazard zones — Cannoneer INCENDIARY (kind: 'fire') and Reaper WAKE (kind:
-  // 'wake'). Line-drawn so the danger area reads without a big alpha fill.
+  // Reaper WAKE hazard segments — dim crimson scar along the boomerang's arc. Many
+  // overlapping segments form a visible damaging trail. Soft fill + outline (small
+  // radius keeps the alpha-fill cheap on mobile). Only hazard kind currently in use
+  // (Cannoneer's fire pool was retired when EPICENTER became the passive).
   (game.hazards || []).forEach(h => {
     const fade = h.timer / h.maxTimer;               // 1 → 0
-    if (h.kind === 'wake') {
-      // Reaper WAKE — a dim crimson scar along the boomerang's arc. Many overlapping
-      // segments form a visible damaging trail. Soft fill + outline (small radius, so
-      // the alpha-fill stays cheap on mobile).
-      ctx.fillStyle = `rgba(170,0,0,${(fade * 0.32).toFixed(3)})`;
-      ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = `rgba(200,20,20,${(fade * 0.7).toFixed(3)})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.stroke();
-      return;
-    }
-    // Cannoneer fire pool — pulsing ring + inward flame licks.
-    const pulse = 0.6 + Math.sin(performance.now() / 120) * 0.4;
-    ctx.strokeStyle = `rgba(255,140,26,${(fade * 0.45 * pulse + 0.12).toFixed(3)})`;
-    ctx.lineWidth = 2;
+    ctx.fillStyle = `rgba(170,0,0,${(fade * 0.32).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(200,20,20,${(fade * 0.7).toFixed(3)})`;
+    ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = `rgba(255,90,20,${(fade * 0.7).toFixed(3)})`;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    for (let i = 0; i < 10; i++) {
-      const ag = (i / 10) * Math.PI * 2;
-      const fl = 4 + Math.abs(Math.sin(performance.now() / 90 + i * 1.7)) * 6;  // flicker
-      ctx.beginPath();
-      ctx.moveTo(h.x + Math.cos(ag) * (h.radius - 2), h.y + Math.sin(ag) * (h.radius - 2));
-      ctx.lineTo(h.x + Math.cos(ag) * (h.radius - 2 - fl), h.y + Math.sin(ag) * (h.radius - 2 - fl));
-      ctx.stroke();
-    }
   });
 
   // Priest JUDGMENT — windup target reticle at the locked predicted spot (world

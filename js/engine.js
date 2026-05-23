@@ -1262,7 +1262,22 @@ function step(dt) {
       return true;
     }
     p.life -= dt;
-    if (p.life <= 0) return false;
+    if (p.life <= 0) {
+      // BOMBARD landing — a cannon shell that didn't directly contact the enemy
+      // EXPLODES at its predicted landing point with DIRECT HIT falloff (max at
+      // center, scaling to 0 at splashRadius). Same logic as the contact branch.
+      if (p.kind === 'cannon') {
+        const ownerC = p.team === 'red' ? red : blue;
+        const tgtC = p.team === 'red' ? blue : red;
+        if (!ownerC.dead && !tgtC.dead) {
+          const d = Math.hypot(tgtC.x - p.x, tgtC.y - p.y);
+          if (d < ownerC.splashRadius) damage(tgtC, p.dmg * (1 - d / ownerC.splashRadius), 'projectile');
+        }
+        spawnImpact(p.x, p.y, 'cannon', 0, 1);
+        sfx('impact', { kind: 'cannon', big: 1 }, p.x);
+      }
+      return false;
+    }
     // A projectile must not outlive its caster — if the owning fighter is
     // dead, the projectile is orphaned and despawns. (endGame() also clears
     // projectiles, but enforcing it here makes it true every frame regardless
@@ -1354,6 +1369,16 @@ function step(dt) {
         if (p.homing <= 0) { p.homing = 25; p.cruise = Math.hypot(p.vx, p.vy); }
         return true; // keep alive, flipped — angle re-syncs to velocity next frame
       }
+      // Cannoneer BOMBARD — explode on contact. A direct hit IS the max damage (so the
+      // card stat matches what lands); falloff is the splash mechanic and only applies
+      // to LANDINGS (the life-expire path below), where the enemy can be near-but-not-
+      // touched by the blast.
+      if (p.kind === 'cannon') {
+        damage(target, p.dmg, 'projectile');
+        spawnImpact(p.x, p.y, 'cannon', 0, 1);
+        sfx('impact', { kind: 'cannon', big: 1 }, p.x);
+        return false;
+      }
       // Hook (Hunter): deals damage, tethers + reels the target, and triggers
       // CRIPPLING HOOK — each hook that connects slows the wounded enemy, so
       // they can't escape the next one. A flat per-hook debuff (no snowball).
@@ -1424,25 +1449,13 @@ function step(dt) {
   game.hazards = game.hazards.filter(h => {
     h.timer -= dt;
     if (h.timer <= 0) return false;
+    // Reaper WAKE — the only hazard kind currently in use (Cannoneer's fire pool
+    // was retired when EPICENTER became the passive). Dense overlapping segments
+    // gate damage on the TARGET's wakeHitCd, not a per-segment cooldown.
     const target = h.team === 'red' ? blue : red;
-    if (h.kind === 'wake') {
-      // Reaper WAKE — segments are dense and overlap, so we gate damage on the
-      // TARGET's wakeHitCd (not a per-segment cooldown). Net cap: one wake tick per
-      // WAKE_HIT_GAP seconds, regardless of how many segments overlap the target.
-      if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {
-        damage(target, h.dmg, 'hazard');
-        target.wakeHitCd = WAKE_HIT_GAP;
-      }
-    } else {
-      // Fire (Cannoneer INCENDIARY) — per-segment tickCd, fixed cadence with burn sfx.
-      h.tickCd -= dt;
-      if (h.tickCd <= 0) {
-        h.tickCd = 0.2;
-        if (!target.dead && dist(h, target) < h.radius) {
-          damage(target, h.dmg, 'hazard');
-          sfx('burn', null, h.x); // soft fire crackle per tick
-        }
-      }
+    if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {
+      damage(target, h.dmg, 'hazard');
+      target.wakeHitCd = WAKE_HIT_GAP;
     }
     return true;
   });
