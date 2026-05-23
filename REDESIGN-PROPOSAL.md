@@ -1,7 +1,44 @@
 # BOXED — ability redesign proposal
 
-**Status:** sketch / for discussion. Mechanics only — **numbers are deliberately
-omitted**; balance is a separate tuning pass once verbs are locked.
+**Status (2026-05-23):** the redesign has been *executed*. Every fighter
+listed below has shipped, except Knight which remains UNRESOLVED. The
+at-a-glance table tracks current state; each section's `IMPLEMENTED &
+VALIDATED` block captures the final tunables and matchup texture.
+
+## Project-level changes that shipped alongside the redesigns
+
+These aren't fighter redesigns but they're load-bearing on everything:
+
+- **Arena shrunk 360 → 300.** Once the melee redesigns landed (Berserker
+  rampage, Ronin overshoot, etc.) the original 360 arena couldn't reliably
+  put two random-bouncing fighters in contact. ARENA dropped to 300
+  (~45% denser); every fighter was re-tuned around the new connection
+  rate, landing the roster in a ~12-point band.
+- **Closing-ring fog removed.** Shorts viewers want fights resolved on
+  the fighters' merits, not by an arena hazard at 20s. Post-shrink fights
+  resolve in 11-15s on their own, so fog was rarely doing real work. The
+  headless 4000-tick guard remains as a stalemate safety net.
+- **Camera simplified.** The dynamic follow-cam (pan deadzone + comfort
+  zoom) was disabled — the smaller arena already frames both fighters
+  statically at zoom 1.0. The kill-cam push-in on the loser is preserved.
+- **DOPPELGANGER substrate.** Jester's UNCANNY DODGE was replaced with
+  decoys (see Jester's section). The supporting change is a *universal*
+  "aim at nearest of {real, decoys}" rule routed through one helper
+  (`pickTarget` in engine.js) that every fighter's aim path uses. For the
+  14 non-Jester fighters this collapses to "aim at the real enemy" and
+  behaviour is unchanged; for Jester it's the whole counter-texture.
+- **Duelist COUNTER simplified.** Used to be "free auto-thrust on every
+  melee hit Duelist takes" — a 80-dmg tax on anyone who touched him.
+  Now `COUNTER` is purely defensive: the RIPOSTE thrust window parries
+  melee hits (absorbed, no damage) and reflects projectiles. No proc.
+
+---
+
+## Original framing (kept for the design intent record)
+
+**Original status:** sketch / for discussion. Mechanics only — **numbers
+are deliberately omitted**; balance is a separate tuning pass once verbs
+are locked.
 
 ## The problem this fixes
 
@@ -53,7 +90,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 
 | Fighter | Verdict | New verb |
 |---|---|---|
-| **Priest** | redesign | `JUDGMENT` — predictive light pillar; landing it heals |
+| **Priest** | shipped | `JUDGMENT` — predictive light pillar; landing it heals (re-tuned dmg/cd/heal after the arena shrink) |
 | **Berserker** | shipped | `RAMPAGE` — wall-ricocheting charge, hits per pass |
 | **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
 | **Reaper** | shipped | `CRESCENT THROW` — returning boomerang (semi-ranged) + WAKE: the arc leaves a damaging trail |
@@ -63,7 +100,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 | **Sapper** | shipped | `STICK CHARGE` — thrown fused limpet bomb; sticks on contact, detonates after a fuse, BLAST RADIUS knockback |
 | Wizard | keep | orbs are offense **and** shield |
 | **Jester** | shipped | `BLINK DAGGER` (unchanged) + `DOPPELGANGER` — every hit spawns a phantom decoy, uniform "aim nearest" routes enemy abilities into the decoy first |
-| Duelist | keep | reflect projectiles + auto-counter |
+| **Duelist** | shipped | `RIPOSTE THRUST` (active, offense only) + `COUNTER` (passive: the thrust window parries melee hits and reflects projectiles — no auto-counter-thrust proc) |
 | Necromancer | keep | summon + explode-on-death |
 | Witch | keep | wall-bouncing bolt + damage-amp mark |
 | Hunter | keep | reel the **enemy** in + stun |

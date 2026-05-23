@@ -178,19 +178,24 @@ defensive response* — the moment a hit is mitigated — always sounds, in the
 defender's material; a *passive ongoing state* generally doesn't (its visual
 carries it), with key transitions getting a one-shot cue:
 
-- **Defensive responses (audible).** Jester dodge = hollow ceramic whiff (`negate`)
-  · Duelist parry = bright steel deflect (`parry`) · Knight Plate Armor = dull
-  steel deflect clank (`armor`) · Wizard Mana Shield = glassy arcane absorb as an
-  orb spends out (`shield`). Armor/shield are gated off drain/hazard DoT so a
-  continuous tick can't machine-gun them.
-- **State transitions (one-shot cue).** Berserker Bloodrage = a rising primal growl
-  the instant HP crosses below 50% (`bloodrage`, fires once on activation) · the
-  closing ring beginning = a single low ominous swell at `RING_START` (`ringClose`,
-  one-shot). Skeleton dying alone = a soft bone crumble (`boneCrumble`); when its
-  death-burst catches an enemy it escalates to `boneBurst`.
+- **Defensive responses (audible).** Duelist parry = bright steel deflect
+  (`parry`, now fires for both projectile-reflect AND melee-parry-absorb during
+  the RIPOSTE thrust window; see REDESIGN-PROPOSAL.md COUNTER redesign) ·
+  Knight Plate Armor = dull steel deflect clank (`armor`) · Wizard Mana
+  Shield = glassy arcane absorb as an orb spends out (`shield`). Armor/shield
+  are gated off drain DoT so a continuous tick can't machine-gun them.
+  Jester's old UNCANNY DODGE `negate` whiff is gone — DOPPELGANGER replaced
+  the dodge mechanic entirely, and decoy-intercepted hits resolve silently
+  in the projectile/melee hit loops (the decoy absorbs the attack; the
+  phantom dies without an audible cue, since it was never a real fighter).
+- **State transitions (one-shot cue).** Berserker Bloodrage = a rising primal
+  growl the instant HP crosses below 50% (`bloodrage`, fires once on activation).
+  Skeleton dying alone = a soft bone crumble (`boneCrumble`); when its
+  death-burst catches an enemy it escalates to `boneBurst`. The closing-ring
+  `ringClose` swell is gone with the fog mechanic itself (no longer triggered).
 - **Silent states.** Stun, Witch's-mark, slow, FOCUS, LOADED — their visual forms
-  carry them; no standing audio. The one-shot flags driving the cues above
-  (`game.ringWarned`, `f.rageWasActive`) are audio-only — gameplay never reads them.
+  carry them; no standing audio. The one-shot flag driving the cue above
+  (`f.rageWasActive`) is audio-only — gameplay never reads it.
 
 ### Two rules under all of it
 1. **Balance-safe.** `sfx()` is headless-guarded — it returns immediately when

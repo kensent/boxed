@@ -2,30 +2,39 @@
 
 BOXED is a YouTube-Shorts-style bouncing-arena fight simulator. Two fighters
 bounce DVD-style around a closed arena, use abilities on cooldowns, and the
-last one alive wins. Target fight length is under 30 seconds. Mobile-targeted.
+last one alive wins. Fights typically finish in 11-15s and there is no longer
+any artificial timeout (no closing ring / fog); a fighter wins by killing the
+other on its own merits. Mobile-targeted.
 
 ## Files
 
 - `boxed.html` — HTML + CSS only, plus `<script src>` tags in load order.
   Open directly in a browser (no build step, no dependencies, works from `file://`).
 - `js/` — all gameplay JavaScript, one concern per file:
-  - `rng.js` · `fighters.js` · `matchups.js` · `audio.js`
+  - `rng.js` · `fighters.js` · `matchups.js` · `quotes.js` · `audio.js`
   - `combat.js` · `particles.js` · `abilities.js` · `engine.js`
-    (`engine.js` also owns the render-only **follow-camera** that frames both
-    fighters for the Shorts format — pans/zooms in the 360×360 reference space,
-    never feeds the sim; see GOTCHAS.md)
+    (`engine.js` owns the static-during-play / kill-cam-on-K.O. camera in the
+    fixed **300×300 reference space**; render-only, never feeds the sim. The old
+    dynamic follow-cam was disabled after the arena shrink — see GOTCHAS.md.)
   - `render/sprites.js` · `render/arena.js`
-    (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so they move
-    with the camera — deliberately not CSS)
+    (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so they
+    scale with the kill-cam zoom — deliberately not CSS)
   - `ui.js` (selection screen) · `main.js` (end-game lifecycle)
-- `boxedshard.js` — runs a slice of the 120-matchup balance simulation.
-  `node boxedshard.js <startIdx> <endIdx> <outfile>` runs matchups in
-  `[startIdx, endIdx)` and writes results to `<outfile>`.
+- `boxedshard.js` — runs a slice of the balance simulation (currently 105
+  matchups — Knight is excluded via `EXCLUDE_IDS`; see GOTCHAS.md and
+  REDESIGN-PROPOSAL.md). `node boxedshard.js <startIdx> <endIdx> <outfile>`
+  runs matchups in `[startIdx, endIdx)` and writes results to `<outfile>`.
 - `boxedmerge.js` — assembles shard result files into the `MATCHUPS` block
-  (paste-ready for `js/matchups.js`) plus a per-fighter win-rate summary.
+  (paste-ready for `js/matchups.js`) plus a per-fighter win-rate summary
+  including `long%` (the fraction of fights past `LONG_FIGHT_THRESHOLD`,
+  currently 30s — stalemate-prone matchup detector).
   `node boxedmerge.js <file> [<file> ...]`.
-- `balance.sh` — runs all 8 shards in parallel and merges. This is the
-  normal way to do a full balance run. Just `./balance.sh`.
+- `balance.sh` — runs all 7 shards (15 matchups each, 105 total) in parallel
+  and merges. The shard count is hardcoded to the active roster size; the
+  header has a re-include note for putting Knight back. Just `./balance.sh`.
+- `REDESIGN-PROPOSAL.md` — the design + rebalance journal. Each shipped fighter
+  has an `IMPLEMENTED & VALIDATED` block with the final tunables and matchup
+  texture; the original sketches below are preserved for history.
 
 ## Workflow
 

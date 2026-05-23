@@ -101,17 +101,31 @@ gleams, ronin's coil + tremor. The kick + launch flash are the *release* of the 
 
 ### State indicators — on the fighter, never a HUD badge
 Every status reads on the fighter itself; the **form** tells buff from debuff:
-- **Buff / ready / active = rings** (at most one per fighter, by ability): armed
-  glow (dodge) + the Wizard's 4-segment mana-shield gauge, active windows (parry,
-  invuln), bloodrage pulse, FOCUS gold aura, the negate-flash.
-- **Debuff / affliction = distinct non-ring forms** (so they never collide with the
-  rings): stun **stars** (overhead), Witch's-mark **sigil** (on the body), slow
-  **drag-trail** (ghosts lagging behind), fog **licks** (encroaching from outside).
-  LOADED is a momentary **"lucky" pop** (a trigger marker, not a state).
+- **Buff / ready / active = rings** (at most one per fighter, by ability): the
+  Wizard's 4-segment mana-shield gauge, the Duelist parry window (cyan tight
+  ring, used as both projectile-parry and melee-parry-absorb — see the COUNTER
+  redesign in REDESIGN-PROPOSAL.md), the Berserker rampage-windup charge ring
+  (crimson, with body tremble + radial coil-lines), the bloodrage pulse, the
+  Ronin FOCUS gold aura, the negate-flash.
+- **Decoys (Jester DOPPELGANGER)** — phantom Jester sprites at 42% alpha with a
+  faint outer halo, drawn in world space at the decoy positions. Not a ring on
+  the real Jester: they're separate bodies enemies can target. (See
+  REDESIGN-PROPOSAL.md for the universal "aim nearest" targeting rule that
+  makes decoys load-bearing across every ability path.)
+- **Embedded arrows (Archer SHATTER)** — literal arrow shafts stuck in the
+  enemy's body, accumulating until the cushion bursts at 5 stacks. Each
+  stuck arrow has its own decay timer; a green halo pulses around the
+  enemy at 3+ stacks (the "about to shatter" tell).
+- **Debuff / affliction = distinct non-ring forms** (so they never collide with
+  the rings): stun **stars** (overhead), Witch's-mark **sigil** (on the body),
+  slow **drag-trail** (ghosts lagging behind). LOADED is a momentary
+  **"lucky" pop** (a trigger marker, not a state). The closing-ring fog-licks
+  indicator was removed with the fog mechanic itself.
 
 ### Death ceremony
 **Shared frame** (always), as a sequence: on the kill the body **freezes** intact
-while the follow-camera pushes in on it (kill-cam); once the camera arrives the body
+while the kill-cam pushes in on it (the camera holds static at the arena centre
+during play; the K.O. is the only time it moves); once the camera arrives the body
 **shatters** (the per-fighter undoing below, over a fixed beat) as the white
 **camera-snap**, the **K.O.** punch-in, the death voice and the boom all land
 together — so the hit reads as one beat instead of leading the visual during the

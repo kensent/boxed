@@ -2,7 +2,11 @@
 
 ## Design principles
 
-1. Timed ring closer keeps fights under 30s; there are no draws.
+1. Fights finish naturally — fighters win by killing the other, not on a
+   timer. The old closing-ring / fog mechanic was removed because it pressured
+   fights toward an artificial KO; with the post-shrink connection rate, fights
+   wrap in ~11–15s on their own. The headless sim has a 4000-tick guard
+   (~67s) only as a stalemate safety net.
 2. Tune per-fighter, not with global multipliers.
 3. Character identity beats pure balance — hard counters are good content,
    not bugs. A fighter that wins most matchups and loses a few badly, landing
@@ -13,17 +17,23 @@
 6. Sprites: faceted/straight-line shapes read crisp at 64px. Judge them
    in-fight, not just in the gallery. Lead with the shape that says the
    fighter's identity instantly.
-7. Frame for the vertical Shorts format. A static full-arena view leaves the
-   fighters too small to read on a fast scroll, so a follow-camera keeps both
-   fighters framed at a comfortable zoom — holding still while they're close (a
-   pan deadzone) and only panning/zooming out when they spread apart. It's purely
-   a render concern — the camera reads positions but never feeds the simulation,
-   so framing changes can't affect balance. (Mechanics in GOTCHAS.md; tunables in
-   `engine.js`.)
+7. The arena is a fixed **300×300 reference space**. Shrunk from 360 once the
+   ability redesigns landed so melee dashes reliably connect under autonomous
+   DVD movement — see GOTCHAS.md. The camera holds STATIC at the arena
+   centre at zoom 1.0 during play (full arena visible) and pushes in on the
+   loser on the K.O. (the kill-cam). Render-only — the sim never reads camera
+   state, so framing can't affect balance. (Tunables in `engine.js`.)
 
 ## Roster
 
-16 fighters: priest, berserker, wizard, knight, sapper, archer, jester,
+15 active fighters: priest, berserker, wizard, sapper, archer, jester,
 cannoneer, duelist, necromancer, reaper, ronin, witch, hunter, warlock,
-gambler. Healthy balance is the whole roster within roughly a 46–53% band
-with no true outliers.
+gambler. **Knight is shelved as UNRESOLVED** — its melee-tank niche has
+been a hard design corner under autonomous DVD movement (see
+REDESIGN-PROPOSAL.md for the failed prototypes), and it's currently
+excluded from the balance harness so its stale numbers don't leak into
+the upset-hunt picker. Knight is still in the FIGHTERS array and is
+selectable from the picker; it just doesn't appear in MATCHUPS.
+
+Current healthy band is **~12 points wide** (Ronin 56% top, Gambler 44%
+bottom) after the arena shrink + post-shrink rebalance.
