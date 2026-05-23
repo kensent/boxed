@@ -39,11 +39,22 @@ const FIGHTERS = [
     get active() { return `CAST ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
-  { id:'knight',  name:'KNIGHT',    hp:1110, speed:90,  color:'#c0c0c0', accent:'#2e9eff', shape:'shield',
-    ability:'sword', cd:1.2, dmg:200, strikeReach:12,
-    armorFlat: 20,
-    active: 'SHIELD BASH — dash in and slam on reach',
-    get passive() { return `PLATE ARMOR — −${this.armorFlat} dmg per hit (min 10)`; },
+  { id:'geomancer',name:'GEOMANCER', hp:1100, speed:82,  color:'#7a6852', accent:'#e8a020', shape:'menhir',
+    // STANDING STONES (passive) — every wall-bounce drives a runestone into
+    // the wall at the contact point. Stones are inert markers, glowing
+    // amber; they decay over `stoneLifetime` and are evicted at `maxStones`
+    // (oldest first). The arena slowly accumulates a network of standing
+    // stones along its perimeter.
+    // SIGIL (active) — Geomancer slams his staff and for `sigilFlashDur`
+    // every planted stone links to its `linksPerStone` nearest neighbours
+    // via amber ley-lines drawn across the arena floor; any line the enemy
+    // (or a decoy) intersects at the cast frame deals `dmg` per crossing.
+    // dmg is per-line, so a single cast can stack 0..many of these.
+    ability:'sigil', cd:2.5, dmg:95,
+    maxStones: 8, stoneLifetime: 13, linksPerStone: 2,
+    sigilFlashDur: 0.6, lineWidth: 4,
+    get active() { return `SIGIL — slams the staff; every planted stone fires a ley-line to every other, burning anyone on the lines`; },
+    get passive() { return `STANDING STONES — each wall-bounce drives a runestone into the wall (max ${this.maxStones}); SIGIL connects them all`; },
   },
   { id:'sapper', name:'SAPPER',    hp:780,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
     // Internal ability id stays 'mine' — keys Sapper's BURST death + casing material.

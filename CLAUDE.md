@@ -20,18 +20,19 @@ other on its own merits. Mobile-targeted.
     (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so they
     scale with the kill-cam zoom — deliberately not CSS)
   - `ui.js` (selection screen) · `main.js` (end-game lifecycle)
-- `boxedshard.js` — runs a slice of the balance simulation (currently 105
-  matchups — Knight is excluded via `EXCLUDE_IDS`; see GOTCHAS.md and
-  REDESIGN-PROPOSAL.md). `node boxedshard.js <startIdx> <endIdx> <outfile>`
+- `boxedshard.js` — runs a slice of the balance simulation (currently 120
+  matchups; `EXCLUDE_IDS` is empty — all 16 active fighters participate after
+  Knight was replaced by Geomancer). `node boxedshard.js <startIdx> <endIdx> <outfile>`
   runs matchups in `[startIdx, endIdx)` and writes results to `<outfile>`.
 - `boxedmerge.js` — assembles shard result files into the `MATCHUPS` block
   (paste-ready for `js/matchups.js`) plus a per-fighter win-rate summary
   including `long%` (the fraction of fights past `LONG_FIGHT_THRESHOLD`,
   currently 30s — stalemate-prone matchup detector).
   `node boxedmerge.js <file> [<file> ...]`.
-- `balance.sh` — runs all 7 shards (15 matchups each, 105 total) in parallel
-  and merges. The shard count is hardcoded to the active roster size; the
-  header has a re-include note for putting Knight back. Just `./balance.sh`.
+- `balance.sh` — runs all 8 shards (15 matchups each, 120 total) in parallel
+  and merges. The shard count is hardcoded to the active roster size; update
+  the loop in lockstep with `FIGHTERS` if a fighter is added or shelved.
+  Just `./balance.sh`.
 - `REDESIGN-PROPOSAL.md` — the design + rebalance journal. Each shipped fighter
   has an `IMPLEMENTED & VALIDATED` block with the final tunables and matchup
   texture; the original sketches below are preserved for history.

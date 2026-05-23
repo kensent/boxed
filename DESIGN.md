@@ -26,14 +26,14 @@
 
 ## Roster
 
-15 active fighters: priest, berserker, wizard, sapper, archer, jester,
-cannoneer, duelist, necromancer, reaper, ronin, witch, hunter, warlock,
-gambler. **Knight is shelved as UNRESOLVED** — its melee-tank niche has
-been a hard design corner under autonomous DVD movement (see
-REDESIGN-PROPOSAL.md for the failed prototypes), and it's currently
-excluded from the balance harness so its stale numbers don't leak into
-the upset-hunt picker. Knight is still in the FIGHTERS array and is
-selectable from the picker; it just doesn't appear in MATCHUPS.
+16 active fighters: priest, berserker, wizard, geomancer, sapper, archer,
+jester, cannoneer, duelist, necromancer, reaper, ronin, witch, hunter,
+warlock, gambler. **Geomancer replaced Knight** — Knight's melee-tank niche
+was a hard design corner under autonomous DVD movement (see REDESIGN-PROPOSAL.md
+for the failed prototypes), and the wall-bouncing identity finally found its
+home in Geomancer (STANDING STONES plant on each wall hit, SIGIL fires
+ley-lines between all stones). The kit *uses* the bounce as its core mechanic
+instead of fighting against it.
 
-Current healthy band is **~12 points wide** (Ronin 56% top, Gambler 44%
-bottom) after the arena shrink + post-shrink rebalance.
+Current healthy band is **~12 points wide** (Cannoneer 57% top, Jester 44%
+bottom) after the arena shrink + Geomancer add. Geomancer lands at ~52%.

@@ -191,32 +191,71 @@ function drawShape(c, f, hinge = 0) {
       c.fillRect(s * 0.63, -s * 0.04, s * 0.10, s * 0.08);
       break;
     }
-    case 'shield': {
-      // Knight — kite shield with a cross emblem.
-      // Shield body (kite shape pointing forward)
+    case 'menhir': {
+      // Geomancer — a standing stone (menhir) with a glowing carved rune.
+      // ONE OBJECT (per the roster pattern: Necromancer = skull, Witch = hat,
+      // Wizard = book, etc.). The fighter IS one of his own runestones,
+      // wandering the arena; smaller stones plant on wall bounces and the
+      // SIGIL connects them all — including himself — into the network.
+      // Forward = +x (the carved rune-face).
+      const s = FIGHTER_SIZE;
+      // Stone body — faceted hexagonal silhouette, asymmetric so the rear
+      // edge reads as the "back" of the stone (slight 3/4 turn). Granite
+      // gray-brown via f.color.
       c.fillStyle = f.color;
       c.beginPath();
-      c.moveTo(-FIGHTER_SIZE * 0.65, -FIGHTER_SIZE * 0.85);
-      c.lineTo(FIGHTER_SIZE * 0.5, -FIGHTER_SIZE * 0.7);
-      c.lineTo(FIGHTER_SIZE * 0.95, 0);
-      c.lineTo(FIGHTER_SIZE * 0.5, FIGHTER_SIZE * 0.7);
-      c.lineTo(-FIGHTER_SIZE * 0.65, FIGHTER_SIZE * 0.85);
-      c.lineTo(-FIGHTER_SIZE * 0.55, 0);
+      c.moveTo(-s * 0.50,  s * 0.92);   // bottom-rear
+      c.lineTo( s * 0.78,  s * 0.88);   // bottom-front
+      c.lineTo( s * 0.88, -s * 0.18);   // mid-front (slight outward bulge)
+      c.lineTo( s * 0.55, -s * 0.92);   // top-front
+      c.lineTo(-s * 0.42, -s * 0.95);   // top-rear
+      c.lineTo(-s * 0.64,  s * 0.12);   // mid-rear (inward indent)
       c.closePath();
       c.fill();
-      // Shield rim (lighter highlight)
-      c.strokeStyle = f.accent;
-      c.lineWidth = 2;
-      c.stroke();
-      // Cross emblem (vertical + horizontal arms)
-      c.fillStyle = f.accent;
-      c.fillRect(-FIGHTER_SIZE * 0.05, -FIGHTER_SIZE * 0.55, FIGHTER_SIZE * 0.18, FIGHTER_SIZE * 1.1);
-      c.fillRect(-FIGHTER_SIZE * 0.4, -FIGHTER_SIZE * 0.1, FIGHTER_SIZE * 0.85, FIGHTER_SIZE * 0.18);
-      // Central rivet/boss
-      c.fillStyle = '#fff';
+      // Rear-edge depth shadow — a darker band along the -x side, hinting at
+      // a back face turned away from view. The stone is a 3D object.
+      c.fillStyle = '#3a322a';
       c.beginPath();
-      c.arc(FIGHTER_SIZE * 0.05, 0, FIGHTER_SIZE * 0.1, 0, Math.PI * 2);
+      c.moveTo(-s * 0.50,  s * 0.92);
+      c.lineTo(-s * 0.42, -s * 0.95);
+      c.lineTo(-s * 0.20, -s * 0.78);
+      c.lineTo(-s * 0.42,  s * 0.10);
+      c.lineTo(-s * 0.30,  s * 0.78);
+      c.closePath();
       c.fill();
+      // Front face — slightly recessed darker panel where the rune is carved.
+      // Defines where the rune sits without floating it on the body surface.
+      c.fillStyle = '#2c241a';
+      c.beginPath();
+      c.moveTo( s * 0.0,  -s * 0.66);
+      c.lineTo( s * 0.50, -s * 0.58);
+      c.lineTo( s * 0.55,  s * 0.58);
+      c.lineTo( s * 0.05,  s * 0.64);
+      c.closePath();
+      c.fill();
+      // Carved rune — geomantic "earth" mark: three stacked horizontal bars
+      // with a bright central node. Glowing amber, time-pulsing (deterministic,
+      // no rng — GOTCHAS). Pulses on the same rate as the wall-stones so the
+      // kit reads as one connected glyph system.
+      const pulse = 0.55 + Math.sin(performance.now() / 340) * 0.30;
+      c.fillStyle = `rgba(232,160,40,${pulse.toFixed(3)})`;
+      c.fillRect( s * 0.10, -s * 0.42, s * 0.36, s * 0.07);   // top bar
+      c.fillRect( s * 0.10, -s * 0.05, s * 0.36, s * 0.07);   // middle bar
+      c.fillRect( s * 0.10,  s * 0.32, s * 0.36, s * 0.07);   // bottom bar
+      // White-hot centre node.
+      c.fillStyle = `rgba(255,240,180,${(pulse * 0.85).toFixed(3)})`;
+      c.beginPath();
+      c.arc(s * 0.28, -s * 0.02, s * 0.08, 0, Math.PI * 2);
+      c.fill();
+      // Hairline weathering crack on the top-rear edge — character detail
+      // that says "old, hand-carved stone" rather than extruded plastic.
+      c.strokeStyle = '#1c1610';
+      c.lineWidth = 0.7;
+      c.beginPath();
+      c.moveTo(-s * 0.25, -s * 0.85);
+      c.lineTo(-s * 0.15, -s * 0.62);
+      c.lineTo(-s * 0.22, -s * 0.40);
+      c.stroke();
       break;
     }
     case 'keg': {
@@ -1008,7 +1047,6 @@ function drawFighter(f) {
   // actually starts moving.
   let windup = { active: false, ease: 1 };
   if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, f.rampageDur, 0.06);
-  else if (f.ability === 'sword')    windup = meleeWindupHold(f, enemy, 0.26, 0.12);
   else if (f.ability === 'riposte')  windup = meleeWindupHold(f, enemy, 0.3, 0.10);
   else if (f.ability === 'sweep')    windup = meleeWindupHold(f, enemy, 0.25, 0.10);
 
@@ -1192,20 +1230,6 @@ function drawFighter(f) {
       bodyX = 1.35;                                 // in-flight: stretch along the charge
       bodyY = 0.74;
     }
-  } else if (f.ability === 'sword') {
-    // Knight — heavy, deliberate shield BASH. Less whip than the Berserker: it
-    // braces, rams as a firm wall, and dead-stops hard on contact.
-    if (f.meleeImpact > 0) {
-      bodyX = 1 - 0.30 * impactK;                   // dead stop: the shield slams flat
-      bodyY = 1 + 0.30 * impactK;
-    } else if (windup.active) {
-      const coil = 1 - windup.ease;                 // brace back
-      bodyX = 1 - 0.18 * coil;
-      bodyY = 1 + 0.14 * coil;
-    } else if (f.dashTimer > 0) {
-      bodyX = 1.16;                                 // ram: firm forward set, not a whip
-      bodyY = 0.90;
-    }
   } else if (f.ability === 'riposte') {
     // Duelist — a precise DART: the whole rapier loads back, then shoots forward
     // and elongates into a needle; it stays long through contact, then retracts.
@@ -1309,33 +1333,6 @@ function drawFighter(f) {
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
     ctx.stroke();
-  }
-
-  // ===== KNIGHT — flat shield-slam shock (bespoke impact) ===================
-  // A flat bar of force perpendicular to the bash direction snaps wide at the
-  // contact point and fades — a blunt WALL hit, deliberately NOT a radial ring
-  // (that's the Berserker's voice). Steel-blue, line-drawn, no particles.
-  if (f.ability === 'sword' && f.meleeImpact > 0) {
-    const prog = 1 - impactK;                        // 0 → 1
-    const a = 1 - prog;                              // fades as it widens
-    ctx.save();
-    ctx.rotate(facing);
-    ctx.translate(FIGHTER_SIZE + 2, 0);              // contact point, ahead of the shield
-    const half = 9 + prog * 16;                      // bar flares outward
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = `rgba(190,215,255,${(a * 0.85).toFixed(3)})`;
-    ctx.lineWidth = 4 * a + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, -half);
-    ctx.lineTo(0, half);
-    ctx.stroke();
-    ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`;
-    ctx.lineWidth = 1.5 * a + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, -half * 0.7);
-    ctx.lineTo(0, half * 0.7);
-    ctx.stroke();
-    ctx.restore();
   }
 
   // ===== DUELIST — puncture lance (bespoke impact) ==========================

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # balance.sh — full balance run, all shards in PARALLEL.
 #
-# Pair count = C(N,2) where N is the harness roster size. Knight is currently
-# excluded from the harness (see boxedshard.js EXCLUDE_IDS) so N=15 → 105
-# matchups → 7 shards of 15. Re-include Knight by removing it from EXCLUDE_IDS
-# AND updating the shard loop below back to 8 × 15 = 120.
+# Pair count = C(N,2) where N is the harness roster size. With all 16 active
+# (Knight replaced by Geomancer, EXCLUDE_IDS empty) → 120 matchups → 8 shards
+# of 15. Update the shard loop below if a fighter is added or shelved.
 #
 # Usage:  ./balance.sh
 #   Expects boxed.html, boxedshard.js, boxedmerge.js all in this directory.
@@ -16,8 +15,8 @@ cd "$(dirname "$0")"
 RESULTS=()
 PIDS=()
 
-# 7 shards of 15 matchups each: [0,15) [15,30) ... [90,105)
-for start in 0 15 30 45 60 75 90; do
+# 8 shards of 15 matchups each: [0,15) [15,30) ... [105,120)
+for start in 0 15 30 45 60 75 90 105; do
   end=$((start + 15))
   out="/tmp/boxed-shard-${start}.txt"
   rm -f "$out"

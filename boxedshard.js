@@ -48,10 +48,9 @@ function loadEngine() {
 }
 
 const engine = loadEngine();
-// Fighters excluded from the balance harness — currently `knight` (redesign
-// unresolved; stale numbers would mislead the upset-hunt). Keep in sync with
-// boxedmerge.js. To re-include, drop the id from this set.
-const EXCLUDE_IDS = new Set(['knight']);
+// Fighters excluded from the balance harness — currently empty (all 15
+// active roster members participate). Keep in sync with boxedmerge.js.
+const EXCLUDE_IDS = new Set();
 const ids = engine.FIGHTERS.map(f => f.id).filter(id => !EXCLUDE_IDS.has(id));
 const N = 500;
 // Fights that took longer than this (seconds) get counted as "long" — useful for

@@ -19,7 +19,6 @@ let fightToken = 0;
 // unit time, which lets dash/strike abilities reliably express their identity
 // without giving them homing pursuit (which would break the bounce). Also feeds
 // Berserker's ricochet count and Witch's hex bounce-relevance as side effects.
-// Re-introduces the Knight design space (a melee tank can now actually connect).
 const ARENA = 300;
 
 // --- Camera ----------------------------------------------------------------
@@ -383,7 +382,7 @@ huntTightBtn.addEventListener('click', async () => {
     pendingSeed = pick.seed;
     const wf = FIGHTERS.find(f => f.id === pick.winId);
     const tag = result.found ? 'TIGHT' : 'CLOSEST';
-    // e.g. "TIGHT — KNIGHT WINS ON 14 HP (vs 25 dmg) · TAP FIGHT"
+    // e.g. "TIGHT — RONIN WINS ON 14 HP (vs 25 dmg) · TAP FIGHT"
     huntTightBtn.textContent = tag + ' — ' + wf.name + ' WINS ON '
       + Math.round(pick.winnerHp) + ' HP (vs ' + pick.loserDmg + ' DMG) · TAP FIGHT';
   } else if (wasCancelled) {
@@ -619,7 +618,33 @@ function makeFighter(t, team, x, y) {
     // coin shots (for the faces that fire over time); gamblerRefund flags a
     // low roll (1-2) that halves the next cooldown.
     gamblerRoll: 0, gamblerShots: [], gamblerRefund: false, gamblerSpeedTimer: 0, loadedFx: 0,
+    // Geomancer — STANDING STONES list and SIGIL cast state. `stones` is the
+    // live wall-embedded runestone roster (each { x, y, nx, ny, life, maxLife, born }).
+    // The roster is pre-seeded with 4 corner stones so the SIGIL network has a
+    // base topology from frame 1 — without this, Geo's first 2-3 casts whiff
+    // (only 0-1 stones planted) and she's dead before the kit comes online.
+    // Subsequent wall bounces add stones beyond the corner skeleton.
+    // sigilLines + sigilFlash drive the brief amber-line visual after a cast.
+    // sigilWhiff flags a no-stones cast that refunds the cd shortly.
+    stones: t.ability === 'sigil' ? makeCornerStones(t) : [],
+    sigilLines: [], sigilFlash: 0, sigilWhiff: false,
   };
+}
+
+// makeCornerStones(t) — four pre-seeded runestones at each arena corner so a
+// fresh Geomancer has a SIGIL network the moment she casts. Their normals
+// point inward (into the arena) so they render correctly. Lifetime matches the
+// template's stoneLifetime so they decay naturally with the rest of the network.
+function makeCornerStones(t) {
+  const PAD = FIGHTER_SIZE;
+  const W = ARENA - PAD;
+  const life = t.stoneLifetime;
+  return [
+    { x: PAD, y: PAD, nx:  1, ny:  1, life, maxLife: life, born: 0.25 },
+    { x: W,   y: PAD, nx: -1, ny:  1, life, maxLife: life, born: 0.25 },
+    { x: PAD, y: W,   nx:  1, ny: -1, life, maxLife: life, born: 0.25 },
+    { x: W,   y: W,   nx: -1, ny: -1, life, maxLife: life, born: 0.25 },
+  ];
 }
 
 function startFight() {
@@ -825,12 +850,36 @@ function loop() {
 
 function bounce(f, w, h) {
   let hit = false;
-  if (f.x - FIGHTER_SIZE < 0) { f.x = FIGHTER_SIZE; f.vx = Math.abs(f.vx); hit = true; }
-  if (f.x + FIGHTER_SIZE > w) { f.x = w - FIGHTER_SIZE; f.vx = -Math.abs(f.vx); hit = true; }
-  if (f.y - FIGHTER_SIZE < 0) { f.y = FIGHTER_SIZE; f.vy = Math.abs(f.vy); hit = true; }
-  if (f.y + FIGHTER_SIZE > h) { f.y = h - FIGHTER_SIZE; f.vy = -Math.abs(f.vy); hit = true; }
+  // Geomancer STANDING STONES — plant a runestone at the contact point on each
+  // wall hit. Plant lives inside each wall branch so a corner tick that
+  // resolves both x and y on the same frame produces TWO stones.
+  if (f.x - FIGHTER_SIZE < 0) {
+    f.x = FIGHTER_SIZE; f.vx = Math.abs(f.vx); hit = true;
+    if (f.ability === 'sigil') plantStone(f, f.x, f.y,  1,  0);
+  }
+  if (f.x + FIGHTER_SIZE > w) {
+    f.x = w - FIGHTER_SIZE; f.vx = -Math.abs(f.vx); hit = true;
+    if (f.ability === 'sigil') plantStone(f, f.x, f.y, -1,  0);
+  }
+  if (f.y - FIGHTER_SIZE < 0) {
+    f.y = FIGHTER_SIZE; f.vy = Math.abs(f.vy); hit = true;
+    if (f.ability === 'sigil') plantStone(f, f.x, f.y,  0,  1);
+  }
+  if (f.y + FIGHTER_SIZE > h) {
+    f.y = h - FIGHTER_SIZE; f.vy = -Math.abs(f.vy); hit = true;
+    if (f.ability === 'sigil') plantStone(f, f.x, f.y,  0, -1);
+  }
   if (hit) sfx('wall', null, f.x);
   return hit;
+}
+
+// plantStone(f, x, y, nx, ny) — drives a Geomancer runestone into the wall.
+// (nx, ny) points inward (away from the wall surface) so the renderer can
+// orient the stone correctly. Caps at f.maxStones (oldest evicted first).
+function plantStone(f, x, y, nx, ny) {
+  f.stones.push({ x, y, nx, ny, life: f.stoneLifetime, maxLife: f.stoneLifetime, born: 0.25 });
+  if (f.stones.length > f.maxStones) f.stones.shift();
+  sfx('stoneThump', null, x);
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
@@ -1003,8 +1052,8 @@ function step(dt) {
           }
         }
       } else {
-        // Knight / Duelist / Reaper: the dash only closes distance. The strike is
-        // LIVE for the whole dash — the first frame the enemy is within this
+        // Duelist / Reaper: the dash only closes distance. The strike is LIVE
+        // for the whole dash — the first frame the enemy is within this
         // fighter's strike range, the single hit lands (once per dash).
         // DOPPELGANGER: a decoy in range consumes the single strike (one-shot
         // melee abilities don't get to chain through a decoy to the real body).
@@ -1094,6 +1143,24 @@ function step(dt) {
       }
     }
     if (f.shatterFlash > 0) f.shatterFlash -= dt;
+
+    // Geomancer STANDING STONES — decay each planted stone's life + born timer.
+    // Stones whose life hits zero get culled (the rune's hold on the wall fades).
+    // Iterate back-to-front for safe splice. Tick the sigil flash + clear lines
+    // once the flash ends so we don't render stale geometry.
+    if (f.ability === 'sigil') {
+      if (f.stones && f.stones.length) {
+        for (let i = f.stones.length - 1; i >= 0; i--) {
+          f.stones[i].life -= dt;
+          if (f.stones[i].born > 0) f.stones[i].born -= dt;
+          if (f.stones[i].life <= 0) f.stones.splice(i, 1);
+        }
+      }
+      if (f.sigilFlash > 0) {
+        f.sigilFlash -= dt;
+        if (f.sigilFlash <= 0) f.sigilLines = [];
+      }
+    }
 
     // Warlock: drain channel. Ticks f.dmg every 0.2s while the enemy stays in
     // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
@@ -1271,6 +1338,9 @@ function step(dt) {
       else if (f.ability === 'cast' && f.castCapped) f.cdTimer = 0.4;
       // Reaper: a crescent is still in flight — retry soon instead of throwing a second.
       else if (f.ability === 'sweep' && f.sweepWhiff) f.cdTimer = 0.1;
+      // Geomancer: a cast with <2 stones generated no lines — short retry
+      // delay so the kit boots up gracefully as bounces accumulate stones.
+      else if (f.ability === 'sigil' && f.sigilWhiff) f.cdTimer = 0.4;
       else f.cdTimer = f.cd;
     }
     if (f.aimTimer > 0) {
@@ -1859,7 +1929,6 @@ function step(dt) {
   // the bonus reach past the fighter+skeleton radii. The fighter's own `dmg`
   // stat is the damage. A per-skeleton i-frame makes one strike land once.
   const MELEE_CLEAVE = [
-    { ability: 'sword',   timer: 'swingTimer', reach: 12 }, // Knight
     { ability: 'riposte', timer: 'swingTimer', reach: 10 }, // Duelist
     { ability: 'tackle',  timer: 'dashTimer',  reach: 0  }, // Berserker
     { ability: 'sweep',   timer: 'sweepTimer', reach: 14 }, // Reaper

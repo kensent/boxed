@@ -365,50 +365,91 @@ function drawDeath(f, prog) {
       }
       break;
     }
-    case 'sword': {  // Knight — kite shield shatters: fractures along the cross into four quadrant shards
+    case 'sigil': {  // Geomancer — menhir tips, cracks, crumbles; ley-lines retract; rune-mark fades
       ctx.lineCap = 'round';
-      // 1) shield reels backward then tumbles — heavy plate, slow start then fast spin (gone by 0.42)
-      if (prog < 0.42) {
-        const sp = prog / 0.42;
-        const tumble = sp * sp * Math.PI * 1.4;   // slow then fast (quadratic — heavy object)
+      // 1) Stone tips forward and crumbles — gravity wins. Same slump+sink as
+      // a body folding, but it reads here as a tall standing stone toppling.
+      // (Gone by prog 0.4.)
+      if (prog < 0.4) {
+        const sp = prog / 0.4;
+        const eOut = 1 - (1 - sp) * (1 - sp);
         ctx.save();
-        ctx.globalAlpha = 1 - sp * sp;
-        ctx.rotate(fc + tumble);
-        ctx.scale(1 - sp * 0.2, 1 - sp * 0.2);
+        ctx.globalAlpha = 1 - sp;
+        ctx.translate(0, eOut * 6);              // sinks into the floor
+        ctx.rotate(eOut * 0.32);                 // tips forward
         drawShape(ctx, f);
         ctx.restore();
       }
-      // 2a) cross fracture — thick silver cracks erupting from center along shield axes
-      const fp = Math.min(1, prog / 0.38), fa = 1 - fp;
-      ctx.lineWidth = (4 - fp * 2.5) * fa + 0.4;
-      ctx.strokeStyle = `rgba(220,220,220,${(fa * 0.9).toFixed(3)})`;
-      for (let i = 0; i < 4; i++) {
-        const g = fc + (i / 4) * Math.PI * 2;    // four cardinal axes of the cross
-        const r0 = 3, r1 = 3 + fp * 32;
-        ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
-      }
-      // 2b) blue cross shatters — accent burst at the boss/rivet point
-      const bp = Math.min(1, prog / 0.28), ba = 1 - bp;
-      ctx.strokeStyle = `rgba(46,158,255,${(ba * 0.85).toFixed(3)})`;
-      ctx.lineWidth = (3 - bp * 2) * ba + 0.3;
+      // 2a) Gravel burst — 8 small angular granite shards spraying out at the base.
+      const gp = Math.min(1, prog / 0.5), ga = 1 - gp;
+      ctx.fillStyle = `rgba(120,104,84,${(ga * 0.85).toFixed(3)})`;
       for (let i = 0; i < 8; i++) {
-        const g = fc + (i / 8) * Math.PI * 2 + Math.PI / 8;
-        ctx.beginPath(); ctx.moveTo(Math.cos(g) * 2, Math.sin(g) * 2); ctx.lineTo(Math.cos(g) * (4 + bp * 14), Math.sin(g) * (4 + bp * 14)); ctx.stroke();
-      }
-      // 3) residue — four silver kite-quadrant shards at cardinal positions, slowly fading
-      const ra = a * 0.7;
-      ctx.fillStyle = `rgba(192,192,192,${ra.toFixed(3)})`;
-      for (let i = 0; i < 4; i++) {
-        const g = fc + (i / 4) * Math.PI * 2 + Math.PI / 4;
-        const rr = 12 + Math.min(1, prog / 0.4) * 20;
-        ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g);
-        // parallelogram shard — tapers to a point, reads as a shield fragment
-        ctx.beginPath(); ctx.moveTo(-4, -7); ctx.lineTo(4, -7); ctx.lineTo(2, 7); ctx.lineTo(-2, 7); ctx.closePath(); ctx.fill();
+        const ang = (i / 8) * Math.PI * 2 + i * 0.3;
+        const r = 4 + gp * (14 + (i % 3) * 4);
+        const sx = Math.cos(ang) * r, sy = Math.sin(ang) * r * 0.6 + 4;
+        ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+        ctx.beginPath();
+        ctx.moveTo(-2, -1.5); ctx.lineTo(2, -2); ctx.lineTo(2.5, 1); ctx.lineTo(-1.5, 1.5);
+        ctx.closePath(); ctx.fill();
         ctx.restore();
       }
-      // blue rivet fragment — the boss sits near center, fading last
-      ctx.fillStyle = `rgba(46,158,255,${(a * 0.5).toFixed(3)})`;
-      ctx.beginPath(); ctx.arc(0, 0, 3 * a + 0.5, 0, Math.PI * 2); ctx.fill();
+      // 2b) Amber rune-flash — the stone's carved rune flares one last time at
+      // its position on the front face (centre, slightly forward), then dies.
+      const rp = Math.min(1, prog / 0.3), ra2 = 1 - rp;
+      const runeX = FIGHTER_SIZE * 0.28, runeY = 0;
+      ctx.fillStyle = `rgba(255,180,60,${(ra2 * 0.85).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(runeX, runeY, 5 + rp * 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255,240,200,${(ra2 * 0.7).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(runeX, runeY, 2 + rp * 5, 0, Math.PI * 2);
+      ctx.fill();
+      // 2c) Ley-line retraction — 4 amber lines snap inward to the body from
+      // the four cardinal directions (his stones' connections collapsing). The
+      // unique death voice: motion goes INWARD, not outward. Distinct from
+      // every other death's "things flying outward" grammar.
+      const lp = Math.min(1, prog / 0.55), la = 1 - lp;
+      ctx.strokeStyle = `rgba(232,170,60,${(la * 0.75).toFixed(3)})`;
+      ctx.lineWidth = (2 - lp) * la + 0.3;
+      for (let i = 0; i < 4; i++) {
+        const g = (i / 4) * Math.PI * 2 + Math.PI / 8;
+        const r0 = (1 - lp) * (32 + i * 6);
+        const r1 = r0 + 14 * la;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0);
+        ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1);
+        ctx.stroke();
+      }
+      // 3) Residue — granite chunks scattered around a dim rune-mark on the
+      // ground (the spot the stone stood). Replaces the old "staff lying flat"
+      // residue, which made no sense for a single-stone sprite.
+      // Ground darkening pool — the granite dust/staining left behind.
+      ctx.fillStyle = `rgba(56,48,38,${(a * 0.55).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 14 * a + 5, 5 * a + 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Five angular granite chunks at scattered positions.
+      ctx.fillStyle = `rgba(140,120,92,${(a * 0.7).toFixed(3)})`;
+      const chunks = [[-8, 5, 0.4], [4, 7, -0.5], [-2, 3, 0.8], [9, 6, -0.2], [-6, 8, 1.1]];
+      chunks.forEach(([cx, cy, cr]) => {
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(cr);
+        ctx.beginPath();
+        ctx.moveTo(-3, -1.5); ctx.lineTo(2, -2); ctx.lineTo(3, 1); ctx.lineTo(-2, 1.5);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      });
+      // Dim amber rune-mark scorched into the ground at the stone's centre —
+      // the last trace of the kit, fading slowest.
+      ctx.fillStyle = `rgba(180,130,40,${(a * 0.4).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(0, 4, 4 * a + 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(180,130,40,${(a * 0.5).toFixed(3)})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(-3, 4); ctx.lineTo(3, 4);
+      ctx.stroke();
       break;
     }
     case 'mine': {  // Sapper — bomb swells then detonates: dark casing breach + red shrapnel, not flame
@@ -1017,6 +1058,84 @@ function draw() {
     ctx.beginPath();
     ctx.arc(h.x, h.y, h.radius * 0.35, 0, Math.PI * 2);
     ctx.fill();
+  });
+
+  // Geomancer SIGIL flash — amber ley-lines drawn between linked stones for
+  // sigilFlashDur after a cast. Drawn UNDER stones so the line endpoints look
+  // like they "emit from" each stone. Lines that actually crossed the enemy
+  // body are bolder + brighter (link.hit set at cast time); lines that missed
+  // are dim. The whole flash fades quadratically to nothing.
+  [game.red, game.blue].forEach(f => {
+    if (f.ability !== 'sigil' || f.sigilFlash <= 0 || !f.sigilLines || !f.sigilLines.length) return;
+    const t = f.sigilFlash / f.sigilFlashDur;
+    const fade = t * t;
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const link of f.sigilLines) {
+      const baseA = (link.hit ? 0.95 : 0.55) * fade;
+      const baseW = (link.hit ? 3.0 : 1.6) * fade + 0.4;
+      // Outer glow — amber halo.
+      ctx.strokeStyle = `rgba(255,180,60,${baseA.toFixed(3)})`;
+      ctx.lineWidth = baseW + 1.6;
+      ctx.beginPath(); ctx.moveTo(link.x1, link.y1); ctx.lineTo(link.x2, link.y2); ctx.stroke();
+      // Bright core — white-hot through amber.
+      ctx.strokeStyle = `rgba(255,240,180,${(baseA * 0.85).toFixed(3)})`;
+      ctx.lineWidth = baseW * 0.45;
+      ctx.beginPath(); ctx.moveTo(link.x1, link.y1); ctx.lineTo(link.x2, link.y2); ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // Geomancer STANDING STONES — wall-embedded runestones from any geomancer's
+  // bounce-chain. Each stone juts INTO the arena from the wall surface; the
+  // (nx, ny) normal points inward. Pulse rate is time- + position-derived
+  // (deterministic, never rng — GOTCHAS) so each stone glimmers on its own
+  // schedule. Stones fade in their last 0.5s of life.
+  [game.red, game.blue].forEach(f => {
+    if (f.ability !== 'sigil' || !f.stones || !f.stones.length) return;
+    f.stones.forEach(st => {
+      const fade = Math.min(1, st.life / 0.5);            // dim out in last 0.5s
+      const ang = Math.atan2(-st.ny, -st.nx);             // local +x = into-arena
+      ctx.save();
+      ctx.translate(st.x, st.y);
+      ctx.rotate(ang);
+      // Stone body — angular granite chunk, flat against wall (-x side) and
+      // jutting forward (+x = into the arena).
+      ctx.fillStyle = `rgba(116,104,86,${fade.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(-3, -3);
+      ctx.lineTo(2, -4);
+      ctx.lineTo(6, -1);
+      ctx.lineTo(5, 3);
+      ctx.lineTo(-1, 4);
+      ctx.lineTo(-4, 1);
+      ctx.closePath();
+      ctx.fill();
+      // Dark edge.
+      ctx.strokeStyle = `rgba(56,46,36,${(fade * 0.85).toFixed(3)})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      // Carved rune line.
+      ctx.strokeStyle = `rgba(70,58,46,${(fade * 0.7).toFixed(3)})`;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(3, 0); ctx.stroke();
+      // Amber rune-dot, time-pulsing.
+      const pulse = 0.55 + Math.sin(performance.now() / 580 + st.x * 0.07 + st.y * 0.07) * 0.30;
+      ctx.fillStyle = `rgba(232,160,40,${(fade * pulse).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(1, 0, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      // Born burst — small amber ring expanding outward on plant (0..0.25s).
+      if (st.born > 0) {
+        const bt = 1 - st.born / 0.25;
+        ctx.strokeStyle = `rgba(232,180,90,${((1 - bt) * 0.7).toFixed(3)})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 4 + bt * 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
   });
 
   // Priest JUDGMENT — windup target reticle at the locked predicted spot (world

@@ -1,7 +1,7 @@
 // ============================================================================
 // === COMBAT =================================================================
-// damage() — applies defensive passives (Jester dodge, Knight plate armor,
-//   Wizard mana shield, Duelist counter) and handles death.
+// damage() — applies defensive passives (Jester dodge, Wizard mana shield,
+//   Duelist counter) and handles death.
 // ============================================================================
 
 // --- Impact juice -----------------------------------------------------------
@@ -50,12 +50,6 @@ function damage(target, dmg, srcKind, src) {
     target.negateFlash = 0.25;
     sfx('parry', null, target.x);
     return;
-  }
-  // Knight: Plate Armor — flat −armorFlat dmg per hit (min 10).
-  if (target.ability === 'sword') {
-    dmg = Math.max(10, dmg - target.armorFlat);
-    // Deflect clank — discrete hits only (a drain/hazard DoT would machine-gun it).
-    if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('armor', null, target.x);
   }
   // Wizard: Mana Shield — shieldReduction dmg reduction per live orb, up to orbCap*shieldReduction.
   // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,

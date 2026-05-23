@@ -125,12 +125,6 @@ const Audio = (() => {
       noise(0.18, 0.22, 'lowpass', 520, { filterGlideTo: 150 });
       tone(125, 0.18, 'sawtooth', 0.16, { glideTo: 64 });
     },
-    // Knight — heavy plate steel. Deep clang with a resonant ring-down tail.
-    sword() {
-      noise(0.05, 0.20, 'bandpass', 1800);
-      tone(330, 0.30, 'triangle', 0.18, { glideTo: 235 });
-      tone(660, 0.42, 'sine', 0.07);
-    },
     // Duelist — sharp drawn steel. Thin, bright, precise ring.
     riposte() {
       noise(0.04, 0.14, 'bandpass', 4200);
@@ -184,6 +178,36 @@ const Audio = (() => {
     wildcard() {
       tone(520, 0.10, 'square', 0.10, { glideTo: 820 });
       noise(0.06, 0.10, 'bandpass', 2500);
+    },
+    // Geomancer — granite + ley-light. STANDING STONES plant: a heavy
+    // stone-thump (rock biting the wall) with a low earthen fundamental.
+    stoneThump() {
+      noise(0.08, 0.18, 'lowpass', 360, { filterGlideTo: 100 });
+      tone(120, 0.12, 'triangle', 0.14, { glideTo: 60 });
+    },
+    // Geomancer SIGIL cast — sharp earthen crack as the staff slams. The crack
+    // is the gesture's audio twin (windup→crack→tail = no windup here, the
+    // slam IS the cast, and the chord chimes are the tail via sigilLines).
+    sigilCrack() {
+      noise(0.06, 0.26, 'bandpass', 1500, { filterGlideTo: 380 });
+      tone(180, 0.20, 'sawtooth', 0.18, { glideTo: 85 });
+      tone(420, 0.14, 'triangle', 0.10, { glideTo: 220 });
+    },
+    // Per-line chord — staggered metallic chimes painting each ley-line. One
+    // sfx call covers all lines; the headless guard at the play() boundary
+    // stops the setTimeout fan-out from leaking timers into the sim path.
+    // Higher line counts produce a denser chord (more lines crossing = a
+    // bigger sonic "presence" cue, mirroring the visual line density).
+    sigilLines(arg) {
+      const n = arg && arg.count != null ? Math.max(1, Math.min(16, arg.count)) : 1;
+      for (let i = 0; i < n; i++) {
+        // Slight detune climb per chime so the chord feels harmonic, not random.
+        const f0 = 660 + (i % 4) * 70;
+        setTimeout(() => {
+          tone(f0, 0.16, 'triangle', 0.08, { glideTo: f0 * 1.5 });
+          tone(f0 * 0.5, 0.10, 'sine', 0.04);
+        }, i * 22);
+      }
     },
 
     // ----- windup textures (charged abilities) -----------------------------
@@ -287,12 +311,6 @@ const Audio = (() => {
       tone(440, 0.20, 'sine', 0.10, { glideTo: 660 });
       noise(0.10, 0.05, 'lowpass', 800);
     },
-    // Knight Plate Armor — a dull heavy steel deflect as plate eats the blow.
-    // Ring-less (a clank, not a clean tone); sits under the attacker's crack.
-    armor() {
-      noise(0.05, 0.16, 'bandpass', 1200);
-      tone(220, 0.12, 'triangle', 0.12, { glideTo: 150 });
-    },
     // Wizard Mana Shield — a glassy arcane absorb as an orb spends itself out.
     shield() {
       tone(1400, 0.16, 'sine', 0.12, { glideTo: 700 });
@@ -309,11 +327,11 @@ const Audio = (() => {
 
     // ===== Impacts ==========================================================
 
-    // Melee body-contact crack — routed by the attacker's material. Only the
-    // dashers (Berserker/Knight/Duelist/Reaper) land a crack here: they swing
-    // at launch and connect a beat later, so the crack is the second beat.
-    // Jester (mask-snap) and Ronin (iai cut) already sound their own contact,
-    // so they no-op here. The crack is the short, loud beat; volume tracks dmg.
+    // Melee body-contact crack — routed by the attacker's material. The dashers
+    // (Berserker / Duelist / Reaper) land a crack here: they swing at launch
+    // and connect a beat later, so the crack is the second beat. Jester
+    // (mask-snap) and Ronin (iai cut) already sound their own contact, so they
+    // no-op here. The crack is the short, loud beat; volume tracks dmg.
     hit(arg) {
       const obj = (arg && typeof arg === 'object');
       const mag = obj ? arg.mag : arg;
@@ -322,9 +340,6 @@ const Audio = (() => {
       if (mat === 'tackle') {            // Berserker — wet flesh thud
         noise(0.06, v, 'lowpass', 520);
         tone(95, 0.10, 'triangle', v, { glideTo: 46 });
-      } else if (mat === 'sword') {      // Knight — flat heavy steel bash
-        noise(0.05, v, 'bandpass', 1400);
-        tone(280, 0.13, 'triangle', v * 0.9, { glideTo: 200 });
       } else if (mat === 'riposte') {    // Duelist — thin sharp puncture
         noise(0.04, v, 'bandpass', 3800);
         tone(1800, 0.08, 'triangle', v * 0.8, { glideTo: 1100 });
@@ -451,7 +466,7 @@ const Audio = (() => {
         noise(0.50, 0.40, 'lowpass', 1400, { filterGlideTo: 70 });
         tone(120, 0.50, 'sawtooth', 0.28, { glideTo: 40 });
         tone(55, 0.55, 'sine', 0.22, { glideTo: 30 });
-      } else if (ability === 'sword' || ability === 'riposte' || ability === 'blink'
+      } else if (ability === 'riposte' || ability === 'blink'
               || ability === 'grapple' || ability === 'wildcard') {
         // SHATTER — high crack into cascading bright fragments.
         noise(0.06, 0.30, 'bandpass', 4000);
@@ -469,12 +484,18 @@ const Audio = (() => {
           tone(440, 0.60, 'sine', 0.16, { glideTo: 1320, attack: 0.30 });
           tone(660, 0.60, 'sine', 0.10, { glideTo: 1980, attack: 0.30 });
         }
-      } else if (ability === 'raise' || ability === 'sweep') {
-        // COLLAPSE — heavy thud + hollow settling. Reaper adds a wet resonance.
+      } else if (ability === 'raise' || ability === 'sweep' || ability === 'sigil') {
+        // COLLAPSE — heavy thud + hollow settling. Reaper adds a wet resonance;
+        // Geomancer adds a deep earthen rumble + a soft cracking ring (his
+        // wall-stones snapping their connections as the network dies).
         noise(0.30, 0.32, 'lowpass', 900, { filterGlideTo: 100 });
         tone(150, 0.40, 'triangle', 0.18, { glideTo: 50 });
         noise(0.30, 0.12, 'bandpass', 1400, { filterGlideTo: 500 });
         if (ability === 'sweep') tone(300, 0.40, 'sine', 0.08, { glideTo: 120 });
+        if (ability === 'sigil') {
+          tone(90, 0.50, 'sawtooth', 0.10, { glideTo: 40 });   // deep earth rumble
+          noise(0.40, 0.10, 'bandpass', 800, { filterGlideTo: 200 });  // gravel hiss tail
+        }
       } else if (ability === 'iai') {
         // CUT — a single clean whisper-crack, held then fading to silence.
         noise(0.50, 0.20, 'highpass', 4000, { filterGlideTo: 2500 });

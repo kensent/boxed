@@ -69,7 +69,7 @@ was deleted first); everything below is line/shape-drawn, no particle pool.
 Every fighter delivers its attack in one of three ways. The body itself reacts;
 we never float a separate weapon-effect around a static sprite.
 
-- **Melee (5)** — berserker, knight, duelist, jester, ronin. Three beats:
+- **Melee (4)** — berserker, duelist, jester, ronin. Three beats:
   *anticipation → strike → recovery*, expressed by deforming the BODY
   (squash/stretch/lunge/spin), plus a bespoke impact **force-shape**. Dashers use
   a shared hold-and-whip anticipation (`meleeWindupHold`): the body holds at its
@@ -77,8 +77,8 @@ we never float a separate weapon-effect around a static sprite.
   wind-up). Jester is the exception (teleports, so the mask-snap is the strike).
   Berserker is now a *charged* melee: the rampage has a real mechanical windup
   with charge ring + body tremble + radial coil-lines, then a wall-ricocheting
-  multi-pass strike. Knight is shelved (still selectable but excluded from
-  balance — see REDESIGN-PROPOSAL.md).
+  multi-pass strike. (Knight was retired and replaced by Geomancer — see
+  REDESIGN-PROPOSAL.md.)
 - **Ranged (10)** — a release **kick** along the firing axis + a bespoke launch
   flash (`fireKick`/`fireDir`). Three sub-shapes by gesture:
   - *Recoil* (3) — cannoneer, priest (staff-bolt), archer (bow): projectile
@@ -94,17 +94,26 @@ we never float a separate weapon-effect around a static sprite.
   reusable by any future channeler. (Set-down — Sapper's old mine-drop grammar —
   is empty after Sapper moved to thrust; kept here as a note for any future
   trap-style ability.)
+- **Field (1)** — geomancer: a **staff-slam** gesture + a brief amber
+  **SIGIL flash** that draws ley-lines between every wall-embedded runestone
+  for `sigilFlashDur`. Damage comes from the stones via the lines, not from
+  a projectile or body contact — the fighter never moves to deliver the hit,
+  the arena itself does. Generic grammar, reusable by any future
+  field-caster whose attack emerges from waypoints they've planted.
 
 ### Force-shapes — the shape of the force at the point of contact
 One primitive per source (mirror of melee for projectiles/traps/minions, via the
 `game.impacts` list + `drawImpact`):
-circle (Berserker punch) · flat bar (Knight bash) · line/lance (Duelist thrust)
+circle (Berserker punch) · line/lance (Duelist thrust)
 · arc/crescent (Reaper bone-arc — used by the HARVEST scythe and BONE BURST)
 · converging pair (Jester pinch) · long slash (Ronin iai) · arrow puncture
 · concussion shockwave with falloff-edge ring (Cannoneer EPICENTER — visualizes
 the splashRadius boundary so the viewer can SEE the lethal zone, distinct grammar
 from Sapper's radial mine-spokes) · lightning zap · orb rune-pop · hex splat
-· coin ding · hook clink · bone shards · mine explosion (radial spokes + ring).
+· coin ding · hook clink · bone shards · mine explosion (radial spokes + ring)
+· straight amber chord (Geomancer SIGIL — drawn between two wall-stones; the
+line *is* the impact primitive, geometrically distinct from anything else
+in the roster).
 The **SHATTER burst** (Archer's cushion releasing at 5 stacks) has its own
 expanding double-ring + arrow scatter, distinct from a per-arrow puncture.
 Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a heavy
@@ -166,8 +175,7 @@ push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
   smears), Cannoneer (rig pitches on wheel → directional muzzle cone + fracture cracks →
   wheel/barrel ring fragments), Sapper (bomb swells → dark casing breach + shrapnel →
   angular casing shards + fuse scrap)
-- **SHATTER** — Knight (heavy tumble → cross fracture lines + blue boss burst → 4 kite-
-  shard parallelograms), Duelist (parry spin → blade snaps linearly, segments along axis →
+- **SHATTER** — Duelist (parry spin → blade snaps linearly, segments along axis →
   3 thin shard lines + cup guard arc), Jester (halves drawn independently, spin apart →
   crack flash + red/blue diamond motes → 3+3 shard diamonds), Hunter (whips backward →
   fracture arc at bend + steel shards + copper barb flies → shank stub + barb shard),
@@ -181,7 +189,11 @@ push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
   → bone pile + purple glow), Reaper (hooded body slumps ease-out, sinks → blood arcs in
   crescent shape → growing blood pool ellipse; only death with a spreading ground mark.
   Updated when the sprite went from a rotor-blade glaive to a hooded-figure scythe-
-  wielder — the slump replaces the old "rotor decelerates" beat.)
+  wielder — the slump replaces the old "rotor decelerates" beat.), Geomancer
+  (stone tips forward + sinks → gravel burst at base + amber rune flare on the
+  carved face + ley-lines retract inward to the body → granite chunks scattered
+  + dim amber rune-mark scorched into the ground; only death with a "lines
+  retracting" voice rather than "things flying outward.")
 - **CUT** — Ronin (slow ease-in swing → single clean gold slash, held then fading →
   blade at rest angle + gold tip)
 - **SCATTER** — Archer (bow springs then fades → bowstring snap flash + 6 arrows with

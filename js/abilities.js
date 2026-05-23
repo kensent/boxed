@@ -5,6 +5,38 @@
 //   (Priest lightning, Cannoneer cannon shot).
 // ============================================================================
 
+// --- Geomancer helpers ------------------------------------------------------
+// segIntersectsCircle(): point-on-segment closest to a circle, then radius test.
+// Used by SIGIL to check which ley-lines actually cross the enemy body / decoys
+// at the cast frame. r = enemy body radius + half line thickness.
+function segIntersectsCircle(x1, y1, x2, y2, cx, cy, r) {
+  const vx = x2 - x1, vy = y2 - y1;
+  const len2 = vx * vx + vy * vy || 1;
+  const t = Math.max(0, Math.min(1, ((cx - x1) * vx + (cy - y1) * vy) / len2));
+  const qx = x1 + t * vx, qy = y1 + t * vy;
+  return Math.hypot(qx - cx, qy - cy) < r;
+}
+
+// computeSigilLinks(): all-pairs network — every stone links to every other.
+// Nearest-neighbour topology fails here because stones plant on walls, so a
+// stone's nearest neighbours are ADJACENT along the same wall — those links
+// hug the perimeter and never cross the arena interior where the enemy lives.
+// All-pairs guarantees cross-arena lines; for N=8 stones that's 28 edges, of
+// which an enemy in the middle is typically crossed by 4-8 (the kit's damage
+// budget tunes per-line dmg low so the per-cast total stays in band). The
+// linksPerStone param is unused in this topology; kept on the fighter object
+// in case future tunings want to clamp the network density. Returns
+// [{x1,y1,x2,y2}, …].
+function computeSigilLinks(stones, _linksPerStone) {
+  const out = [];
+  for (let i = 0; i < stones.length; i++) {
+    for (let j = i + 1; j < stones.length; j++) {
+      out.push({ x1: stones[i].x, y1: stones[i].y, x2: stones[j].x, y2: stones[j].y });
+    }
+  }
+  return out;
+}
+
 function fireAbility(f, enemy) {
   // Uniform DOPPELGANGER rule: every fighter aims at the NEAREST of {real
   // enemy, ...enemy's decoys}. pickTarget() handles the choice; for fighters
@@ -20,7 +52,7 @@ function fireAbility(f, enemy) {
   // play inside their switch cases; wildcard plays when the die starts tumbling.
   if (f.ability !== 'lightning' && f.ability !== 'cannon' && f.ability !== 'iai'
       && f.ability !== 'tackle' && f.ability !== 'drain' && f.ability !== 'cast'
-      && f.ability !== 'sweep' && f.ability !== 'wildcard') {
+      && f.ability !== 'sweep' && f.ability !== 'wildcard' && f.ability !== 'sigil') {
     sfx(f.ability, null, f.x);
   } else if (f.ability === 'iai') {
     sfx('iai', null, f.x); // rising tension hum during the windup
@@ -30,6 +62,8 @@ function fireAbility(f, enemy) {
   // 0.1s and would loop the cast sound. Same pattern as drain/cast.
   // Wizard's cast sound is played inside the 'cast' case instead, so it only
   // sounds when orbs actually spawn (not when the 3-orb cap blocks the cast).
+  // Geomancer 'sigil' plays its sfx inside its case too — a no-stones whiff
+  // still slams the staff (gesture is the gesture) but flags a cd refund.
   switch (f.ability) {
     case 'lightning': {
       // JUDGMENT — predictive light pillar. Lock the strike on the enemy's
@@ -83,17 +117,6 @@ function fireAbility(f, enemy) {
       f.aimAbility = 'tackle';
       f.dashStartX = f.x; f.dashStartY = f.y;              // launch anchor (visual)
       sfx('rampageCoil', null, f.x);                       // primal growl inhaling for the launch
-      break;
-    }
-    case 'sword': {
-      // Lunge toward enemy as part of the swing
-      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
-      f.vx = Math.cos(ang) * f.speed * 2.5;
-      f.vy = Math.sin(ang) * f.speed * 2.5;
-      f.dashTimer = 0.26;
-      f.swingTimer = 0.3;
-      f.dashHit = false;
-      f.dashStartX = f.x; f.dashStartY = f.y; // visual anchor for the wind-up hold
       break;
     }
     case 'mine': {
@@ -299,6 +322,63 @@ function fireAbility(f, enemy) {
       f.aimTimer = dramatic ? 1.1 : 0.8;                    // tumble + settle
       f.aimAbility = 'wildcard';
       sfx('wildcard', null, f.x);
+      break;
+    }
+    case 'sigil': {
+      // Geomancer SIGIL — instant cast. Build nearest-neighbour links between
+      // the currently-planted stones; any line that crosses the enemy body (or
+      // a decoy) at the cast frame deals f.dmg per crossing. The flash window
+      // (sigilFlashDur) is purely visual — damage is single-frame, deterministic.
+      // No windup: the staff slam IS the cast (Sapper-style instant cast).
+      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = 0;   // staff slam pose
+      sfx('sigilCrack', null, f.x);
+      f.sigilLines = [];
+      f.sigilFlash = f.sigilFlashDur;
+      const stones = f.stones || [];
+      if (stones.length < 2) {
+        // Not enough stones to form even one ley-line — the slam still sounds,
+        // but no network exists yet. Flag for a short cd refund so the kit
+        // boots up gracefully on the first few bounces instead of burning the
+        // full cooldown on a no-op.
+        f.sigilWhiff = true;
+        break;
+      }
+      const links = computeSigilLinks(stones, f.linksPerStone);
+      if (links.length === 0) { f.sigilWhiff = true; break; }
+      // Hit detection — enemy body radius + half line thickness defines the
+      // crossing zone. Each line is independently tested against the enemy
+      // and every decoy; decoys hit by a line are consumed (DOPPELGANGER
+      // substrate — phantoms absorb the line in place of the real body).
+      const hitR = FIGHTER_SIZE + (f.lineWidth || 4) * 0.5;
+      let realHits = 0;
+      for (const link of links) {
+        let hit = false;
+        if (!enemy.dead && segIntersectsCircle(link.x1, link.y1, link.x2, link.y2,
+                                                enemy.x, enemy.y, hitR)) {
+          realHits++; hit = true;
+        }
+        if (enemy.decoys && enemy.decoys.length) {
+          for (const d of enemy.decoys) {
+            if (d.dead) continue;
+            if (segIntersectsCircle(link.x1, link.y1, link.x2, link.y2, d.x, d.y, hitR)) {
+              d.dead = true; hit = true;
+            }
+          }
+        }
+        link.hit = hit;
+      }
+      f.sigilLines = links;
+      f.sigilWhiff = false;
+      if (realHits > 0) {
+        // One damage() call with the summed crossings — keeps feedback shape
+        // (shake, flash, float) sized to the total impact, not per-line spam.
+        damage(enemy, f.dmg * realHits, 'projectile');
+      }
+      // Per-line chord chime — light staggered metallic chimes paint the
+      // network in audio (more lines = denser chord). Routed through a single
+      // sfx call so the headless guard stops the timer fan-out at the audio
+      // boundary (instead of leaking N timers into the sim path).
+      sfx('sigilLines', { count: links.length }, f.x);
       break;
     }
   }

@@ -8,7 +8,7 @@
 const fs = require('fs');
 
 // Fighters excluded from the balance harness — keep in sync with boxedshard.js.
-const EXCLUDE_IDS = new Set(['knight']);
+const EXCLUDE_IDS = new Set();
 function loadIds() {
   const src = fs.readFileSync(__dirname + '/js/fighters.js', 'utf8');
   const m = [...src.matchAll(/\{\s*id:'([a-z]+)'/g)];

@@ -77,7 +77,7 @@ draws from it.
 | Fighter     | Ability key  | Material identity                                     |
 |-------------|--------------|-------------------------------------------------------|
 | Berserker   | `tackle`     | Raw flesh + blood — wet thuds, primal low-end         |
-| Knight      | `sword`      | Heavy plate steel — deep clang, resonant ring         |
+| Geomancer   | `sigil`      | Granite + ley-light — heavy stone-thump, earthen crack, metallic chord chime |
 | Duelist     | `riposte`    | Sharp drawn steel — precise ring, thin and bright     |
 | Reaper      | `sweep`      | Hollow bone scythe — dry crack + crescent hiss        |
 | Jester      | `blink`      | Ceramic mask — hollow pop, brittle, dissonant         |
@@ -108,9 +108,9 @@ windup character; the crack and tail are universal.
   a sharp transient whose character matches the material. Steel cracks bright;
   bone cracks hollow; flesh cracks wet and low; void makes no crack — it absorbs
   (a reverse-envelope silence-notch). For melee, the windup (swing) and the crack
-  (contact) are *two triggers* a beat apart: the dashers (Berserker/Knight/
-  Duelist) swing at launch and crack on connect — so a whiff sounds the swing
-  with no crack. Jester (teleport) and Ronin (iai) ALSO crack on connect — their
+  (contact) are *two triggers* a beat apart: the dashers (Berserker/Duelist)
+  swing at launch and crack on connect — so a whiff sounds the swing with no
+  crack. Jester (teleport) and Ronin (iai) ALSO crack on connect — their
   per-hit impact sound layers on top of the strike sound for a clearer "hit
   landed" beat, even though the strike sound already telegraphs the cut. (This
   walks back the original "they don't double up" rule — playtesting showed the
@@ -128,14 +128,22 @@ trap, and minion impacts route through one `impact({kind, big})` dispatcher — 
 primitive per kind, mirroring `spawnImpact`/`drawImpact`. Volume scales with the
 hit's magnitude (`big`, 0..1):
 
-- **Melee** — flesh thud (Berserker) · flat steel bash (Knight) · thin puncture
-  (Duelist) · steel whisper-crack (Ronin) · ceramic puncture (Jester). Reaper is
-  no longer melee (HARVEST is a returning projectile — its crack lives
-  in the projectile mirror below as "bone arc").
+- **Melee** — flesh thud (Berserker) · thin puncture (Duelist) · steel
+  whisper-crack (Ronin) · ceramic puncture (Jester). Reaper is no longer melee
+  (HARVEST is a returning projectile — its crack lives in the projectile mirror
+  below as "bone arc").
 - **Projectile / trap / minion** — arrow puncture · cannon concussion · hex wet
   splat · coin ding · orb rune-pop · lightning zap · hook clink · bone clack
   (Reaper crescent + Necromancer skeleton burst) · mine casing-crack + pressure.
   Each plays at its `spawnImpact` site so kind is known.
+- **Field** — Geomancer's SIGIL is its own sub-grammar: a single `sigilCrack`
+  on the staff slam (earthen crack + sawtooth thud, the gesture's audio twin)
+  followed by `sigilLines({count})` — a staggered chord of metallic chimes,
+  one per drawn ley-line, slightly detuned per chime so the chord feels
+  harmonic. Headless-guarded as a single sfx call so the timer fan-out
+  never leaks into the sim path. No per-line "impact crack" — the chord IS
+  the impact mirror. Per-bounce, a heavy `stoneThump` (lowpass noise +
+  earthen fundamental) marks each new runestone planting in the wall.
 
 The **SHATTER burst** (Archer's cushion releasing at 5 stacks) gets a *dedicated*
 sound (`shatterBurst`) — a wider crack + falling whoosh, not just a louder per-
@@ -173,17 +181,19 @@ own material, because death is bigger than the fighter:
 - **BURST** (Berserker, Cannoneer, Sapper) — a low concussive boom + shockwave
   sub-bass pressure release. The body energy discharges outward all at once.
   Lowpass noise sweep from mid down to rumble, plus a heavy sub-fundamental.
-- **SHATTER** (Knight, Duelist, Jester, Hunter, Gambler) — a high-pitched crack
-  leading into cascading fragment noise. The body breaks into pieces. Bandpass
-  noise with a falling filter sweep; multiple short bright tones staggered to
+- **SHATTER** (Duelist, Jester, Hunter, Gambler) — a high-pitched crack leading
+  into cascading fragment noise. The body breaks into pieces. Bandpass noise
+  with a falling filter sweep; multiple short bright tones staggered to
   simulate shard scatter.
 - **DISSOLVE** (Priest, Wizard, Witch, Warlock) — the body's energy releases
   upward (or inward for Warlock). A soft ascending swell: rising sine harmonics
   or, for Warlock, a deep void absorption (inverted — the energy implodes rather
   than releases). No hard transient; the death fades in and out.
-- **COLLAPSE** (Necromancer, Reaper) — a heavy thud + hollow settling. The body
-  falls and comes to rest. Low impact noise + a bone/liquid residue sound that
-  decays slowly. Reaper adds a wet resonance matching the blood-pool spread.
+- **COLLAPSE** (Necromancer, Reaper, Geomancer) — a heavy thud + hollow
+  settling. The body falls and comes to rest. Low impact noise + a bone/liquid
+  residue sound that decays slowly. Reaper adds a wet resonance matching the
+  blood-pool spread; Geomancer adds a deep earthen rumble + a gravel hiss tail
+  (the wall-stones snapping their connections as the network dies).
 - **CUT** (Ronin) — a single clean whisper-crack, held for ~0.5 s then fading to
   silence. No scatter, no boom. The quietest death — the stillness after the
   blade is the point.
@@ -200,9 +210,8 @@ carries it), with key transitions getting a one-shot cue:
 - **Defensive responses (audible).** Duelist parry = bright steel deflect
   (`parry`, now fires for both projectile-reflect AND melee-parry-absorb during
   the RIPOSTE thrust window; see REDESIGN-PROPOSAL.md COUNTER redesign) ·
-  Knight Plate Armor = dull steel deflect clank (`armor`) · Wizard Mana
-  Shield = glassy arcane absorb as an orb spends out (`shield`). Armor/shield
-  are gated off drain DoT so a continuous tick can't machine-gun them.
+  Wizard Mana Shield = glassy arcane absorb as an orb spends out (`shield`).
+  The shield is gated off drain DoT so a continuous tick can't machine-gun it.
   Jester's old UNCANNY DODGE `negate` whiff is gone — DOPPELGANGER replaced
   the dodge mechanic entirely, and decoy-intercepted hits resolve silently
   in the projectile/melee hit loops (the decoy absorbs the attack; the

@@ -1,9 +1,12 @@
 # BOXED — ability redesign proposal
 
 **Status (2026-05-23):** the redesign has been *executed*. Every fighter
-listed below has shipped, except Knight which remains UNRESOLVED. The
-at-a-glance table tracks current state; each section's `IMPLEMENTED &
-VALIDATED` block captures the final tunables and matchup texture.
+listed below has shipped. **Knight was retired and replaced by Geomancer**
+(see the GEOMANCER section near the end) — the wall-bouncing identity
+finally landed in a kit that *uses* the bounce as its core mechanic instead
+of fighting against it. The at-a-glance table tracks current state; each
+section's `IMPLEMENTED & VALIDATED` block captures the final tunables and
+matchup texture.
 
 ## Project-level changes that shipped alongside the redesigns
 
@@ -43,6 +46,17 @@ These aren't fighter redesigns but they're load-bearing on everything:
   counting fights where the winner finished < 30% HP — drama indicator).
   Picker UI gained a **HUNT A CLOSE FINISH** button alongside HUNT THE
   UPSET and HUNT A TIGHT FIGHT.
+- **Knight retired, Geomancer added.** Knight's melee-tank-under-DVD niche
+  was the hard design corner of the redesign (every prototype hit one of:
+  un-tunable reactive timing, off-brand ranged, off-brand homing, or
+  "just a dash"). Geomancer ships in the same roster slot with a new
+  "Field" attack grammar: STANDING STONES plant on each wall bounce, SIGIL
+  fires amber ley-lines between every stone — the DVD bounce IS the
+  ability-input rather than something to fight against. EXCLUDE_IDS is
+  now empty in both `boxedshard.js` and `boxedmerge.js`; `balance.sh` is
+  at 8 shards × 15 = 120 matchups (all 16 active fighters in balance).
+  Knight's sprite (kite shield), death (4-quadrant SHATTER), and audio
+  (sword crack + armor clank) were removed from the codebase.
 
 ---
 
@@ -104,7 +118,7 @@ holds up under RNG and are left alone (see *Keep*, below).
 |---|---|---|
 | **Priest** | shipped | `JUDGMENT` — predictive light pillar; landing it heals (re-tuned dmg/cd/heal after the arena shrink) |
 | **Berserker** | shipped | `RAMPAGE` — wall-ricocheting charge, hits per pass |
-| **Knight** | **UNRESOLVED** | hard design corner (melee tank under DVD) — maybe cut & replace; see status note |
+| **Knight → Geomancer** | **REPLACED** | Knight retired; **`SIGIL`** — runestones plant on each wall bounce, the cast fires amber ley-lines between every stone and burns whatever crosses them |
 | **Reaper** | shipped | `HARVEST` — returning scythe (semi-ranged boomerang) + WAKE: the arc leaves a damaging trail |
 | **Archer** | shipped | `VOLLEY` — fan of arrows per cast + SHATTER (cushion of embedded arrows bursts at 5 stacks for stacks×N damage) |
 | **Ronin** | shipped | `IAI` — overshoot line-cut + FOCUS chain skips the windup for instant follow-ups |
@@ -247,37 +261,39 @@ heavy meaty slam on each wall ricochet; low primal rumble tail.
 
 ---
 
-## KNIGHT → `BULWARK` *(UNRESOLVED — prototyping shelved; see status)*
-*Material: heavy plate steel, deep clang, resonant ring (unchanged).*
+## KNIGHT → RETIRED, replaced by GEOMANCER
+*Material: heavy plate steel, deep clang, resonant ring (removed from roster).*
 
-> **STATUS (2026-05-23): Knight is the hard corner of this whole effort.** Every
-> direction we tried hit a wall, because a **melee tank under autonomous DVD movement**
-> is a genuinely tight design box. What we explored and why each failed:
-> - **BULWARK (reactive absorb → counter-return):** *impossible to balance.* Its output
->   depends on the enemy attacking during an un-timable stance window; with no agency to
->   time the guard, the result is RNG coincidence, not a tunable function. (This is the
->   general no-reactive-timing lesson — see the note in GOTCHAS / memory.)
-> - **JUGGERNAUT (continuous homing pursuit + bash):** tuned and paced great, but **broke
->   the DVD-bounce identity** — Knight cutting straight at the enemy looked wrong.
-> - **SHIELD THROW (boomerang projectile):** keeps DVD and tunes cleanly, but **turns the
->   frontline tank into a ranged fighter** — off-brand.
-> - **SHIELD CHARGE (brief dash-charge + tank twist):** keeps DVD and is melee, but the
->   locomotion is "a dash," so it's only a modest twist on the generic dash we're trying
->   to move the cluster *away* from.
+> **STATUS (2026-05-23): RESOLVED by replacement.** Every Knight direction we
+> tried hit a wall, because a **melee tank under autonomous DVD movement** is a
+> genuinely tight design box. What we explored and why each failed (kept here
+> as the design-journal record of what doesn't work, so we don't relitigate):
+> - **BULWARK (reactive absorb → counter-return):** *impossible to balance.* Its
+>   output depends on the enemy attacking during an un-timable stance window;
+>   with no agency to time the guard, the result is RNG coincidence, not a
+>   tunable function. (The general no-reactive-timing lesson — see GOTCHAS.)
+> - **JUGGERNAUT (continuous homing pursuit + bash):** tuned and paced great,
+>   but **broke the DVD-bounce identity** — Knight cutting straight at the
+>   enemy looked wrong.
+> - **SHIELD THROW (boomerang projectile):** keeps DVD and tunes cleanly, but
+>   **turns the frontline tank into a ranged fighter** — off-brand.
+> - **SHIELD CHARGE (brief dash-charge + tank twist):** keeps DVD and is melee,
+>   but the locomotion is "a dash," so it's only a modest twist on the generic
+>   dash we're trying to move the cluster *away* from.
 >
-> **The trilemma:** a melee tank under DVD can only land reliable damage by (a) dashing
-> to close — on-brand but "just a dash"; (b) reaching out — ranged, off-brand; or
-> (c) random body-contact — pure DVD but unreliable/slow. There's no clean fourth path.
+> **The trilemma:** a melee tank under DVD can only land reliable damage by
+> (a) dashing to close — on-brand but "just a dash"; (b) reaching out — ranged,
+> off-brand; or (c) random body-contact — pure DVD but unreliable/slow. There's
+> no clean fourth path *for a melee tank*.
 >
-> **Decision pending:** either accept a modest **Shield Charge** as Knight's redesign, or
-> **cut Knight from the roster and design a new 16th fighter with a genuinely distinct,
-> DVD-friendly verb** to take his slot. Leaning toward the latter — it's better to add a
-> fighter that *wants* to exist in this design space than to force one that doesn't.
-> Prototyping is skipped for now; Knight stays on the original SHIELD BASH in code until
-> this is decided.
->
-> *The BULWARK write-up below is the original sketch, kept for reference — it is
-> superseded by this status.*
+> **The resolution: a fighter that *uses* the DVD bounce as its core mechanic
+> instead of fighting against it.** Geomancer (next section) plants a runestone
+> on each wall hit, then the SIGIL cast fires amber ley-lines between every
+> stone — damage emerges from the planted geometry, not from a body that has
+> to close to land it. The bounce-rich autonomous movement *is* the
+> ability-input. The Knight slot is now Geomancer's. Knight's SHIELD/SHIELD BASH
+> code, sword/armor sounds, and shield-shape sprite were removed from the
+> roster; the BULWARK sketch below is preserved as a record of what didn't work.
 
 **Active — BULWARK.** The opposite of a dash. Knight **plants** and raises guard for a
 brief stance. Damage taken during the stance is reduced *and* **banked**; when the
@@ -308,6 +324,107 @@ grammar) with a fill-meter rising as damage is banked; release sends the Knight'
 
 **Sounds as.** Deep clang as it plants; a dull armored clank on each absorbed hit
 (reuse `armor`); a big resonant steel *bong* with a long ring-down on release.
+
+---
+
+## GEOMANCER → `SIGIL` *(shipped — Knight's slot; wall-bouncing field caster)*
+*Material: granite + ley-light. Heavy stone-thump on plant, earthen crack on cast, metallic chord chime on each line.*
+
+> **IMPLEMENTED & VALIDATED (2026-05-23).** Geomancer ships in the Knight slot
+> as the resolution of the melee-tank-under-DVD trilemma. Instead of trying to
+> *bypass* the autonomous bounce, this kit *uses* it: every wall-bounce plants
+> a runestone, and the cast fires amber ley-lines between every stone. The
+> DVD movement IS the ability-input.
+>
+> **Identity (sprite v2).** A standing stone (menhir) — a faceted granite
+> block with a carved amber rune glowing on the forward face. The fighter
+> IS one of his own runestones, wandering the arena (the kit's wall-stones
+> are smaller copies of himself; the SIGIL connects them all — including
+> the fighter — into the network). One object, matching the roster's
+> "Necromancer = skull, Witch = hat, Wizard = book" single-icon pattern.
+> Forward = +x (the carved face). Sprite v1 was a multi-piece pilgrim
+> (cloak + brimmed hat + staff with rune-disc + brim-stones) — replaced
+> because it was visually too busy and didn't read as a coherent object.
+> Color palette: granite gray-brown body, dark-brown rear-edge shadow,
+> recessed front-face panel, amber rune-glow.
+>
+> **PASSIVE — STANDING STONES.** Each wall-bounce drives a granite runestone
+> into the wall at the contact point (deterministic; no rng — the bounce IS
+> the input). Stones are inert markers, glowing amber, decaying over
+> `stoneLifetime` (oldest evicted at `maxStones`). The arena slowly accumulates
+> a perimeter network. **Pre-seeded with 4 corner stones at fight start** so
+> the SIGIL has a base topology from frame 1 — without this, Geo's first 2-3
+> casts whiff (only 0-1 stones planted) and she dies before the network exists.
+>
+> **ACT — SIGIL.** Instant cast (no windup): Geo slams the staff and, for
+> `sigilFlashDur`, amber ley-lines are drawn between **every pair** of planted
+> stones. Any line crossed by the enemy body (or a decoy) at the cast frame
+> deals `f.dmg` per crossing. Decoys hit by lines are consumed. The number of
+> lines is **all-pairs**, not nearest-neighbour — see the topology note below.
+>
+> **Topology — all-pairs, not nearest-neighbour.** The first prototype linked
+> each stone to its 2 nearest. Sounded clean, but stones plant on walls — the
+> nearest stones are ADJACENT along the same wall, so links hugged the perimeter
+> and **never crossed the arena interior** where the enemy lives. Geo ran at
+> **0% win rate**. Switching to ALL-PAIRS (every stone links to every other)
+> produces ~28 lines at the 8-stone cap, of which ~4 typically cross the enemy
+> body — the per-line `dmg` is tuned around that count. The `linksPerStone`
+> field survives unused on the fighter object in case a future topology wants
+> to clamp the network density. See `computeSigilLinks()` in `abilities.js`.
+>
+> **Decoy interaction (DOPPELGANGER substrate).** Decoys are valid line-cross
+> targets — a sigil line crossing a phantom Jester consumes it (same shape as
+> projectile/melee decoy intercept). Counter-intuitively, this makes Geomancer
+> **the hardest counter to Jester in the roster** (~99% vs Jester): every hit
+> Jester takes spawns a fresh decoy near her current position, and the next
+> sigil's lines tend to cross BOTH Jester AND the decoy. Decoys get vaporised
+> and stop providing real interference because the sigil rebuilds the line set
+> every cast. The standard DOPPELGANGER counter-shape (decoys absorb single
+> attacks) doesn't apply when the ATTACK is many simultaneous lines.
+>
+> **Audio (Field grammar — new sub-category).** A staff-slam `sigilCrack`
+> (earthen crack + sawtooth thud) on cast; a single `sigilLines({count: n})`
+> sfx fires `n` slightly-detuned metallic chimes in a staggered chord (one per
+> line), with the setTimeout fan-out gated by the headless-guarded `sfx`
+> boundary so it can't leak timers into the sim path. Per-bounce `stoneThump`
+> (lowpass noise + earthen fundamental) on each new stone planting. AUDIO.md
+> updated with the Field grammar entry.
+>
+> **Death (COLLAPSE).** Stone tips forward + sinks; gravel burst at the base
+> + amber rune flares one last time on the carved face + 4 ley-lines retract
+> inward to the body (the only "things flying INTO the corpse" death voice —
+> every other death's voice radiates outward). Residue: granite chunks
+> scattered around a dim amber rune-mark scorched into the ground at the
+> stone's centre, fading last.
+>
+> **Numbers:** hp 1100, dmg 95, cd 2.5, maxStones 8, stoneLifetime 13,
+> sigilFlashDur 0.6, lineWidth 4, linksPerStone 2 (unused; reserved).
+> **~52% overall.** Spread 12.2 points (Cannoneer 57% top → Jester 44% bottom).
+>
+> **Matchup texture (sim-validated).** STRONG: Jester 99% (decoys are absorbed
+> as line crossings — the kit reads Jester's identity as free damage), Duelist
+> 72% (no parry against a sigil — the lines aren't a projectile to reflect
+> nor a melee to absorb), Archer 63%. EVEN: Witch 51%, Necromancer 44%
+> (skeletons act as soft decoys but don't actually block lines effectively).
+> WEAK: Hunter 22% (hooks Geo and stuns mid-cast, hard counter), Wizard 21%
+> (Wizard's mana shield + orb chip wins the early game before stones build),
+> Cannoneer 31% (one-shot windup can KO before Geo gets a sigil off).
+>
+> **Implementation files touched:**
+> - `js/fighters.js` — entry replaces Knight's slot; props expose tunables.
+> - `js/engine.js` — `bounce()` extended to plant stones on each wall hit
+>   per fighter; `makeCornerStones()` pre-seeds 4 corners; `makeFighter()`
+>   initialises the live arrays; `step()` decays stones + ticks sigilFlash.
+> - `js/abilities.js` — `case 'sigil'`: computes all-pairs link set,
+>   segment-circle test against enemy + decoys, damage applied as one
+>   summed call. Helpers: `segIntersectsCircle()`, `computeSigilLinks()`.
+> - `js/render/sprites.js` — `case 'menhir'` body sprite (single granite
+>   stone with carved amber rune; rear-edge shadow for 3D form; subtle
+>   weathering crack). Replaced the original multi-piece `case 'pilgrim'`.
+> - `js/render/arena.js` — stones-in-walls render pass + sigil-flash render
+>   pass + `case 'sigil'` in `drawDeath` for the COLLAPSE-with-retraction.
+> - `js/audio.js` — `stoneThump`, `sigilCrack`, `sigilLines` (new SOUNDS
+>   entries); `case 'sigil'` added to the COLLAPSE branch of `death()`.
 
 ---
 

@@ -126,13 +126,26 @@
   guard (~67s) is the only stalemate backstop. The balance harness tracks
   `long%` (fights past 30s) as a stalemate-prone-matchup detector — see
   `boxedshard.js`'s `LONG_FIGHT_THRESHOLD`.
-- **Knight is shelved (excluded from balance), not removed.** Knight is still
-  in the `FIGHTERS` array and is selectable in the picker, but
-  `boxedshard.js`'s `EXCLUDE_IDS = new Set(['knight'])` keeps it out of the
-  balance harness (its UNRESOLVED redesign would just produce misleading win
-  rates). Keep `EXCLUDE_IDS` in sync between `boxedshard.js` and
-  `boxedmerge.js`; both files filter the same way. `matchupOdds` in
-  `matchups.js` falls back to 50 for missing pairs so the upset-hunt picker
-  treats Knight fights as "unknown odds." To re-include Knight: drop the id
-  from both `EXCLUDE_IDS` sets AND bump `balance.sh` back to 8 shards × 15
-  matchups = 120 (it's at 7 × 15 = 105 now).
+- **Knight was retired and replaced by Geomancer.** Knight's melee-tank niche
+  was a hard design corner under autonomous DVD movement (see REDESIGN-PROPOSAL.md
+  for the failed prototypes). Geomancer ships in the same roster slot and
+  *uses* the wall-bounce as its core mechanic (STANDING STONES plant on each
+  hit, SIGIL fires ley-lines between every stone). `EXCLUDE_IDS` is now empty
+  in both `boxedshard.js` and `boxedmerge.js`; `balance.sh` is at 8 shards × 15
+  = 120 matchups (all 16 active fighters participate). If a future fighter
+  goes shelved, sync `EXCLUDE_IDS` across both files AND drop the shard count
+  in `balance.sh` in lockstep.
+- **Geomancer's SIGIL is all-pairs, not nearest-neighbour.** The first
+  topology shipped was "each stone links to its 2 nearest" — sounded clean
+  but the nearest stones are ADJACENT along the same wall, so links hugged
+  the perimeter and never crossed the arena interior where the enemy lives.
+  Geo ran at 0% win rate. Switching to ALL-PAIRS (every stone links to every
+  other) produces ~28 lines at the 8-stone cap, of which ~4 typically cross
+  the enemy body — the per-line dmg (`f.dmg`) is tuned around that count.
+  The `linksPerStone` template prop survives unused; it's there if a future
+  topology wants to clamp the network density.
+- **Geomancer is pre-seeded with 4 corner stones at fight start.** Without
+  this seed, her first 2-3 casts whiff (only 0-1 stones planted from the
+  early bounces) and she dies before the SIGIL network exists. Corner stones
+  give the kit a "skeleton" topology from frame 1, and wall bounces add to it.
+  See `makeCornerStones()` in `engine.js`.
