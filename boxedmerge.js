@@ -7,10 +7,12 @@
 //   (avoids concurrent-append corruption from a shared file).
 const fs = require('fs');
 
+// Fighters excluded from the balance harness — keep in sync with boxedshard.js.
+const EXCLUDE_IDS = new Set(['knight']);
 function loadIds() {
   const src = fs.readFileSync(__dirname + '/js/fighters.js', 'utf8');
   const m = [...src.matchAll(/\{\s*id:'([a-z]+)'/g)];
-  return m.map(x => x[1]);
+  return m.map(x => x[1]).filter(id => !EXCLUDE_IDS.has(id));
 }
 
 const files = process.argv.slice(2);

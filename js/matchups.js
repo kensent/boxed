@@ -8,32 +8,34 @@
 // simplified model that drifted from the real game; do not trust it.
 // REGENERATE after any balance change: run `./balance.sh` and paste the
 // printed MATCHUPS block here — otherwise it silently drifts from reality.
+//
+// Knight is currently excluded from the balance harness (see boxedshard.js EXCLUDE_IDS) —
+// the redesign is unresolved and we don't want stale win rates leaking into the
+// upset-hunt picker. matchupOdds falls back to 50 for missing pairs, so Knight
+// fights register as "unknown" instead of a misleading data point.
 // ============================================================================
 const MATCHUPS = {
-  'priest_berserker':0, 'priest_wizard':98, 'priest_knight':0, 'priest_sapper':90, 'priest_archer':94,
-  'priest_jester':1, 'priest_cannoneer':35, 'priest_duelist':22, 'priest_necromancer':25, 'priest_reaper':65,
-  'priest_ronin':10, 'priest_witch':77, 'priest_hunter':35, 'priest_warlock':89, 'priest_gambler':81,
-  'berserker_wizard':55, 'berserker_knight':13, 'berserker_sapper':36, 'berserker_archer':39, 'berserker_jester':94,
-  'berserker_cannoneer':28, 'berserker_duelist':2, 'berserker_necromancer':31, 'berserker_reaper':29, 'berserker_ronin':80,
-  'berserker_witch':20, 'berserker_hunter':57, 'berserker_warlock':86, 'berserker_gambler':61, 'wizard_knight':6,
-  'wizard_sapper':90, 'wizard_archer':1, 'wizard_jester':43, 'wizard_cannoneer':69, 'wizard_duelist':21,
-  'wizard_necromancer':28, 'wizard_reaper':74, 'wizard_ronin':33, 'wizard_witch':74, 'wizard_hunter':49,
-  'wizard_warlock':50, 'wizard_gambler':38, 'knight_sapper':1, 'knight_archer':28, 'knight_jester':78,
-  'knight_cannoneer':6, 'knight_duelist':12, 'knight_necromancer':94, 'knight_reaper':10, 'knight_ronin':32,
-  'knight_witch':80, 'knight_hunter':60, 'knight_warlock':55, 'knight_gambler':90, 'sapper_archer':51,
-  'sapper_jester':17, 'sapper_cannoneer':52, 'sapper_duelist':80, 'sapper_necromancer':86, 'sapper_reaper':57,
-  'sapper_ronin':57, 'sapper_witch':55, 'sapper_hunter':47, 'sapper_warlock':48, 'sapper_gambler':61,
-  'archer_jester':21, 'archer_cannoneer':47, 'archer_duelist':76, 'archer_necromancer':59, 'archer_reaper':57,
-  'archer_ronin':53, 'archer_witch':43, 'archer_hunter':88, 'archer_warlock':45, 'archer_gambler':48,
-  'jester_cannoneer':76, 'jester_duelist':3, 'jester_necromancer':74, 'jester_reaper':73, 'jester_ronin':30,
-  'jester_witch':76, 'jester_hunter':83, 'jester_warlock':1, 'jester_gambler':78, 'cannoneer_duelist':48,
-  'cannoneer_necromancer':35, 'cannoneer_reaper':56, 'cannoneer_ronin':29, 'cannoneer_witch':57, 'cannoneer_hunter':40,
-  'cannoneer_warlock':89, 'cannoneer_gambler':45, 'duelist_necromancer':29, 'duelist_reaper':36, 'duelist_ronin':99,
-  'duelist_witch':55, 'duelist_hunter':77, 'duelist_warlock':18, 'duelist_gambler':50, 'necromancer_reaper':51,
-  'necromancer_ronin':55, 'necromancer_witch':57, 'necromancer_hunter':37, 'necromancer_warlock':75, 'necromancer_gambler':70,
-  'reaper_ronin':49, 'reaper_witch':38, 'reaper_hunter':48, 'reaper_warlock':70, 'reaper_gambler':38,
-  'ronin_witch':61, 'ronin_hunter':59, 'ronin_warlock':57, 'ronin_gambler':65, 'witch_hunter':46,
-  'witch_warlock':71, 'witch_gambler':49, 'hunter_warlock':78, 'hunter_gambler':45, 'warlock_gambler':39,
+  'priest_berserker':0, 'priest_wizard':98, 'priest_sapper':89, 'priest_archer':95, 'priest_jester':1,
+  'priest_cannoneer':35, 'priest_duelist':22, 'priest_necromancer':25, 'priest_reaper':67, 'priest_ronin':10,
+  'priest_witch':75, 'priest_hunter':38, 'priest_warlock':88, 'priest_gambler':85, 'berserker_wizard':59,
+  'berserker_sapper':32, 'berserker_archer':34, 'berserker_jester':95, 'berserker_cannoneer':30, 'berserker_duelist':2,
+  'berserker_necromancer':34, 'berserker_reaper':26, 'berserker_ronin':83, 'berserker_witch':24, 'berserker_hunter':58,
+  'berserker_warlock':87, 'berserker_gambler':64, 'wizard_sapper':91, 'wizard_archer':2, 'wizard_jester':42,
+  'wizard_cannoneer':71, 'wizard_duelist':17, 'wizard_necromancer':30, 'wizard_reaper':70, 'wizard_ronin':35,
+  'wizard_witch':83, 'wizard_hunter':45, 'wizard_warlock':50, 'wizard_gambler':39, 'sapper_archer':53,
+  'sapper_jester':18, 'sapper_cannoneer':51, 'sapper_duelist':81, 'sapper_necromancer':86, 'sapper_reaper':54,
+  'sapper_ronin':54, 'sapper_witch':48, 'sapper_hunter':41, 'sapper_warlock':47, 'sapper_gambler':56,
+  'archer_jester':26, 'archer_cannoneer':50, 'archer_duelist':80, 'archer_necromancer':56, 'archer_reaper':54,
+  'archer_ronin':55, 'archer_witch':45, 'archer_hunter':89, 'archer_warlock':46, 'archer_gambler':49,
+  'jester_cannoneer':76, 'jester_duelist':3, 'jester_necromancer':75, 'jester_reaper':74, 'jester_ronin':27,
+  'jester_witch':76, 'jester_hunter':84, 'jester_warlock':1, 'jester_gambler':76, 'cannoneer_duelist':44,
+  'cannoneer_necromancer':37, 'cannoneer_reaper':61, 'cannoneer_ronin':27, 'cannoneer_witch':55, 'cannoneer_hunter':37,
+  'cannoneer_warlock':88, 'cannoneer_gambler':51, 'duelist_necromancer':34, 'duelist_reaper':32, 'duelist_ronin':99,
+  'duelist_witch':60, 'duelist_hunter':80, 'duelist_warlock':18, 'duelist_gambler':45, 'necromancer_reaper':54,
+  'necromancer_ronin':58, 'necromancer_witch':54, 'necromancer_hunter':39, 'necromancer_warlock':75, 'necromancer_gambler':68,
+  'reaper_ronin':49, 'reaper_witch':35, 'reaper_hunter':54, 'reaper_warlock':66, 'reaper_gambler':42,
+  'ronin_witch':63, 'ronin_hunter':62, 'ronin_warlock':53, 'ronin_gambler':70, 'witch_hunter':49,
+  'witch_warlock':70, 'witch_gambler':50, 'hunter_warlock':76, 'hunter_gambler':45, 'warlock_gambler':46,
 };
 
 // matchupOdds(a, b) — fighter A's win % vs B, in either stored direction.
