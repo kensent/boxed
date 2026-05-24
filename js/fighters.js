@@ -194,11 +194,10 @@ const FIGHTERS = [
     // instead of "average tanky chaos."
     ability:'wildcard', cd:1.5, dmg:50,
     active: 'WILDCARD — roll a die; higher pips, bigger coin attack',
-    // DOUBLES (replaces LOADED DICE) — when consecutive WILDCARD rolls
-    // match the same face, the rolled pattern fires TWICE in the same
-    // cast (Dealer's Blessing). The second copy is fired with a small
-    // angular offset / phase shift so the coins diverge visually instead
-    // of stacking on the same trajectories.
+    // DOUBLES — when consecutive WILDCARD rolls match the same face, the
+    // rolled pattern fires TWICE in the same cast (Dealer's Blessing).
+    // The second copy fires with a small angular offset so the coins
+    // diverge visually instead of stacking on the same trajectories.
     passive: "DOUBLES — when two rolls in a row match the same face, the cast fires its coin pattern twice",
   },
 ];

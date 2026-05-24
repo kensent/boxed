@@ -351,9 +351,8 @@ function fireAbility(f, enemy) {
       // endpoints — they don't track him during the flash).
       const nodes = [{ x: f.x, y: f.y }].concat(stones);
       if (nodes.length < 2) {
-        // Only self, no stones yet (fight just started, no bounce yet). The
-        // slam still sounds, but there's no network. Flag for a short cd
-        // refund so the kit boots up gracefully on the first bounce.
+        // Safety net — engine skips the cast when stones is empty, so this
+        // path is only reachable if stones somehow empties mid-cast.
         f.sigilWhiff = true;
         break;
       }

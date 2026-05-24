@@ -900,8 +900,10 @@ function bounce(f, w, h) {
 // orient the stone correctly. Caps at f.maxStones (oldest evicted first).
 // Stones don't decay over time; cap-eviction is the only removal.
 function plantStone(f, x, y, nx, ny) {
+  const wasEmpty = !f.stones.length;
   f.stones.push({ x, y, nx, ny, born: 0.25 });
   if (f.stones.length > f.maxStones) f.stones.shift();
+  if (wasEmpty) f.cdTimer = f.cd;  // first stone: start the CD from scratch
   sfx('stoneThump', null, x);
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
@@ -1343,26 +1345,25 @@ function step(dt) {
       }
     }
 
-    f.cdTimer -= dt;
+    // Geomancer holds the CD frozen until the first stone is planted — no
+    // network means no cast, same as Warlock out of range.
+    if (!(f.ability === 'sigil' && (!f.stones || !f.stones.length))) f.cdTimer -= dt;
     // Warlock can't recast while a drain channel is still active.
     // A stunned fighter (Hunter's CRIPPLING HOOK) can't act — the cdTimer stays
     // ready, so they fire the instant the stun ends (cooldown isn't wasted).
     if (f.cdTimer <= 0 && !f.dead && f.aimTimer <= 0 && f.drainTimer <= 0 && f.stunTimer <= 0) {
       const target = f === red ? blue : red;
-      if (!target.dead) fireAbility(f, target);
-      // Gambler's Loaded Dice: a dud refunds half the cooldown.
-      // Warlock: a whiffed drain (enemy out of range) only costs a short retry
-      // delay, so the beam grabs on as soon as the enemy is close enough.
-      // Gambler LOADED DICE refund is applied in resolveAim (the roll settles
-      // ~1s after fire, so cdTimer is adjusted there once the face is known).
-      if (f.ability === 'drain' && f.drainWhiffed) f.cdTimer = 0.25;
-      else if (f.ability === 'cast' && f.castCapped) f.cdTimer = 0.4;
-      // Reaper: a crescent is still in flight — retry soon instead of throwing a second.
-      else if (f.ability === 'sweep' && f.sweepWhiff) f.cdTimer = 0.1;
-      // Geomancer: a cast with <2 stones generated no lines — short retry
-      // delay so the kit boots up gracefully as bounces accumulate stones.
-      else if (f.ability === 'sigil' && f.sigilWhiff) f.cdTimer = 0.4;
-      else f.cdTimer = f.cd;
+      if (!target.dead) {
+        fireAbility(f, target);
+        // Warlock: a whiffed drain (enemy out of range) only costs a short retry
+        // delay, so the beam grabs on as soon as the enemy is close enough.
+        // Wizard: at orb cap nothing spawns — short retry instead of wasting the full cd.
+        if (f.ability === 'drain' && f.drainWhiffed) f.cdTimer = 0.25;
+        else if (f.ability === 'cast' && f.castCapped) f.cdTimer = 0.4;
+        // Reaper: a crescent is still in flight — retry soon instead of throwing a second.
+        else if (f.ability === 'sweep' && f.sweepWhiff) f.cdTimer = 0.1;
+        else f.cdTimer = f.cd;
+      }
     }
     if (f.aimTimer > 0) {
       f.aimTimer -= dt;
