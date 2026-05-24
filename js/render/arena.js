@@ -206,54 +206,139 @@ function drawImpact(im) {
   ctx.restore();
 }
 
-// drawCelebration(winner, prog) — Phase 1 SHARED celebration grammar. Plays
-// during the final CAM_PULLBACK seconds of the finish window, anchored to the
-// winner's live position (sprite stays sim-driven; this layers effects on
-// top). Three beats over prog 0→1:
-//   (1) inner team-colour glow ring expands + fades from the body
-//   (2) a second offset pulse ring (double-pulse rhythm)
-//   (3) 8 team-colour motes burst radially and fade
-// Per-fighter "victory voices" are a Phase 2 follow-up; this base grammar
-// makes the outro stop feeling empty before that work is scoped.
+// drawCelebration(winner, prog) — per-fighter victory ceremony. drawFighter
+// early-returns for the celebrating winner (mirror of how it early-returns
+// for dead fighters and lets drawDeath own the loser's sprite), so each
+// case here OWNS the body draw and applies its own bespoke sprite transform.
+// Three-layer grammar parallel to drawDeath: (1) sprite transform — the body
+// does something distinctly per-fighter (flex, swell, sheathe, lift…),
+// (2) voice effect — the energy of victory in the fighter's identity, and
+// (3) settling residue — what's left as the camera pulls back. Default case
+// is the Phase 1 placeholder (body untransformed + generic pulse+burst);
+// replaced wholesale as bespoke celebrations land.
 function drawCelebration(winner, prog) {
   const teamHex = winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
   ctx.save();
-  ctx.lineWidth = 2.2;
-  ctx.strokeStyle = teamHex;
-  // Inner pulse ring — starts at the fighter's radius, expands outward.
-  const r1 = FIGHTER_SIZE + 4 + prog * 32;
-  ctx.globalAlpha = (1 - prog) * 0.7;
-  ctx.beginPath();
-  ctx.arc(winner.x, winner.y, r1, 0, Math.PI * 2);
-  ctx.stroke();
-  // Second offset pulse — gives the celebration a double-tap rhythm so it
-  // doesn't read as a single one-shot burst.
-  if (prog > 0.3) {
-    const p2 = (prog - 0.3) / 0.7;
-    const r2 = FIGHTER_SIZE + 4 + p2 * 28;
-    ctx.globalAlpha = (1 - p2) * 0.5;
-    ctx.beginPath();
-    ctx.arc(winner.x, winner.y, r2, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  // Radial mote burst — 8 motes, slight rotational drift so the shape feels
-  // alive rather than perfectly symmetric. Particles complete by prog≈0.85.
-  const N = 8;
-  const baseRot = prog * Math.PI * 0.35;
-  const burstT = Math.min(1, prog * 1.18);
-  ctx.fillStyle = teamHex;
-  ctx.globalAlpha = (1 - burstT) * 0.9;
-  for (let i = 0; i < N; i++) {
-    const angle = baseRot + (i / N) * Math.PI * 2;
-    const dist = FIGHTER_SIZE + 6 + burstT * 30;
-    const px = winner.x + Math.cos(angle) * dist;
-    const py = winner.y + Math.sin(angle) * dist;
-    ctx.beginPath();
-    ctx.arc(px, py, 2.0, 0, Math.PI * 2);
-    ctx.fill();
+  switch (winner.ability) {
+    case 'tackle': {
+      // Berserker — bloodrage triumph. (1) Body swells with each chest-thump
+      // and shakes with a rage-tremor between them. (2) Crimson aura pulses,
+      // three chest-thump shockwaves boom outward (boom · boom · BOOM).
+      // (3) Residue: fading flesh-red smear bars on the final thump.
+      ctx.lineCap = 'round';
+
+      // === LAYER 1: BODY — rage tremor + per-thump swell ===
+      const thumpTimes = [0.00, 0.35, 0.70];
+      let bodyScale = 1.0;
+      for (const t0 of thumpTimes) {
+        const td = (prog - t0) / 0.22;
+        if (td > 0 && td < 1) {
+          const env = Math.sin(td * Math.PI);            // 0 → 1 → 0
+          bodyScale = Math.max(bodyScale, 1 + env * 0.20);
+        }
+      }
+      const tremX = Math.sin(prog * 70) * 0.6;            // rage shake
+      const tremY = Math.cos(prog * 65) * 0.4;
+      ctx.save();
+      ctx.translate(winner.x + tremX, winner.y + tremY);
+      if (Math.cos(winner.lastFacing || 0) < 0) ctx.scale(-1, 1);
+      ctx.scale(bodyScale, bodyScale);
+      drawShape(ctx, winner);
+      ctx.restore();
+
+      // === LAYER 2: voice — crimson aura + escalating chest thumps ===
+      const auraPulse = 0.55 + Math.sin(prog * Math.PI * 5) * 0.45;
+      ctx.globalAlpha = (1 - prog * 0.6) * 0.45;
+      ctx.fillStyle = 'rgba(220,20,20,1)';
+      ctx.beginPath();
+      ctx.arc(winner.x, winner.y, FIGHTER_SIZE + 5 + auraPulse * 4, 0, Math.PI * 2);
+      ctx.fill();
+      const thumps = [{ t0: 0.00, big: false }, { t0: 0.35, big: false }, { t0: 0.70, big: true }];
+      ctx.strokeStyle = 'rgba(255,80,80,1)';
+      for (const th of thumps) {
+        const tp = (prog - th.t0) / 0.30;
+        if (tp < 0 || tp > 1) continue;
+        const baseR = th.big ? 12 : 8;
+        const grow = th.big ? 78 : 52;
+        const lw = (th.big ? 4.5 : 3) * (1 - tp) + 0.5;
+        ctx.globalAlpha = (1 - tp) * (th.big ? 0.95 : 0.70);
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        ctx.arc(winner.x, winner.y, baseR + tp * grow, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // === LAYER 3: residue — five radial crimson smear bars on final thump ===
+      if (prog > 0.70) {
+        const sp = (prog - 0.70) / 0.30;
+        const N = 5;
+        ctx.lineWidth = 2.5 * (1 - sp) + 0.4;
+        ctx.strokeStyle = `rgba(180,10,10,${((1 - sp) * 0.7).toFixed(3)})`;
+        for (let i = 0; i < N; i++) {
+          const a = (i / N) * Math.PI * 2 + 0.2;
+          const r0 = FIGHTER_SIZE + 14 + sp * 8;
+          const r1 = r0 + 18 - sp * 6;
+          ctx.beginPath();
+          ctx.moveTo(winner.x + Math.cos(a) * r0, winner.y + Math.sin(a) * r0);
+          ctx.lineTo(winner.x + Math.cos(a) * r1, winner.y + Math.sin(a) * r1);
+          ctx.stroke();
+        }
+      }
+      break;
+    }
+    default: {
+      // Phase 1 placeholder — body untransformed (drawFighter is skipped for
+      // celebrating winners, so we draw the body here even with no bespoke
+      // transform), plus generic pulse + radial mote burst on top. Replaced
+      // wholesale per-fighter as bespoke celebrations land in Phase 2.
+      ctx.save();
+      ctx.translate(winner.x, winner.y);
+      if (Math.cos(winner.lastFacing || 0) < 0) ctx.scale(-1, 1);
+      drawShape(ctx, winner);
+      ctx.restore();
+
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = teamHex;
+      const r1 = FIGHTER_SIZE + 4 + prog * 32;
+      ctx.globalAlpha = (1 - prog) * 0.7;
+      ctx.beginPath();
+      ctx.arc(winner.x, winner.y, r1, 0, Math.PI * 2);
+      ctx.stroke();
+      if (prog > 0.3) {
+        const p2 = (prog - 0.3) / 0.7;
+        const r2 = FIGHTER_SIZE + 4 + p2 * 28;
+        ctx.globalAlpha = (1 - p2) * 0.5;
+        ctx.beginPath();
+        ctx.arc(winner.x, winner.y, r2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      const N = 8;
+      const baseRot = prog * Math.PI * 0.35;
+      const burstT = Math.min(1, prog * 1.18);
+      ctx.fillStyle = teamHex;
+      ctx.globalAlpha = (1 - burstT) * 0.9;
+      for (let i = 0; i < N; i++) {
+        const angle = baseRot + (i / N) * Math.PI * 2;
+        const dist = FIGHTER_SIZE + 6 + burstT * 30;
+        ctx.beginPath();
+        ctx.arc(winner.x + Math.cos(angle) * dist, winner.y + Math.sin(angle) * dist, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
   }
   ctx.globalAlpha = 1;
   ctx.restore();
+}
+
+// fireCelebSfx(winner) — per-fighter victory voice fired once at celebration
+// start. Falls through to the generic 'win' fanfare for fighters without a
+// bespoke voice yet (Phase 1 placeholder — see audio.js).
+function fireCelebSfx(winner) {
+  switch (winner.ability) {
+    case 'tackle': sfx('celebTackle', null, winner.x); break;
+    default: sfx('win'); break;
+  }
 }
 
 // drawDeath(f, prog) — the per-fighter death "undoing": the loser's form comes apart
@@ -1887,12 +1972,12 @@ function draw() {
       else if (age < 0.28) scale = 0.9 + ((age - 0.16) / 0.12) * 0.1; // settle to 1
       else scale = 1;
       // K.O. is the death-ceremony beat — it should be GONE before the
-      // celebration phase begins. Full opacity during the death ceremony,
-      // fades out across the first half of the pull-back window
-      // (CAM_PULLBACK → 0.3s), fully clear by the time the celebration's
-      // glow/burst is reading.
+      // celebration's important beats land. Full opacity during the death
+      // ceremony; fades out across the first 0.4s of the celebration
+      // window (finishTimer CAM_PULLBACK → CAM_PULLBACK-0.4), fully clear
+      // for the remainder so the bespoke celebration owns the screen.
       const alpha = Math.max(0, Math.min(1,
-        (game.finishTimer - 0.3) / Math.max(0.01, CAM_PULLBACK - 0.3)));
+        (game.finishTimer - (CAM_PULLBACK - 0.4)) / 0.4));
       const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // leave camera space → screen space
@@ -1932,7 +2017,38 @@ function draw() {
       drawCelebration(game.winner, prog);
       if (!game.celebSfxFired) {
         game.celebSfxFired = true;
-        sfx('win');
+        fireCelebSfx(game.winner);
+      }
+
+      // Winner name label — subtle screen-space punctuation mirroring K.O.
+      // Crossfades INTO position as K.O. fades OUT (same 0.4s window, same
+      // banner location). Smaller and restrained — no scale-in slam — so it
+      // reads as quiet labeling rather than another "moment." Team-coloured
+      // outline + glow, no white fill (that's K.O.'s job).
+      const nameAlpha = Math.max(0, Math.min(1,
+        (CAM_PULLBACK - game.finishTimer) / 0.4));
+      if (nameAlpha > 0) {
+        const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
+        const dpr = window.devicePixelRatio || 1;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.save();
+        ctx.globalAlpha = nameAlpha;
+        ctx.translate(canvas.width / (2 * dpr), canvas.height * 0.22 / dpr);
+        ctx.font = '900 28px Bungee, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.lineJoin = 'round';
+        const txt = game.winner.name + ' WINS';
+        ctx.strokeText(txt, 0, 0);
+        ctx.shadowColor = wc;
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = wc;
+        ctx.fillText(txt, 0, 0);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        ctx.globalAlpha = 1;
       }
     }
   }

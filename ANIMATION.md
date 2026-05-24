@@ -236,14 +236,24 @@ centre.
 **Shared contract** (structural — survives into Phase 2 unchanged, the way
 the death ceremony's camera/snap/K.O. frame survives across every bespoke
 death):
-- **Anchored to live winner position** (`winner.x, winner.y`) in
-  world/camera space. The winner is still sim-driven, so the celebration
-  tracks whatever the body is doing.
+- **Winner freezes at celebration start.** `step()` gates the winner's
+  position update for the final `CAM_PULLBACK` seconds of the finish window
+  (`inCeleb = game.winner === f && game.finishTimer < CAM_PULLBACK`). Safe
+  to skip from the sim path because the fight is already over (balance
+  harness has long returned) — without the freeze the camera would chase a
+  bouncing body and the bespoke celebration effects would smear across the
+  arena instead of radiating cleanly from a stable origin.
+- **Celeb-cam** — mirrors the kill-cam. Camera pushes in on the winner at
+  zoom `CAM_CELEB` (1.4, slightly looser than `CAM_KILL` 1.7 so effects
+  reaching out from the body have room to read). Transition loser→winner
+  is smooth (`CAM_PAN_TAU`); attention transfers naturally.
+- **Anchored to winner position** (`winner.x, winner.y`) in world/camera
+  space — frozen for the celebration window per above.
 - **Team color** — `#ff2e2e` red / `#2e9eff` blue. Every shape inherits
   the winner's banner color so the celebration reads as theirs.
-- **`prog` 0→1 over `CAM_PULLBACK`** (currently 0.6 s — see timing note
-  below). Per-fighter bespoke celebrations key all beats on this same
-  prog scale so camera and audio stay in sync.
+- **`prog` 0→1 over `CAM_PULLBACK`** (currently 1.2 s). Per-fighter
+  bespoke celebrations key all beats on this same prog scale so camera
+  and audio stay in sync.
 - **Render contract**: the K.O. text block sits in screen space
   (`ctx.setTransform`), so the celebration block must call `applyCamera()`
   first to return to world/camera space before drawing. K.O. text fades
@@ -257,32 +267,44 @@ death):
   no overlay DOM. The kill-cam push-in + celebration carry the win
   emotionally; the giant slamming winner-name was over-engineered.
 
-**Phase 1 placeholder visual** (`drawCelebration(winner, prog)` in
-`arena.js`) — temporary, replaced wholesale by per-fighter bespoke
-celebrations in Phase 2 (the same way you don't see a generic
-pulse on top of Berserker's bloodrage convulse in death). Currently:
-inner team-colour pulse ring at `FIGHTER_SIZE + 4 + prog*32`, an offset
-second pulse at `prog > 0.3` for double-tap rhythm, and an 8-mote radial
-burst completing by `prog ≈ 0.85`. The job is "stop the outro feeling
-empty until bespoke land," nothing more — don't preserve any of these
-shapes when authoring a per-fighter celebration unless they happen to be
-that fighter's identity.
+**Sprite handoff**: `drawFighter` early-returns for the celebrating winner
+(mirror of how it early-returns for dead fighters and lets `drawDeath` own
+the loser's sprite), so each per-fighter case in `drawCelebration` OWNS the
+body draw — translates, mirrors per facing, applies its bespoke transform,
+calls `drawShape`. The team-color outline ring and live state indicators
+(parry rings, buff rings, etc.) drop during celebration because the fight
+is over and the celebration effects carry team identity.
 
-**Timing — `CAM_PULLBACK` will grow in Phase 2.** The current 0.6 s is a
-deliberate Phase 1 minimum: enough to register the generic pulse+burst,
-not so much that a placeholder drags the outro. Bespoke per-fighter
-celebrations need ~1.2–1.5 s of breathing room (matching `DEATH_DUR`'s
-allowance for bespoke deaths). Grow `CAM_PULLBACK` in lockstep when the
-first bespoke celebration lands — and re-tune `FINISH_WINDOW` so the
-total stays in Shorts-friendly territory.
+**Phase 1 placeholder visual** (`drawCelebration` default case) —
+temporary, replaced wholesale by per-fighter bespoke celebrations in
+Phase 2 (the same way you don't see a generic pulse on top of Berserker's
+bloodrage convulse in death). Currently: untransformed body draw + inner
+team-colour pulse ring + offset second pulse for double-tap rhythm + 8-mote
+radial burst. The job is "stop the outro feeling empty until bespoke land,"
+nothing more — don't preserve any of these shapes when authoring a
+per-fighter celebration unless they happen to be that fighter's identity.
+
+**Timing.** `CAM_PULLBACK` is currently 1.2 s (grew from 0.6 s in lockstep
+with the first bespoke celebration); `FINISH_WINDOW` is 3.2 s
+(~0.8 s push-in + 1.2 s death + 1.2 s celebration). Re-tune in lockstep
+if a future bespoke celebration needs more breathing room — but keep the
+total inside Shorts-friendly territory.
 
 **Phase 2 — per-fighter celebrations.** Three-layer grammar (parallel to
-death's three-layer grammar): sprite transform (the body does something
-distinctly *theirs* — Berserker bellows, Ronin sheathes, Wizard summons
-sparkles) · voice effect (the energy of victory in the fighter's identity
-language) · settling residue (what's left as the camera pulls back). The
-shared contract above is the container; this is the content. Principle 11
-applies — every beat marks a moment, none run as ambient texture.
+death's three-layer grammar):
+1. **Sprite transform** — the body itself does something distinctly
+   *theirs* (Berserker swells with per-thump scale spikes and rage-tremor;
+   Ronin straightens into a still sheathe; Wizard lifts/orbits…). Drawn
+   inside the per-fighter case in `drawCelebration` after `drawFighter`'s
+   handoff; this IS the visible focal element, not adornment around it.
+2. **Voice effect** — the energy of victory in the fighter's identity
+   language (Berserker's crimson aura + escalating chest-thump shockwaves;
+   per-fighter equivalents follow the material identity in AUDIO.md).
+3. **Settling residue** — what's left as the camera pulls back (Berserker's
+   radial crimson smear bars on the final thump).
+
+The shared contract above is the container; this is the content. Principle
+11 applies — every beat marks a moment, none run as ambient texture.
 
 ### Two rules under all of it
 1. **Visual-only & balance-safe.** These read fields set in the sim path, but the

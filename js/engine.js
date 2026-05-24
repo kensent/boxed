@@ -33,12 +33,18 @@ const ARENA = 300;
 // resolves. Render-only — it reads fighter positions, but the sim never
 // reads camera state back, so balance is untouched. Grid + border are drawn
 // in-world (see drawArenaBackdrop) so they zoom with the camera on the kill.
-const CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
+// CAM_KILL pushes in tight on the loser; CAM_CELEB is the slightly looser
+// celebration zoom (room for the bespoke effects to read around the body
+// without being clipped).
+const CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7, CAM_CELEB = 1.4;
 // Pull-back / celebration phase length (seconds within the finish window).
 // The kill-cam holds on the loser for the first FINISH_WINDOW - CAM_PULLBACK
 // seconds (the death ceremony), then eases out to arena centre while the
-// winner does the base celebration. The overlay opens at finishTimer=0.
-const CAM_PULLBACK = 0.6;
+// winner does its bespoke celebration. The overlay opens at finishTimer=0.
+// Grew from 0.6 → 1.2 alongside Phase 2 per-fighter celebrations — the
+// generic pulse+burst fit in 0.6s but bespoke celebrations need ~1.2-1.5s
+// (sprite transform + voice + residue, paralleling DEATH_DUR's allowance).
+const CAM_PULLBACK = 1.2;
 // Finish/kill-cam timing (real seconds): the body holds frozen until the kill-cam
 // arrives (or KILLCAM_MAX_PUSH elapses, a fallback), then the death plays over a
 // fixed DEATH_DUR — so every kill, melee or ranged, gets its full beat instead of
@@ -46,12 +52,10 @@ const CAM_PULLBACK = 0.6;
 // the select screen.
 // FINISH_WINDOW = death ceremony (DEATH_DUR after kill-cam arrival, with the
 // push-in taking up to KILLCAM_MAX_PUSH) + celebration phase (CAM_PULLBACK).
-// Bumped from 2.0 → 2.6 to add the 0.6s winner-celebration phase: the camera
-// pulls back to centre while the winner does a base celebration (glow ring +
-// radial team-colour mote burst) and the 'win' arpeggio plays — and THAT is
-// the outro. There is no winner-name overlay anymore (see main.js
-// showWinnerOverlay): the arena's final tableau is the closing image.
-const FINISH_WINDOW = 2.6, DEATH_DUR = 1.2, KILLCAM_MAX_PUSH = 0.8;
+// 3.2s total = ~0.8s push-in + 1.2s death + 1.2s celebration. There is no
+// winner-name overlay anymore (see main.js showWinnerOverlay): the arena's
+// final tableau is the closing image.
+const FINISH_WINDOW = 3.2, DEATH_DUR = 1.2, KILLCAM_MAX_PUSH = 0.8;
 const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;
@@ -77,11 +81,12 @@ function updateCamera() {
   let tx, ty, tz;
   if (game.winner) {
     const loser = game.winner === r ? b : r;
-    // Pull-back phase: in the last CAM_PULLBACK seconds of the finish window,
-    // ease the camera back to the arena centre at zoom 1 so the WINNER name
-    // overlay lands over a wide frame, not a tight crop on the corpse.
+    // Celeb-cam: in the last CAM_PULLBACK seconds, push in on the WINNER
+    // (frozen by step() for this window) so the celebration has its own
+    // focal frame — mirrors the kill-cam's emphasis on the loser. The
+    // camera transitions loser→winner naturally as attention transfers.
     if (game.finishTimer < CAM_PULLBACK) {
-      tx = ARENA / 2; ty = ARENA / 2; tz = 1;
+      tx = game.winner.x; ty = game.winner.y; tz = CAM_CELEB;
     } else {
       // Kill-cam: push in on the loser's (frozen) death position so the K.O.
       // frames the actual kill regardless of where the winner ended up.
@@ -966,7 +971,14 @@ function step(dt) {
     // The hook's tether reel still repositions them (it sets x/y directly).
     // NOTE: only movement is frozen — passives below still tick (a stunned
     // Priest keeps regenerating, a stunned Berserker keeps Bloodrage).
-    if (f.stunTimer <= 0) {
+    // Freeze the winner during the celebration window (the final CAM_PULLBACK
+    // seconds of the finish): the body holds a still victory pose while the
+    // camera pushes in. Safe to gate from the sim path because the fight is
+    // already over (game.winner set, balance harness long returned) — this is
+    // purely cosmetic. Without the freeze the camera would chase a bouncing
+    // body and the celebration effects would smear across the arena.
+    const inCeleb = game.winner === f && game.finishTimer < CAM_PULLBACK;
+    if (f.stunTimer <= 0 && !inCeleb) {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
       const bounced = bounce(f, w, h);

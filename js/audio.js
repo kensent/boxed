@@ -550,6 +550,35 @@ const Audio = (() => {
       [523, 659, 784, 1046].forEach((f, i) =>
         setTimeout(() => tone(f, 0.30, 'triangle', 0.20, { exact: true }), i * 110));
     },
+
+    // ----- per-fighter celebration voices (Phase 2) --------------------------
+    // Each voice mirrors the bespoke visual celebration in drawCelebration()
+    // and carries the fighter's material identity (table near the top of this
+    // file). Material identity table: Berserker = raw flesh + blood (wet,
+    // primal low-end). Triggered once via fireCelebSfx() at celebration start.
+
+    // Berserker — triumphant bellow + three escalating chest-thumps. The
+    // bellow is a low primal flesh-growl rising in pitch; the thumps are
+    // wet flesh-on-flesh impacts mirroring the visual shockwaves (the
+    // third is the biggest, syncing with the K.O. punctuation).
+    celebTackle() {
+      // Bellow — low rising growl, the rage exposed in voice
+      tone(85, 1.00, 'sawtooth', 0.16, { glideTo: 180 });
+      tone(130, 1.00, 'triangle', 0.10, { glideTo: 260 });
+      noise(1.00, 0.05, 'bandpass', 280, { filterGlideTo: 520 });
+      // Three chest thumps at 0ms / 350ms / 700ms — escalating wet flesh impacts
+      noise(0.10, 0.18, 'lowpass', 200, { filterGlideTo: 90 });
+      tone(90, 0.18, 'sine', 0.16, { glideTo: 50 });
+      setTimeout(() => {
+        noise(0.12, 0.20, 'lowpass', 200, { filterGlideTo: 85 });
+        tone(80, 0.20, 'sine', 0.18, { glideTo: 45 });
+      }, 350);
+      setTimeout(() => {
+        noise(0.20, 0.32, 'lowpass', 240, { filterGlideTo: 70 });
+        tone(65, 0.40, 'sine', 0.24, { glideTo: 32 });
+        tone(120, 0.30, 'sawtooth', 0.10, { glideTo: 60 });
+      }, 700);
+    },
   };
 
   return {
