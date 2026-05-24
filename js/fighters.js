@@ -128,7 +128,7 @@ const FIGHTERS = [
     active: 'RAISE SKELETON — summons a slow skeleton, no cap',
     passive: 'BONE BURST — skeletons explode on death, damaging nearby foes',
   },
-  { id:'reaper',  name:'REAPER',    hp:750, speed:100, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
+  { id:'reaper',  name:'REAPER',    hp:900, speed:100, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
     // HP is the balance lever; dmg/cd tuned for pace. cd is the post-catch RECOVERY
     // (one crescent in flight at a time — the flight round-trip dominates the throw
     // cycle; see abilities.js). dmg 180 -> 135 to compensate for HARVEST's
@@ -136,13 +136,13 @@ const FIGHTERS = [
     // (only turning at max travel or a wall), so a single cast can land BOTH
     // an outbound and a return pass on the enemy. Pre-overshoot baseline ran
     // at 54.6%; raw overshoot with dmg 180 went to 68.3% (multi-hit per cast).
-    ability:'sweep', cd:1.0, dmg:142,
+    ability:'sweep', cd:1.0, dmg:130,
     crescentSpeed: 360, crescentHoming: 40, crescentMaxTravel: 240,
     // WAKE passive — the crescent drops a small damaging hazard ("wake segment") along
     // its flight path every wakeRate seconds. Segments overlap into a visible arc-trail
     // and damage the enemy if they bounce through it; per-target wakeHitCd (in engine.js)
     // caps the tick rate so dense overlap can't double-dip.
-    wakeRate: 0.04, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
+    wakeRate: 0.2, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
     active: 'HARVEST — hurls a returning scythe; strikes coming and going',
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
