@@ -167,17 +167,20 @@
   signal.
 - **`srcKind === 'reel'` is PURE damage** — bypasses every defensive layer
   in `damage()`: no Jester decoy spawn, no Duelist parry absorb, no Wizard
-  Mana Shield reduction or orb consumption. Stays fractional (skips the
-  integer round) so per-frame sub-1.0 ticks don't round to 0 (or worse, get
-  doubled by 0.5→1 rounding); the float display rounds the running total.
-  Used by Hunter's BARBED LINE passive (applied during the 0.3s reel-in
-  tether, per-frame, scaled by drag distance). The per-pixel rate lives
-  on the HOOKER's template (`reelDmgPerPx`) and is read at tick time via
-  `tetherTarget.reelDmgPerPx` — do NOT add `reelDmgPerPx: 0` to the
-  `makeFighter` runtime defaults: the spread order (`...t` first, defaults
-  after) would silently override the template value to 0 and the passive
-  would do nothing. Future "pure" mechanics should reuse this srcKind or
-  follow the same template-only pattern.
+  Mana Shield reduction or orb consumption. Used by Hunter's BARBED LINE
+  passive: as the tether drags the enemy in, the engine accumulates drag
+  distance on `target.reelDragAccum`; every `reelStepPx` (10) it fires
+  `reelStepDmg` (3) via `damage(target, dmg, 'reel')`. **Integer ticks by
+  design** — an earlier fractional-per-frame version (0.3 dmg/px) had to
+  skip `Math.round` to avoid 0.5→1 doubling and sub-1.0 rounding to 0.
+  Step-based accumulation sidesteps both: dmg is always an integer (3),
+  no rounding needed, float display is naturally clean. Template props
+  (`reelStepPx`, `reelStepDmg`) live on the HOOKER and are read at tick
+  time via `tetherTarget.reelStepPx/reelStepDmg` — do NOT add those props
+  to the `makeFighter` runtime defaults: the spread order (`...t` first,
+  defaults after) would silently override the template values to 0 and
+  the passive would do nothing. Future "pure" mechanics should reuse
+  this srcKind and the same template-only pattern.
 - **`game.bloodTrail` is render-only.** Initialized to `[]` in `buildGame`
   but mutated (push + filter) exclusively inside `draw()` — never touched
   by `step()` or the headless harness. Drops have `bornAt: performance.now()`

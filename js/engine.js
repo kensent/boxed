@@ -619,11 +619,16 @@ function makeFighter(t, team, x, y) {
     embedded: [], embedFlash: 0,
     shattering: [], shatterFlash: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
-    // BARBED LINE per-pixel rate is read from tetherTarget (the hooker) at
-    // tick time — no need to capture it onto the target separately, and
-    // adding a runtime default here would silently override the template's
-    // reelDmgPerPx via the makeFighter spread order.
+    // BARBED LINE damage is read from tetherTarget (the hooker) at tick time —
+    // reelStepPx (drag pixels per tick) and reelStepDmg (dmg per tick) live
+    // on the hooker's template, so DON'T add them to the runtime defaults
+    // here — the makeFighter spread order (`...t` first, defaults after)
+    // would silently override the template values to 0 and the passive
+    // would do nothing. reelDragAccum below tracks accumulated drag on
+    // THIS fighter so the discrete ticks fire cleanly without fractional
+    // damage.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
+    reelDragAccum: 0,
     // Warlock drain channel state
     drainTimer: 0, drainTickTimer: 0, drainTarget: null, drainElapsed: 0, drainWhiffed: false,
     // Gambler — WILDCARD die roll. gamblerRoll is the face shown (1-6) while
@@ -1169,22 +1174,30 @@ function step(dt) {
         const endY = t.y + dyh / dh * standoff;
         f.x = f.tetherStartX + (endX - f.tetherStartX) * progress;
         f.y = f.tetherStartY + (endY - f.tetherStartY) * progress;
-        // BARBED LINE tick — pure damage scaled by drag distance this frame.
-        // Long-range hooks drag fast/far (high per-frame distance = real
-        // damage); melee hooks drag ~0 (tiny damage). Per-pixel rate comes
-        // from the hooker (the tetherTarget) via template prop.
-        const rate = t.reelDmgPerPx || 0;
-        if (rate > 0) {
-          const dragPx = Math.hypot(f.x - prevX, f.y - prevY);
-          if (dragPx > 0) damage(f, dragPx * rate, 'reel');
+        // BARBED LINE tick — pure damage in discrete chunks. Each
+        // `reelStepPx` of accumulated drag fires `reelStepDmg`. Long-range
+        // hooks drag fast/far so the accumulator crosses the threshold
+        // many times per reel (~19 ticks max); melee hooks drag ~0, so
+        // few or no ticks fire. Integer ticks avoid the fractional/per-
+        // frame sub-1.0 damage problem (no rounding needed).
+        const stepPx = t.reelStepPx || 0;
+        const stepDmg = t.reelStepDmg || 0;
+        if (stepPx > 0 && stepDmg > 0) {
+          f.reelDragAccum += Math.hypot(f.x - prevX, f.y - prevY);
+          while (f.reelDragAccum >= stepPx) {
+            f.reelDragAccum -= stepPx;
+            damage(f, stepDmg, 'reel');
+          }
         }
         if (f.tetherTimer <= 0) {
           sfx('yank');
           f.tetherTarget = null;
+          f.reelDragAccum = 0;   // reset for the next hook
         }
       } else {
         f.tetherTimer = 0;
         f.tetherTarget = null;
+        f.reelDragAccum = 0;
       }
     }
 

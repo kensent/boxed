@@ -1560,17 +1560,21 @@ function draw() {
 
   // Hunter BARBED LINE blood trail — during reel, drop a red droplet at the
   // body's current position each frame. Droplets persist + fade over ~1.2s,
-  // leaving a visible bloody path along the yanked body's trajectory. Trail
+  // leaving a visible bloody trail along the yanked body's trajectory. Trail
   // is render-only (game.bloodTrail is initialized in buildGame, mutated only
   // in draw() — headless never runs draw, so the list stays empty in the
   // balance harness). Use performance.now() for time, no RNG (per gotcha).
   const trailNow = performance.now();
+  const SPAWN_EVERY_MS = 35;   // every ~2 frames at 60Hz; each spawn is a 5-drop spatter cluster
   [game.red, game.blue].forEach(f => {
     if (f.tetherTimer <= 0 || !f.tetherTarget || f.tetherTarget.dead || f.dead) return;
-    const rate = f.tetherTarget.reelDmgPerPx || 0;
+    const rate = f.tetherTarget.reelStepDmg || 0;
     if (rate <= 0) return;
-    // Spawn one drop per frame at the body's current position. Slight
-    // jitter perpendicular to facing for the "sprayed" look.
+    // Throttle spawns — each "spawn" is a spatter cluster, not a single dot,
+    // so spawning every frame would put 240 drops/sec on screen.
+    f.bloodSpawnAt = f.bloodSpawnAt || 0;
+    if (trailNow - f.bloodSpawnAt < SPAWN_EVERY_MS) return;
+    f.bloodSpawnAt = trailNow;
     const jitter = Math.sin(trailNow / 18) * 2.5;
     game.bloodTrail.push({
       x: f.x + jitter,
@@ -1578,19 +1582,41 @@ function draw() {
       bornAt: trailNow,
     });
   });
-  // Tick + render trail drops. Drops drift slightly downward (gravity sag)
-  // and fade to alpha 0 over LIFE_MS.
+  // Tick + render trail spatters. Each entry is a CLUSTER drawn as 1 main
+  // blob + 3 satellite drops. Satellite positions/sizes are derived from
+  // bornAt (no RNG in draw — gotcha) so each spatter has unique shape.
+  // The whole cluster fades + sags together over LIFE_MS.
   const LIFE_MS = 1200;
   game.bloodTrail = game.bloodTrail.filter(d => (trailNow - d.bornAt) < LIFE_MS);
   for (const d of game.bloodTrail) {
     const age = (trailNow - d.bornAt) / LIFE_MS;   // 0..1
     const a = 1 - age;
     const sag = age * age * 4;                      // gravity sag
-    const r = 2.2 - age * 1.2;                      // shrinks slightly
-    ctx.fillStyle = `rgba(160,15,15,${(a * 0.85).toFixed(3)})`;
+    // Main splash blob — bright vivid red, big enough to read clearly.
+    ctx.fillStyle = `rgba(200,20,20,${(a * 0.95).toFixed(3)})`;
     ctx.beginPath();
-    ctx.arc(d.x, d.y + sag, r, 0, Math.PI * 2);
+    ctx.arc(d.x, d.y + sag, 5 - age * 2, 0, Math.PI * 2);
     ctx.fill();
+    // Darker core for the wet/depth read.
+    ctx.fillStyle = `rgba(130,8,8,${(a * 0.9).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y + sag, 2.5 - age * 1, 0, Math.PI * 2);
+    ctx.fill();
+    // Deterministic seed for the satellite spread (uses bornAt bits).
+    const seed = (d.bornAt * 0.0173) % 1;           // 0..1
+    // 5 satellite drops scattered in a flattened ellipse — wider spread
+    // for a real splatter pattern (reads as violent impact, not droplet).
+    ctx.fillStyle = `rgba(170,15,15,${(a * 0.85).toFixed(3)})`;
+    for (let i = 0; i < 5; i++) {
+      const ang = seed * Math.PI * 2 + i * 1.257;   // 72° apart
+      const dist = 4 + ((seed * 11 + i * 1.7) % 5);  // 4-9 px out
+      const sx = d.x + Math.cos(ang) * dist;
+      const sy = d.y + sag + Math.sin(ang) * dist * 0.55;
+      const sr = 1.8 - age * 0.9 + ((seed * 13 + i) % 1.0);  // 1.8-2.8 px
+      ctx.beginPath();
+      ctx.arc(sx, sy, Math.max(0.4, sr), 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // Archer SHATTER — render the cushion: optional saturation halo at high

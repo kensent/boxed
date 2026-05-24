@@ -21,9 +21,10 @@ function damage(target, dmg, srcKind, src) {
   // Hunter BARBED LINE reel-tick is PURE — bypasses every defensive layer
   // (no Jester decoy spawn, no Duelist parry absorb, no Wizard Mana
   // Shield reduction / orb consumption). The line is in the flesh already,
-  // there's no intermediate projectile to absorb. Stays fractional too:
-  // per-frame sub-1.0 ticks would round to 0 (or worse, get doubled by
-  // 0.5→1 rounding). Float text rounds the running total below.
+  // there's no intermediate projectile to absorb. Damage is already in
+  // discrete integer chunks (reelStepDmg per reelStepPx of drag — fired
+  // by engine.js tether tick), so no rounding needed — kept on the
+  // bypass path for consistency with the other defensive-bypass logic.
   const isPure = srcKind === 'reel';
   if (!isPure) {
     // Jester DOPPELGANGER: every hit Jester actually takes spawns a phantom

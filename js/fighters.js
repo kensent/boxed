@@ -180,7 +180,7 @@ const FIGHTERS = [
     // intermediate projectile to absorb. Scope is tight: only ticks
     // during the ~0.3s tether. Replaces CRIPPLING HOOK stun.
     ability:'grapple', cd:1.6, dmg:150,
-    reelDmgPerPx: 0.3,
+    reelStepPx: 10, reelStepDmg: 3,
     active: 'GRAPPLING HOOK — fires a hook that wounds and reels the enemy in',
     passive: 'BARBED LINE — the reel tears pure damage; longer pulls hurt more',
   },
