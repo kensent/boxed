@@ -42,7 +42,7 @@ const FIGHTERS = [
     // prop that flows from spawn (`cruise`) through the existing renormaliser.
     ability:'cast', cd:2.0, dmg:105,
     orbsPerCast: 2, orbCap: 4, shieldReduction: 0.20, orbSpeed: 135,
-    get active() { return `CAST ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
+    get active() { return `MANA ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
   { id:'geomancer',name:'GEOMANCER', hp:1100, speed:120, color:'#7a6852', accent:'#e8a020', shape:'menhir',
@@ -70,7 +70,7 @@ const FIGHTERS = [
     ability:'mine', cd:1.4, dmg:195,
     throwSpeed: 300, fuseTime: 1.5, blastRadius: 30,
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
-    passive: 'BLAST RADIUS — the detonation knocks the enemy back and damages nearby skeletons',
+    passive: 'SHOCKWAVE — the detonation knocks the enemy back and damages nearby skeletons',
   },
   { id:'archer',  name:'ARCHER',    hp:730,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
     // VOLLEY fan per cast + SHATTER: arrows embed visibly; the shatterAt-th arrow
@@ -97,8 +97,8 @@ const FIGHTERS = [
     // decoy absorbs one incoming hit then dies. Cap of decoyCap simultaneously
     // (oldest replaced on overflow). Decoy lifetime is decoyLife seconds.
     decoyCap: 2, decoyLife: 3.0,
-    active: 'BLINK DAGGER — teleports behind enemy and stabs',
-    get passive() { return `DOPPELGANGER — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
+    active: 'PUNCHLINE — teleports behind enemy and stabs',
+    get passive() { return `DECOY — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
   },
   { id:'cannoneer',name:'CANNONEER',hp:1030, speed:85,  color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
     // dmg 360 -> 340 (keeping splashMinFrac 0.4). The 400 dmg + 0 floor
@@ -120,12 +120,12 @@ const FIGHTERS = [
     // 100 targets ~50%. Cast cadence dominates damage output; speed
     // cut tones down idle closing pressure between casts.
     ability:'riposte', cd:1.6, dmg:250, strikeReach:10,
-    active: 'RIPOSTE THRUST — dash in and thrust on reach',
-    passive: 'COUNTER — the thrust parries melee hits and reflects projectiles',
+    active: 'RIPOSTE — dash in and thrust on reach',
+    passive: 'EN GARDE — the thrust parries melee hits and reflects projectiles',
   },
   { id:'necromancer',name:'NECROMANCER',hp:810, speed:100, color:'#3a2a4a', accent:'#e8e0d0', shape:'scythe',
     ability:'raise', cd:2.5, dmg:65,
-    active: 'RAISE SKELETON — summons a slow skeleton, no cap',
+    active: 'ANIMATE BONE — summons a slow skeleton, no cap',
     passive: 'BONE BURST — skeletons explode on death, damaging nearby foes',
   },
   { id:'reaper',  name:'REAPER',    hp:870, speed:105, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
@@ -160,13 +160,13 @@ const FIGHTERS = [
     // because the smaller arena also means the windup-locked direction is more
     // likely to predict where the enemy actually ends up.
     strikeDist: 175, slashReach: 26, focusRefund: 0.4,
-    get active() { return `IAI — ${this.windupTime}s windup, then a heavy line-cut through the enemy and beyond`; },
-    passive: 'FOCUS — landing a cut skips the next windup AND refunds the cooldown — chained cuts strike instantly',
+    get active() { return `DRAW BLADE — ${this.windupTime}s windup, then a heavy line-cut through the enemy and beyond`; },
+    passive: 'CLEAN CUT — landing a cut skips the next windup AND refunds the cooldown — chained cuts strike instantly',
   },
   { id:'witch',   name:'WITCH',     hp:780,  speed:100, color:'#2d4a2a', accent:'#7dff3d', shape:'hat',
     ability:'hex', cd:1.5, dmg:110,
     maxBounces: 5, markBonus: 0.5, markDuration: 3.0,
-    get active() { return `HEX BOLT — bouncing projectile, up to ${this.maxBounces} wall bounces`; },
+    get active() { return `HEX — bouncing projectile, up to ${this.maxBounces} wall bounces`; },
     get passive() { return `WITCH'S MARK — marked enemies take +${Math.round(this.markBonus * 100)}% damage for ${this.markDuration}s`; },
   },
   { id:'hunter',  name:'HUNTER',    hp:900,  speed:90, color:'#3a2818', accent:'#c89060', shape:'hook',
@@ -181,7 +181,7 @@ const FIGHTERS = [
     // during the ~0.3s tether. Replaces CRIPPLING HOOK stun.
     ability:'grapple', cd:1.6, dmg:150,
     reelStepPx: 10, reelStepDmg: 3,
-    active: 'GRAPPLING HOOK — fires a hook that wounds and reels the enemy in',
+    active: 'THE HOOK — fires a hook that wounds and reels the enemy in',
     passive: 'BARBED LINE — the reel tears pure damage; longer pulls hurt more',
   },
   { id:'warlock', name:'WARLOCK',   hp:570,  speed:100, color:'#2a0e2e', accent:'#c050ff', shape:'cowl',
@@ -192,7 +192,7 @@ const FIGHTERS = [
     ability:'drain', cd:2.6, dmg:40,
     slowRate: 0.6, drainHealRate: 0.50,
     active: 'SIPHON — channels, leeching the enemy\'s life',
-    get passive() { return `ENERVATE — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
+    get passive() { return `WITHER — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
   { id:'gambler', name:'GAMBLER',   hp:880, speed:110, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
     // HP 1000 -> 900 + speed 100 -> 110 after the DOUBLES rework. dmg is
@@ -203,7 +203,7 @@ const FIGHTERS = [
     // his survival ratio. Target: ~50% with a "fast glass cannon" profile
     // instead of "average tanky chaos."
     ability:'wildcard', cd:1.5, dmg:50,
-    active: 'WILDCARD — roll a die; higher pips, bigger coin attack',
+    active: 'WAGER — roll a die; higher pips, bigger coin attack',
     // DOUBLES — when consecutive WILDCARD rolls match the same face, the
     // rolled pattern fires TWICE in the same cast (Dealer's Blessing).
     // The second copy fires with a small angular offset so the coins

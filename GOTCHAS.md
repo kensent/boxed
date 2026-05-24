@@ -235,3 +235,35 @@ knob. Confirm via `./balance.sh` regardless.
   (Berserker idle → rampage, blinked Jester) escape the pillar
   geometrically — no amount of damage tuning closes this gap. Hard
   counters here are content, not a bug to fix.
+
+## Card name vs internal name
+
+Some ability card names were refreshed for viewer-readability without
+renaming the matching substrates/mechanics in code. Comments throughout
+the codebase still use the old names as *concept labels* (e.g.,
+"DOPPELGANGER substrate" names the decoy-aware targeting rule; "FOCUS
+chain" names the clean-cut chain mechanic). Those internal names are
+intentionally preserved — they describe the mechanism, not the marketing
+label. This table is the canonical bridge between the two namespaces.
+
+| Card (user-facing) | Internal name (in comments / identifiers) |
+|---|---|
+| MANA ORBS (Wizard active) | CAST ORBS |
+| RIPOSTE (Duelist active) | RIPOSTE THRUST |
+| EN GARDE (Duelist passive) | COUNTER |
+| ANIMATE BONE (Necro active) | RAISE SKELETON |
+| SHOCKWAVE (Sapper passive) | BLAST RADIUS |
+| PUNCHLINE (Jester active) | BLINK DAGGER (ability id `blink`) |
+| DECOY (Jester passive) | DOPPELGANGER — appears across abilities.js, engine.js, combat.js, ANIMATION.md, AUDIO.md as the **substrate name** for the decoy-aware targeting rule |
+| DRAW BLADE (Ronin active) | IAI (ability id `iai`) |
+| CLEAN CUT (Ronin passive) | FOCUS (tunable `focusRefund`) |
+| HEX (Witch active) | HEX BOLT |
+| THE HOOK (Hunter active) | GRAPPLING HOOK |
+| WITHER (Warlock passive) | ENERVATE |
+| WAGER (Gambler active) | WILDCARD (ability id `wildcard`) |
+
+When grepping for an ability's logic, search the **internal name**
+(it's what's in code and comments). When updating the card description
+in `fighters.js`, use the **card name**. If you rename an ability
+again, update this table — and only update internal comments/
+identifiers if the underlying *mechanism* changed, not just the label.
