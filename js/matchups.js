@@ -13,9 +13,9 @@
 // a fresh harness run shows as "unknown odds" instead of a misleading default).
 // ============================================================================
 const MATCHUPS = {
-  'priest_berserker':0, 'priest_wizard':82, 'priest_geomancer':83, 'priest_sapper':79, 'priest_archer':86,
-  'priest_jester':16, 'priest_cannoneer':21, 'priest_duelist':26, 'priest_necromancer':64, 'priest_reaper':61,
-  'priest_ronin':4, 'priest_witch':73, 'priest_hunter':14, 'priest_warlock':64, 'priest_gambler':78,
+  'priest_berserker':0, 'priest_wizard':86, 'priest_geomancer':80, 'priest_sapper':75, 'priest_archer':83,
+  'priest_jester':19, 'priest_cannoneer':30, 'priest_duelist':19, 'priest_necromancer':52, 'priest_reaper':70,
+  'priest_ronin':3, 'priest_witch':68, 'priest_hunter':16, 'priest_warlock':70, 'priest_gambler':78,
   'berserker_wizard':56, 'berserker_geomancer':34, 'berserker_sapper':48, 'berserker_archer':24, 'berserker_jester':47,
   'berserker_cannoneer':36, 'berserker_duelist':31, 'berserker_necromancer':43, 'berserker_reaper':47, 'berserker_ronin':71,
   'berserker_witch':28, 'berserker_hunter':73, 'berserker_warlock':90, 'berserker_gambler':48, 'wizard_geomancer':81,

@@ -12,10 +12,10 @@
 const FIGHTER_SIZE = 16;
 
 const FIGHTERS = [
-  { id:'priest',  name:'PRIEST',    hp:830,  speed:110, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
+  { id:'priest',  name:'PRIEST',    hp:830,  speed:105, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
     // Internal ability id stays 'lightning' — it keys Priest's DISSOLVE death,
     // charge telegraph, fire-recoil, and audio. The ability itself is now JUDGMENT.
-    ability:'lightning', cd:1.6, dmg:112,
+    ability:'lightning', cd:1.6, dmg:115,
     windupTime: 0.45, healOnHit: 18, pillarRadius: 40,
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
