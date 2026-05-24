@@ -15,6 +15,25 @@ function endGame() {
   game.projectiles = [];
   game.skeletons = [];
   game.hazards = [];
+  // Jester DOPPELGANGER — when Jester dies, her remaining phantom decoys
+  // shatter (mirrors the on-consume visual). Without this they'd silently
+  // sit in the arena during the finish window, confusing the closing
+  // tableau. Only the LOSER's decoys shatter — if Jester won, her decoys
+  // continue to live out their natural lifetime (still part of her kit).
+  const loser = game.red.dead ? game.red : game.blue;
+  if (loser.decoys && loser.decoys.length) {
+    loser.decoys.forEach(d => {
+      if (!d.dead && !headless && game.impacts) {
+        game.impacts.push({
+          x: d.x, y: d.y,
+          kind: 'decoyShatter',
+          dir: 0, mag: 0.5, radius: 0,
+          life: 0.30, maxLife: 0.30,
+        });
+      }
+    });
+    loser.decoys = [];
+  }
   // Resolve any still-"open" debounced damage float (e.g. the killing blow's)
   // so it punches and floats off normally instead of freezing mid-burst.
   // Resolve open floats and clamp life so they expire before the loop stops.

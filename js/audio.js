@@ -305,10 +305,14 @@ const Audio = (() => {
       noise(0.14, 0.14, 'highpass', 2000, { filterGlideTo: 5000 });
       tone(1400, 0.08, 'sine', 0.05, { glideTo: 2200 });
     },
-    // Heal cue — a warm, faintly wet restorative pulse (Priest DIVINE GRACE,
-    // Warlock leech). Reaper no longer heals (HARVEST is now an execute, not lifesteal).
+    // Heal cue — a warm restorative pulse (Priest DIVINE GRACE, Warlock leech).
+    // Brightened with upper harmonics so it cuts through JUDGMENT's lightning
+    // crack (which fires at the same instant). Reaper no longer heals
+    // (HARVEST is now an execute, not lifesteal).
     heal() {
-      tone(440, 0.20, 'sine', 0.10, { glideTo: 660 });
+      tone(440, 0.22, 'sine', 0.12, { glideTo: 660 });
+      tone(880, 0.22, 'sine', 0.08, { glideTo: 1320 });
+      tone(1320, 0.18, 'triangle', 0.05, { glideTo: 1980 });
       noise(0.10, 0.05, 'lowpass', 800);
     },
     // Wizard Mana Shield — a glassy arcane absorb as an orb spends itself out.
@@ -424,6 +428,24 @@ const Audio = (() => {
     wakeTick() {
       noise(0.06, 0.08, 'bandpass', 1400, { filterGlideTo: 700 });
       tone(190, 0.07, 'triangle', 0.06, { glideTo: 110 });
+    },
+    // Hunter BARBED LINE per-tick. Soft wet tearing — flesh giving way as the
+    // barbed cable drags through it. Throttled in engine.js so a max-range
+    // reel (many drag ticks) doesn't machine-gun. Lower & wetter than
+    // wakeTick (steel cable vs hollow scythe arc — different material).
+    bleedTick() {
+      noise(0.06, 0.06, 'bandpass', 700, { filterGlideTo: 280 });
+      tone(140, 0.05, 'sawtooth', 0.05, { glideTo: 80 });
+    },
+    // Gambler DOUBLES trigger — fires once when two consecutive WILDCARD
+    // rolls match. Bright lucky chime that lands BEFORE the dice settles
+    // (the dice still plays its diceLand on settle, this is the prefix).
+    // Identity: pure ivory/gold sparkle, no noise — a moment of fortune,
+    // not impact.
+    gamblerLucky() {
+      tone(1320, 0.24, 'triangle', 0.14, { glideTo: 1980 });
+      tone(880, 0.24, 'sine', 0.08, { glideTo: 1320 });
+      tone(2640, 0.16, 'sine', 0.05, { glideTo: 3960 });
     },
 
     // ===== Arena ============================================================

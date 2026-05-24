@@ -171,6 +171,17 @@ hiss per damage tick, same exception as Cannoneer's incendiary `burn` — contin
 damage gated to a sizzle, never a sharp crack. Per-target `wakeHitCd` caps the
 rate so it never machine-guns.
 
+The **BARBED LINE step-in** (Hunter's hook tearing flesh as the reel drags
+the enemy in) gets a `bleedTick` wet-tear per damage chunk, throttled by a
+per-target ~0.08 s gate. **Material-identity bend**: per principle 1, Hunter
+sounds should be steel cable; `bleedTick` is intentionally flesh-side
+(low bandpass + sawtooth) because the bleed is the VICTIM's experience of
+the hook tearing through them, not Hunter's tool sounding. Same with the
+visual (red blood spatters along the reel trail, not metallic sparks).
+Hunter's cable identity carries elsewhere — hook clink, reel cable, the
+metallic crack on initial hit. The bleed is intentionally the wound, not
+the weapon. Don't "fix" this without re-considering the visual too.
+
 Continuous damage never ticks a *sharp* crack — that would machine-gun. Fog and
 drain stay crack-less (the drain beam drone covers its own channel; fog rides its
 visual). The incendiary burn is the one exception: each 0.2s tick plays a soft, low

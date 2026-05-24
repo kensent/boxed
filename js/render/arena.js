@@ -119,6 +119,29 @@ function drawImpact(im) {
       for (let i = 0; i < 7; i++) { const g = (i / 7) * Math.PI * 2 + i * 0.5; ctx.beginPath(); ctx.moveTo(Math.cos(g) * 3, Math.sin(g) * 3); ctx.lineTo(Math.cos(g) * r, Math.sin(g) * r); ctx.stroke(); }
       break;
     }
+    case 'decoyShatter': {                          // Jester decoy consumed
+      // 6 small diamond motes scatter outward, alternating red/blue (mirrors
+      // Jester's SHATTER death in miniature). Slight gravity sag — reads
+      // as a phantom breaking apart, not exploding. Silent (audio side
+      // is intentionally muted; visual is the only cue).
+      const N = 6;
+      for (let i = 0; i < N; i++) {
+        const ang = (i / N) * Math.PI * 2 + i * 0.31;
+        const dist = prog * (9 + (i % 3) * 3);
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist + prog * prog * 3;
+        const c = i % 2 === 0 ? '#ff2e2e' : '#2e9eff';
+        ctx.globalAlpha = a;
+        ctx.fillStyle = c;
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(Math.PI / 4 + prog * 1.2);
+        ctx.fillRect(-1.6, -1.6, 3.2, 3.2);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
     case 'orb': {                                   // purple rune pop
       ctx.strokeStyle = `rgba(199,125,255,${a.toFixed(3)})`;
       ctx.lineWidth = 2 * a + 0.4;
@@ -1543,13 +1566,9 @@ function draw() {
       }
       ctx.globalAlpha = alpha;
       drawShape(ctx, d);
-      // Faint outer halo so the phantom reads as ghostly, not just dim.
-      ctx.globalAlpha = alpha * 0.45;
-      ctx.strokeStyle = `rgba(232,216,184,1)`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
-      ctx.stroke();
+      // (No phantom halo — the 42% alpha vs real Jester's 100% is enough
+      // contrast to read as a phantom, and a faint cream ring conflicts
+      // tonally with the team-ring teardown on real fighters.)
       ctx.globalAlpha = 1.0;
       ctx.restore();
     });

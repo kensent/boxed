@@ -628,7 +628,7 @@ function makeFighter(t, team, x, y) {
     // THIS fighter so the discrete ticks fire cleanly without fractional
     // damage.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
-    reelDragAccum: 0,
+    reelDragAccum: 0, bleedSoundCd: 0,
     // Warlock drain channel state
     drainTimer: 0, drainTickTimer: 0, drainTarget: null, drainElapsed: 0, drainWhiffed: false,
     // Gambler — WILDCARD die roll. gamblerRoll is the face shown (1-6) while
@@ -974,7 +974,20 @@ function tryHitDecoy(pos, defender, hitRange) {
     const dd = dist(pos, d);
     if (dd < bestD) { best = d; bestD = dd; }
   }
-  if (best) best.dead = true;
+  if (best) {
+    best.dead = true;
+    // Visual shatter — small diamond-mote burst (Jester's SHATTER death in
+    // miniature) so the consumed decoy reads as "absorbed and shattered"
+    // rather than silently vanishing. Render-only, headless-skipped.
+    if (!headless && game && game.impacts) {
+      game.impacts.push({
+        x: best.x, y: best.y,
+        kind: 'decoyShatter',
+        dir: 0, mag: 0.5, radius: 0,
+        life: 0.30, maxLife: 0.30,
+      });
+    }
+  }
   return best;
 }
 
@@ -1208,6 +1221,10 @@ function step(dt) {
         // many times per reel (~19 ticks max); melee hooks drag ~0, so
         // few or no ticks fire. Integer ticks avoid the fractional/per-
         // frame sub-1.0 damage problem (no rounding needed).
+        // Audio tick is throttled (~0.08s gap) so a max-range high-rate
+        // tick chain doesn't machine-gun the tearing sound — same gating
+        // pattern as wakeHitCd.
+        if (f.bleedSoundCd > 0) f.bleedSoundCd -= dt;
         const stepPx = t.reelStepPx || 0;
         const stepDmg = t.reelStepDmg || 0;
         if (stepPx > 0 && stepDmg > 0) {
@@ -1215,6 +1232,10 @@ function step(dt) {
           while (f.reelDragAccum >= stepPx) {
             f.reelDragAccum -= stepPx;
             damage(f, stepDmg, 'reel');
+            if (f.bleedSoundCd <= 0) {
+              sfx('bleedTick', null, f.x);
+              f.bleedSoundCd = 0.08;
+            }
           }
         }
         if (f.tetherTimer <= 0) {

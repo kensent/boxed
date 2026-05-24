@@ -499,6 +499,10 @@ function resolveAim(f) {
     // The die has just settled on its face — a hard clack, brighter on a
     // high roll (5-6) to signal the lucky result before the coins fly.
     sfx(f.gamblerRoll >= 5 ? 'diceLandBig' : 'diceLand', null, f.x);
+    // DOUBLES — the "lucky!" chime trails the dice clack so the moment reads
+    // as "die landed... AND it's a match." Fires before the firePattern coin
+    // throws so the bell precedes (and motivates) the doubled volley.
+    if (f.isDoubles) sfx('gamblerLucky', null, f.x);
     // shoot a coin at a given heading offset (radians) from the aim line
     const coin = (offset, speed, homing) => {
       const a = ang + offset;
