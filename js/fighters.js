@@ -128,7 +128,7 @@ const FIGHTERS = [
     active: 'RAISE SKELETON — summons a slow skeleton, no cap',
     passive: 'BONE BURST — skeletons explode on death, damaging nearby foes',
   },
-  { id:'reaper',  name:'REAPER',    hp:900, speed:100, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
+  { id:'reaper',  name:'REAPER',    hp:870, speed:105, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
     // HP is the balance lever; dmg/cd tuned for pace. cd is the post-catch RECOVERY
     // (one crescent in flight at a time — the flight round-trip dominates the throw
     // cycle; see abilities.js). dmg 180 -> 135 to compensate for HARVEST's
@@ -147,12 +147,12 @@ const FIGHTERS = [
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
   { id:'ronin',   name:'RONIN',     hp:950,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
-    // dmg 130 -> 118 -> 112 -> 106 -> 110 (across passes); cd unchanged 2.5.
+    // dmg 130 -> 118 -> 112 -> 106 -> 110 -> 105 (across passes); cd unchanged 2.5.
     // The trim-and-bump dance: 112 ran 53.7% (top of band), so trimmed
     // to 106 (overshot to 48.1%); then bumped back to 110. cd is sharply
     // sensitive at Ronin (~1 wr per 1% cd change — earlier 2.5→2.7
     // experiments over-corrected by ~10 wr), so kept at 2.5.
-    ability:'iai', cd:2.5, dmg:110,
+    ability:'iai', cd:2.5, dmg:105,
     windupTime: 0.5,
     // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
     // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%
