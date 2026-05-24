@@ -20,13 +20,13 @@ const FIGHTERS = [
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
   },
-  { id:'berserker',name:'BERSERKER', hp:920, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
+  { id:'berserker',name:'BERSERKER', hp:1000, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
     // dmg is PER PASS (RAMPAGE multi-hits — see rampageHitGap below). Tuned for
     // ~3-5 hits per rampage at the small-arena geometry; whole-rampage payoff
     // is dmg × ~4, so this lever moves the matchup faster than it looks (~1 win
     // point per 1 dmg). Iteration: 100 (pre-shrink) -> 84 (post-shrink) -> 76
-    // (further trim) -> 82 (compensate for 0.5s windup vulnerability).
-    ability:'tackle', cd:1.7, dmg:82,
+    // (further trim) -> 82 -> 80 (HP bump to 1000 compensates the dmg trim).
+    ability:'tackle', cd:1.7, dmg:80,
     windupTime: 0.5,
     rageBoost: 0.33,
     rampageDur: 1.1, rampageSpeedMult: 4, rampageHitGap: 0.22,
@@ -40,8 +40,8 @@ const FIGHTERS = [
     // to dodge between wall bounces. Tune orbSpeed up if Wizard is below band,
     // down if above. Was hardcoded 120 in step() and the spawn; now a named
     // prop that flows from spawn (`cruise`) through the existing renormaliser.
-    ability:'cast', cd:2.0, dmg:100,
-    orbsPerCast: 2, orbCap: 4, shieldReduction: 0.20, orbSpeed: 180,
+    ability:'cast', cd:2.0, dmg:105,
+    orbsPerCast: 2, orbCap: 4, shieldReduction: 0.20, orbSpeed: 135,
     get active() { return `CAST ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
