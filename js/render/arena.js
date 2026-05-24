@@ -355,15 +355,8 @@ function drawDeath(f, prog) {
       ctx.strokeStyle = `rgba(192,192,232,${(ga * 0.7).toFixed(3)})`;
       ctx.lineWidth = 2 * ga + 0.3;
       ctx.beginPath(); ctx.arc(gx, gy, 5 + gp * 3, -Math.PI * 0.8, Math.PI * 0.8); ctx.stroke();
-      // 3) residue — 3 thin silver blade-shard lines along the forward axis, slowly fading
-      ctx.strokeStyle = `rgba(160,160,200,${(a * 0.55).toFixed(3)})`;
-      ctx.lineWidth = 1.5;
-      for (let i = 0; i < 3; i++) {
-        const off = (i - 1) * 6;
-        const base = 16 + i * 8;
-        const px = Math.cos(fc) * base + Math.sin(fc) * off, py = Math.sin(fc) * base - Math.cos(fc) * off;
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(fc) * 8, py + Math.sin(fc) * 8); ctx.stroke();
-      }
+      // (No residue layer — the snap + cup guard fly-off carry the death;
+      // a settling shard set was redundant and read as floating orphan lines.)
       break;
     }
     case 'sigil': {  // Geomancer — menhir tips, cracks, crumbles; ley-lines retract; rune-mark fades
@@ -479,21 +472,19 @@ function drawDeath(f, prog) {
         ctx.lineWidth = (2.5 - i * 0.15) * sa + 0.3;
         ctx.beginPath(); ctx.moveTo(Math.cos(g) * r0, Math.sin(g) * r0); ctx.lineTo(Math.cos(g) * r1, Math.sin(g) * r1); ctx.stroke();
       }
-      // 3) residue — dark casing shards: angular polygons at radial positions + fuse scrap
+      // 3) residue — dark casing shards: angular polygons at radial positions.
+      // (No fuse-scrap residue: the fuse goes up with the bomb, leaving it
+      // hanging in place after the explosion looks like the casing breached
+      // around an intact fuse.)
       const shardA = (a * 0.65);
       ctx.fillStyle = `rgba(40,24,24,${shardA.toFixed(3)})`;
       for (let i = 0; i < 5; i++) {
         const g = (i / 5) * Math.PI * 2 + 0.3;
         const rr = 14 + Math.min(1, prog / 0.35) * 18 + (i % 2) * 5;
         ctx.save(); ctx.translate(Math.cos(g) * rr, Math.sin(g) * rr); ctx.rotate(g);
-        // angular shard — asymmetric triangle reads as broken metal, not a stave
         ctx.beginPath(); ctx.moveTo(-4, -3); ctx.lineTo(4, -1); ctx.lineTo(2, 4); ctx.closePath(); ctx.fill();
         ctx.restore();
       }
-      // fuse scrap — the collar and a short grey curl near top
-      ctx.strokeStyle = `rgba(160,160,160,${(a * 0.5).toFixed(3)})`;
-      ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(2, -8); ctx.quadraticCurveTo(8, -14, 4, -20); ctx.stroke();
       break;
     }
     case 'cannon': {  // Cannoneer — catastrophic overload: rig pitches, muzzle blast + structural cracks
@@ -638,18 +629,10 @@ function drawDeath(f, prog) {
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
       }
-      // 3) residue — blade lying at rest angle, gold tip last to fade
-      const bladeFc = fc + Math.PI * 0.85;  // final resting angle after the swing
-      ctx.strokeStyle = `rgba(228,236,244,${(a * 0.55).toFixed(3)})`;
-      ctx.lineWidth = 2.5 * a + 0.3;
-      const blen = FIGHTER_SIZE * 1.35;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(bladeFc + Math.PI) * FIGHTER_SIZE * 0.4, Math.sin(bladeFc + Math.PI) * FIGHTER_SIZE * 0.4);
-      ctx.lineTo(Math.cos(bladeFc) * blen, Math.sin(bladeFc) * blen);
-      ctx.stroke();
-      // gold tip glints last
-      ctx.fillStyle = `rgba(232,192,32,${(a * 0.7).toFixed(3)})`;
-      ctx.beginPath(); ctx.arc(Math.cos(bladeFc)*blen, Math.sin(bladeFc)*blen, 2.5*a+0.3, 0, Math.PI*2); ctx.fill();
+      // (No residue layer — Ronin's body IS the katana; once it shatters
+      // there's nothing left to lie on the ground. The slash mark above
+      // carries the entire death — "the stillness after the blade IS
+      // the point" per the CUT archetype.)
       break;
     }
     case 'sweep': {  // Reaper — hooded body slumps and sinks, blood pool spreads beneath
@@ -971,16 +954,30 @@ function drawDeath(f, prog) {
       ctx.strokeStyle = `rgba(200,144,96,${(ba * 0.85).toFixed(3)})`;
       ctx.lineWidth = 2.5 * ba + 0.3;
       ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(tipX + Math.cos(fc)*8, tipY + Math.sin(fc)*8); ctx.stroke();
-      // 3) residue — shank stub at origin + copper barb shard forward
-      ctx.strokeStyle = `rgba(90,90,96,${(a * 0.6).toFixed(3)})`;
-      ctx.lineWidth = 3.5 * a + 0.3;
-      ctx.beginPath(); ctx.moveTo(Math.cos(fc+Math.PI)*4, Math.sin(fc+Math.PI)*4);
-      ctx.lineTo(Math.cos(fc+Math.PI)*16, Math.sin(fc+Math.PI)*16); ctx.stroke();
-      ctx.fillStyle = `rgba(200,144,96,${(a * 0.5).toFixed(3)})`;
-      const rx = Math.cos(fc)*28, ry = Math.sin(fc)*28;
-      ctx.save(); ctx.translate(rx, ry); ctx.rotate(fc);
-      ctx.beginPath(); ctx.moveTo(-3,-2); ctx.lineTo(4,0); ctx.lineTo(-3,2); ctx.closePath(); ctx.fill();
-      ctx.restore();
+      // 3) residue — steel claw fragments scattered around the bend (the
+      // claw broke into a few thick pieces). All steel-grey to match the
+      // sprite's single-material claw — no copper barb, no shank handle
+      // (neither was in the sprite; the original residue was inventing parts).
+      ctx.fillStyle = `rgba(120,124,134,${(a * 0.7).toFixed(3)})`;
+      const fragAngles = [-0.6, 0.3, 1.4];   // 3 chunks fanned around the bend
+      for (let i = 0; i < fragAngles.length; i++) {
+        const ang = fc + fragAngles[i];
+        const r = 10 + (i % 2) * 5;
+        const fx = bendX + Math.cos(ang) * r, fy = bendY + Math.sin(ang) * r;
+        ctx.save(); ctx.translate(fx, fy); ctx.rotate(ang + 0.4);
+        // Thick chunk: a curved trapezoid scrap (the claw's belly broke off)
+        ctx.beginPath();
+        ctx.moveTo(-3, -2); ctx.lineTo(3, -1); ctx.lineTo(4, 2); ctx.lineTo(-2, 3); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      // A thin steel sliver along the original bend axis (the shank fragment)
+      ctx.strokeStyle = `rgba(140,144,154,${(a * 0.55).toFixed(3)})`;
+      ctx.lineWidth = 2 * a + 0.3;
+      ctx.beginPath();
+      ctx.moveTo(bendX + Math.cos(fc + Math.PI) * 2, bendY + Math.sin(fc + Math.PI) * 2);
+      ctx.lineTo(bendX + Math.cos(fc + Math.PI) * 10, bendY + Math.sin(fc + Math.PI) * 10);
+      ctx.stroke();
       break;
     }
     default: {  // generic shatter — fighters not yet given a bespoke death

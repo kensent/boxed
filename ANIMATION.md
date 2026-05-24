@@ -201,12 +201,16 @@ push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
 - **BURST** — Berserker (bloodrage convulse → shockwave ring + 5 blunt bars → crimson
   smears), Cannoneer (rig pitches on wheel → directional muzzle cone + fracture cracks →
   wheel/barrel ring fragments), Sapper (bomb swells → dark casing breach + shrapnel →
-  angular casing shards + fuse scrap)
-- **SHATTER** — Duelist (parry spin → blade snaps linearly, segments along axis →
-  3 thin shard lines + cup guard arc), Jester (halves drawn independently, spin apart →
+  angular casing shards; the fuse goes up with the bomb, no fuse-scrap residue)
+- **SHATTER** — Duelist (parry spin → blade snaps linearly into segments
+  along axis + cup guard arc tumbles off; no settling shard residue, the
+  snap is the death), Jester (halves drawn independently, spin apart →
   crack flash + red/blue diamond motes → 3+3 shard diamonds), Hunter (whips backward →
-  fracture arc at bend + steel shards + copper barb flies → shank stub + barb shard),
-  Gambler (accelerating tumble → gold edge flash + 4 corner shards → pip-dot residue)
+  fracture arc at bend + steel shards + copper barb flies → steel claw fragments
+  scattered around the bend + a thin steel sliver along the shank axis; all
+  steel-grey to match the sprite's single-material claw, no out-of-sprite
+  copper barb), Gambler (accelerating tumble → gold edge flash + 4 corner
+  shards → pip-dot residue)
 - **DISSOLVE** — Priest (rises UP → gold ring expands + 7 motes ascend → warm glow pool;
   only death that goes up), Wizard (flickers then implodes inward → 4 orbs wink out in
   sequence → hexagram sigil), Witch (hat melts DOWN → toxic green cloud → puddle + brim
@@ -221,8 +225,10 @@ push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
   carved face + ley-lines retract inward to the body → granite chunks scattered
   + dim amber rune-mark scorched into the ground; only death with a "lines
   retracting" voice rather than "things flying outward.")
-- **CUT** — Ronin (slow ease-in swing → single clean gold slash, held then fading →
-  blade at rest angle + gold tip)
+- **CUT** — Ronin (slow ease-in swing → single clean gold slash, held then
+  fading; no residue layer — the body IS the katana, so there's nothing to
+  lie on the ground after the shatter, and the slash mark alone IS the
+  "stillness after the blade" the CUT archetype calls for)
 - **SCATTER** — Archer (bow springs then fades → bowstring snap flash + 6 arrows with
   fletching fly 360° → 4 arrows lying flat + green bow-arc fragment)
 

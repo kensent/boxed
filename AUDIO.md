@@ -190,33 +190,56 @@ overlap can't stutter them into a buzz:
   very low volume. Present so the contact is registered, absent as a sonic event.
   Never the loudest thing happening in a frame.
 
-### Death archetype voices
-Death is the ceiling (principle 5). Six archetypes matching `drawDeath()`'s
-animation archetypes — each archetype has a sonic identity beyond the fighter's
-own material, because death is bigger than the fighter:
+### Death voices — per-fighter, material-identity driven
+Death is the ceiling (principle 5) — the loudest moment each fighter has, so
+the place their material identity should read MOST clearly. Each fighter's
+death voice is unique, drawing from their material identity (table above)
+while still sitting in the tonal shape of the animation archetype
+(`drawDeath()`'s BURST/SHATTER/DISSOLVE/COLLAPSE/CUT/SCATTER). Two fighters
+should never sound interchangeable at the moment of death.
 
-- **BURST** (Berserker, Cannoneer, Sapper) — a low concussive boom + shockwave
-  sub-bass pressure release. The body energy discharges outward all at once.
-  Lowpass noise sweep from mid down to rumble, plus a heavy sub-fundamental.
-- **SHATTER** (Duelist, Jester, Hunter, Gambler) — a high-pitched crack leading
-  into cascading fragment noise. The body breaks into pieces. Bandpass noise
-  with a falling filter sweep; multiple short bright tones staggered to
-  simulate shard scatter.
-- **DISSOLVE** (Priest, Wizard, Witch, Warlock) — the body's energy releases
-  upward (or inward for Warlock). A soft ascending swell: rising sine harmonics
-  or, for Warlock, a deep void absorption (inverted — the energy implodes rather
-  than releases). No hard transient; the death fades in and out.
-- **COLLAPSE** (Necromancer, Reaper, Geomancer) — a heavy thud + hollow
-  settling. The body falls and comes to rest. Low impact noise + a bone/liquid
-  residue sound that decays slowly. Reaper adds a wet resonance matching the
-  blood-pool spread; Geomancer adds a deep earthen rumble + a gravel hiss tail
-  (the wall-stones snapping their connections as the network dies).
-- **CUT** (Ronin) — a single clean whisper-crack, held for ~0.5 s then fading to
-  silence. No scatter, no boom. The quietest death — the stillness after the
-  blade is the point.
-- **SCATTER** (Archer) — a bowstring snap (bandpass crack) followed by 6 small
-  staggered impact tones, simulating arrows raining down. Light, bright, many-
-  bodied. The only death sound with a distinct multi-event tail.
+- **BURST archetype** (low concussive boom + shockwave):
+  - **Berserker** — wet meaty primal BOOM (flesh + blood), low oscillating
+    sub-bass body, wet aftershock.
+  - **Cannoneer** — sharp percussive iron detonation + gunpowder fizzle
+    tail (the hard mechanical bang).
+  - **Sapper** — metallic casing-crack onset + hot-metal boom + three
+    shrapnel pings as the casing scatters.
+- **SHATTER archetype** (high crack into bright shard scatter):
+  - **Duelist** — clean steel snap + thin bright ring + 3 staggered
+    sword-shard pings (pure, no noise residue).
+  - **Jester** — hollow brittle pop (ceramic) + dissonant overtone +
+    4 ceramic-shard clatters (pottery breaking).
+  - **Hunter** — tensioned coil-release rising tone + hard cable-crack +
+    cable-hum + 3 metallic shard scatters.
+  - **Gambler** — bright ivory click + ivory clatter + cascading 6-coin
+    gold chime descent (the jackpot scatter).
+- **DISSOLVE archetype** (swell — ascending or inverted):
+  - **Priest** — warm gold bell tone ascending through 3 harmonics (440 →
+    1760 Hz). The death rises.
+  - **Wizard** — glassy crystal shimmer ascending + bright sparkle noise +
+    a delayed upper-octave wisp.
+  - **Witch** — unstable wet warble (sawtooth + square detuned) + wet
+    lowpass hiss + bubbling cauldron tail.
+  - **Warlock** — void absorption: pure sine descending into sub-bass
+    (200 → 28 Hz). Inverted — the energy implodes rather than releases.
+- **COLLAPSE archetype** (thud + material-specific settle):
+  - **Necromancer** — heavy thud + hollow bandpass rattle + 3 bone-clatter
+    pings settling (dried bones falling).
+  - **Reaper** — body-fall thud + dry bone-crack + delayed wet blood-pool
+    spread (the wet resonance is the bloody slump).
+  - **Geomancer** — deep stone-fall + earthen sub-fundamental rumble +
+    gravel hiss tail + 3 dim ley-line chord chimes snapping (the network
+    dying).
+- **CUT archetype** (single sustained):
+  - **Ronin** — clean whisper-crack + pure sine + triangle chime sustained
+    over 0.7 s, no scatter. The quietest death — stillness after the blade.
+- **SCATTER archetype** (multi-event):
+  - **Archer** — bowstring twang + 6 staggered arrow-whistles with lowpass
+    thuds (arrows raining down). The only death with a true multi-event tail.
+
+Routed by `death(ability)` in `audio.js` — one switch case per fighter,
+fallback to a generic heavy death for any new fighter without a bespoke voice.
 
 ### Defensive responses & state cues
 The audio twin of the on-fighter state indicators (ANIMATION.md). An *active

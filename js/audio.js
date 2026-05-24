@@ -458,57 +458,145 @@ const Audio = (() => {
       noise(0.14, 0.18, 'bandpass', 1500, { filterGlideTo: 400 });
       tone(150, 0.16, 'triangle', 0.08, { glideTo: 60 });
     },
-    // Per-fighter death voice — routed by archetype (AUDIO.md). Death is the
-    // ceiling: the archetype voice is bigger than the fighter's own material.
+    // Per-fighter death voice — each fighter's death is unique to its
+    // material identity (AUDIO.md table), while still sitting in its
+    // death-animation archetype's tonal shape (BURST = low boom, SHATTER =
+    // high crack scatter, DISSOLVE = swell, COLLAPSE = thud + settle,
+    // CUT = whisper-crack, SCATTER = staggered impacts). Death is the
+    // ceiling — the loudest moment each fighter has — so it's the LOUDEST
+    // place their material identity should read.
     death(ability) {
-      if (ability === 'tackle' || ability === 'cannon' || ability === 'mine') {
-        // BURST — low concussive boom + shockwave sub-bass pressure release.
-        noise(0.50, 0.40, 'lowpass', 1400, { filterGlideTo: 70 });
-        tone(120, 0.50, 'sawtooth', 0.28, { glideTo: 40 });
-        tone(55, 0.55, 'sine', 0.22, { glideTo: 30 });
-      } else if (ability === 'riposte' || ability === 'blink'
-              || ability === 'grapple' || ability === 'wildcard') {
-        // SHATTER — high crack into cascading bright fragments.
-        noise(0.06, 0.30, 'bandpass', 4000);
-        noise(0.40, 0.20, 'bandpass', 3000, { filterGlideTo: 600 });
-        [1600, 2100, 1300].forEach((fr, i) =>
-          setTimeout(() => tone(fr, 0.12, 'triangle', 0.08, { glideTo: fr * 0.7 }), i * 55));
-      } else if (ability === 'lightning' || ability === 'cast' || ability === 'hex'
-              || ability === 'drain') {
-        if (ability === 'drain') {
-          // DISSOLVE (Warlock) — void implodes inward, descending into sub-bass.
-          tone(200, 0.70, 'sine', 0.18, { glideTo: 40, attack: 0.20 });
-          tone(120, 0.70, 'sawtooth', 0.08, { glideTo: 30, attack: 0.20 });
-        } else {
-          // DISSOLVE — soft ascending swell, no hard transient.
-          tone(440, 0.60, 'sine', 0.16, { glideTo: 1320, attack: 0.30 });
-          tone(660, 0.60, 'sine', 0.10, { glideTo: 1980, attack: 0.30 });
-        }
-      } else if (ability === 'raise' || ability === 'sweep' || ability === 'sigil') {
-        // COLLAPSE — heavy thud + hollow settling. Reaper adds a wet resonance;
-        // Geomancer adds a deep earthen rumble + a soft cracking ring (his
-        // wall-stones snapping their connections as the network dies).
-        noise(0.30, 0.32, 'lowpass', 900, { filterGlideTo: 100 });
-        tone(150, 0.40, 'triangle', 0.18, { glideTo: 50 });
-        noise(0.30, 0.12, 'bandpass', 1400, { filterGlideTo: 500 });
-        if (ability === 'sweep') tone(300, 0.40, 'sine', 0.08, { glideTo: 120 });
-        if (ability === 'sigil') {
-          tone(90, 0.50, 'sawtooth', 0.10, { glideTo: 40 });   // deep earth rumble
-          noise(0.40, 0.10, 'bandpass', 800, { filterGlideTo: 200 });  // gravel hiss tail
-        }
-      } else if (ability === 'iai') {
-        // CUT — a single clean whisper-crack, held then fading to silence.
-        noise(0.50, 0.20, 'highpass', 4000, { filterGlideTo: 2500 });
-        tone(2400, 0.50, 'sine', 0.10, { glideTo: 1600 });
-      } else if (ability === 'arrow') {
-        // SCATTER — bowstring snap + 6 staggered light impacts raining down.
-        noise(0.06, 0.26, 'bandpass', 3000);
-        [1400, 1100, 1600, 900, 1300, 1000].forEach((fr, i) =>
-          setTimeout(() => { tone(fr, 0.10, 'triangle', 0.08); noise(0.05, 0.07, 'bandpass', 2500); }, i * 70));
-      } else {
-        // Fallback — generic heavy death.
-        noise(0.50, 0.40, 'lowpass', 1200, { filterGlideTo: 80 });
-        tone(300, 0.50, 'sawtooth', 0.20, { glideTo: 50 });
+      switch (ability) {
+        // === BURST — flesh / iron / metal explosions ===
+        case 'tackle':    // Berserker — wet meaty primal BOOM
+          noise(0.50, 0.40, 'lowpass', 800, { filterGlideTo: 50 });
+          tone(70, 0.55, 'sawtooth', 0.30, { glideTo: 30 });
+          tone(40, 0.55, 'sine', 0.25, { glideTo: 22 });
+          setTimeout(() => {
+            noise(0.06, 0.18, 'lowpass', 400);
+            tone(85, 0.20, 'sine', 0.20, { glideTo: 50 });
+          }, 80);
+          break;
+        case 'cannon':    // Cannoneer — hard percussive detonation + gunpowder fizzle
+          noise(0.05, 0.06, 'highpass', 4000);
+          noise(0.50, 0.45, 'lowpass', 1200, { filterGlideTo: 80 });
+          tone(90, 0.50, 'square', 0.32, { glideTo: 35 });
+          setTimeout(() => noise(0.30, 0.20, 'bandpass', 800, { filterGlideTo: 200 }), 100);
+          break;
+        case 'mine':      // Sapper — sharp metallic boom + shrapnel pings
+          noise(0.05, 0.10, 'highpass', 3500, { filterGlideTo: 1500 });
+          noise(0.50, 0.35, 'bandpass', 1800, { filterGlideTo: 200 });
+          tone(110, 0.40, 'square', 0.28, { glideTo: 45 });
+          [1800, 2400, 1200].forEach((fr, i) => setTimeout(() => {
+            noise(0.05, 0.05, 'highpass', 3000);
+            tone(fr, 0.08, 'triangle', 0.06);
+          }, 80 + i * 50));
+          break;
+
+        // === SHATTER — bright cracks + material-specific scatter ===
+        case 'riposte':   // Duelist — clean steel snap + thin ring shards
+          noise(0.04, 0.20, 'highpass', 5000, { filterGlideTo: 3000 });
+          tone(2400, 0.40, 'sine', 0.10, { glideTo: 1200 });
+          tone(3600, 0.30, 'triangle', 0.06, { glideTo: 1800 });
+          [2800, 1800, 3200].forEach((fr, i) =>
+            setTimeout(() => tone(fr, 0.14, 'sine', 0.06, { glideTo: fr * 0.7 }), 60 + i * 50));
+          break;
+        case 'blink':     // Jester — hollow brittle pop + ceramic shard clatter
+          noise(0.05, 0.25, 'bandpass', 1800, { filterGlideTo: 800 });
+          tone(620, 0.20, 'triangle', 0.14, { glideTo: 380 });
+          tone(880, 0.16, 'square', 0.08, { glideTo: 540 });
+          [720, 540, 920, 440].forEach((fr, i) => setTimeout(() => {
+            tone(fr, 0.10, 'triangle', 0.06);
+            noise(0.04, 0.04, 'bandpass', 1500);
+          }, 70 + i * 55));
+          break;
+        case 'grapple':   // Hunter — tensioned coil release + cable-crack + metallic shards
+          tone(500, 0.18, 'sawtooth', 0.18, { glideTo: 800 });
+          noise(0.05, 0.12, 'highpass', 3500);
+          tone(1200, 0.30, 'triangle', 0.10, { glideTo: 600 });
+          [1400, 900, 1800].forEach((fr, i) =>
+            setTimeout(() => tone(fr, 0.12, 'triangle', 0.06, { glideTo: fr * 0.6 }), 90 + i * 55));
+          break;
+        case 'wildcard':  // Gambler — bright ivory click + cascading gold coin chimes
+          tone(880, 0.16, 'square', 0.16, { glideTo: 1400 });
+          noise(0.05, 0.10, 'bandpass', 3000);
+          [1320, 1760, 1100, 1980, 880, 1500].forEach((fr, i) =>
+            setTimeout(() => tone(fr, 0.14, 'triangle', 0.08, { glideTo: fr * 0.6 }), 70 + i * 45));
+          break;
+
+        // === DISSOLVE — swells (ascending or void-inverted) ===
+        case 'lightning': // Priest — warm gold bell ascending through harmonics
+          tone(440, 0.80, 'sine', 0.18, { glideTo: 1760, attack: 0.30 });
+          tone(660, 0.80, 'sine', 0.10, { glideTo: 2640, attack: 0.30 });
+          tone(880, 0.70, 'triangle', 0.06, { glideTo: 3520, attack: 0.35 });
+          break;
+        case 'cast':      // Wizard — glassy crystal shimmer ascending
+          tone(1100, 0.70, 'sine', 0.14, { glideTo: 2200, attack: 0.25 });
+          tone(1650, 0.70, 'triangle', 0.08, { glideTo: 3300, attack: 0.25 });
+          noise(0.50, 0.04, 'highpass', 6000);
+          setTimeout(() => tone(2640, 0.40, 'sine', 0.06, { glideTo: 5280 }), 200);
+          break;
+        case 'hex':       // Witch — unstable wet warble + bubbling hiss
+          tone(220, 0.70, 'sawtooth', 0.16, { glideTo: 380, attack: 0.20 });
+          tone(280, 0.70, 'square', 0.08, { glideTo: 420, attack: 0.20 });
+          noise(0.50, 0.15, 'lowpass', 1200, { filterGlideTo: 400 });
+          setTimeout(() => noise(0.30, 0.10, 'bandpass', 600, { filterGlideTo: 300 }), 150);
+          break;
+        case 'drain':     // Warlock — void implodes inward, descending into sub-bass
+          tone(200, 0.80, 'sine', 0.18, { glideTo: 28, attack: 0.20 });
+          tone(120, 0.80, 'sawtooth', 0.08, { glideTo: 22, attack: 0.20 });
+          noise(0.60, 0.10, 'lowpass', 400, { filterGlideTo: 60 });
+          setTimeout(() => tone(40, 0.50, 'sine', 0.30, { glideTo: 18 }), 200);
+          break;
+
+        // === COLLAPSE — thud + material-specific settle ===
+        case 'raise':     // Necromancer — heavy thud + hollow bone rattle + bone clatter
+          noise(0.30, 0.30, 'lowpass', 800, { filterGlideTo: 80 });
+          tone(140, 0.35, 'triangle', 0.18, { glideTo: 50 });
+          noise(0.50, 0.25, 'bandpass', 1500, { filterGlideTo: 500 });
+          [1100, 800, 1400].forEach((fr, i) => setTimeout(() => {
+            tone(fr, 0.10, 'square', 0.06);
+            noise(0.05, 0.05, 'highpass', 2000);
+          }, 100 + i * 55));
+          break;
+        case 'sweep':     // Reaper — body slump + dry bone-crack + wet blood-pool spread
+          noise(0.30, 0.30, 'lowpass', 900, { filterGlideTo: 100 });
+          tone(150, 0.40, 'triangle', 0.16, { glideTo: 50 });
+          tone(380, 0.18, 'square', 0.10, { glideTo: 190 });
+          setTimeout(() => {
+            noise(0.40, 0.30, 'lowpass', 500, { filterGlideTo: 150 });
+            tone(80, 0.45, 'sine', 0.10, { glideTo: 40 });
+          }, 150);
+          break;
+        case 'sigil':     // Geomancer — deep stone-fall + earthen rumble + ley-line chord snap
+          noise(0.06, 0.20, 'lowpass', 200, { filterGlideTo: 60 });
+          tone(75, 0.55, 'sawtooth', 0.30, { glideTo: 32 });
+          tone(120, 0.40, 'triangle', 0.16, { glideTo: 60 });
+          noise(0.40, 0.20, 'bandpass', 800, { filterGlideTo: 200 });
+          [660, 880, 990].forEach((fr, i) =>
+            setTimeout(() => tone(fr, 0.20, 'triangle', 0.04, { glideTo: fr * 0.5 }), 200 + i * 60));
+          break;
+
+        // === CUT — single whisper-crack with sustained chime ===
+        case 'iai':       // Ronin — clean whisper-crack + pure sustained chime
+          noise(0.50, 0.20, 'highpass', 4000, { filterGlideTo: 2500 });
+          tone(2400, 0.70, 'sine', 0.10, { glideTo: 1200, attack: 0.05 });
+          tone(3600, 0.70, 'triangle', 0.04, { glideTo: 1800, attack: 0.05 });
+          break;
+
+        // === SCATTER — bowstring snap + staggered light impacts ===
+        case 'arrow':     // Archer — bowstring twang + 6 arrow whistles + thuds
+          noise(0.05, 0.10, 'highpass', 3000);
+          tone(440, 0.16, 'square', 0.14, { glideTo: 220 });
+          [1400, 1100, 1600, 900, 1300, 1000].forEach((fr, i) => setTimeout(() => {
+            tone(fr, 0.10, 'triangle', 0.08, { glideTo: fr * 0.7 });
+            noise(0.05, 0.04, 'lowpass', 400);
+          }, 70 + i * 65));
+          break;
+
+        default:          // Fallback for any new fighter without a bespoke voice
+          noise(0.50, 0.40, 'lowpass', 1200, { filterGlideTo: 80 });
+          tone(300, 0.50, 'sawtooth', 0.20, { glideTo: 50 });
       }
     },
 
