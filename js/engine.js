@@ -459,6 +459,27 @@ function returnToSelect() {
 }
 document.getElementById('back-btn').addEventListener('click', returnToSelect);
 
+// Recording mode — clean Shorts-capture layout. Toggling adds/removes the
+// `recording` class on <body>, which (via boxed.html CSS) hides the
+// restart/back controls and vertically centres the fight screen. While
+// recording mode is on AND the fight screen is active, tapping anywhere
+// outside the arena triggers the back action — the only way out of the
+// fight, since the back button itself is hidden. Session-only flag (no
+// localStorage), mirroring the mute toggle.
+const recBtn = document.getElementById('rec-btn');
+let recordingMode = false;
+recBtn.addEventListener('click', () => {
+  recordingMode = !recordingMode;
+  document.body.classList.toggle('recording', recordingMode);
+  recBtn.textContent = recordingMode ? 'REC: ON' : 'REC: OFF';
+  recBtn.classList.toggle('on', recordingMode);
+});
+document.getElementById('fight-screen').addEventListener('click', e => {
+  if (!recordingMode) return;
+  if (e.target.closest('.arena-wrap')) return; // tap inside arena does nothing
+  returnToSelect();
+});
+
 // buildGame(redT, blueT) — construct a fresh fight state. Used by both the
 // live startFight and the headless upset-hunt so they build identical games.
 // Arena is the fixed ARENA×ARENA square (the live canvas is always this arena).

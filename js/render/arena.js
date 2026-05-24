@@ -1042,6 +1042,18 @@ function drawArenaBackdrop() {
   ctx.strokeStyle = 'rgba(245,245,240,0.85)';
   ctx.lineWidth = lw * 2;
   ctx.strokeRect(0, 0, game.w, game.h);
+  // Channel watermark — drawn in-world as a faded arena-floor decal (like
+  // a centre-court logo). Low alpha so sprites/projectiles/death FX read
+  // unambiguously above it; drawn here at the end of the backdrop so the
+  // entire fighter layer naturally renders on top. Scales with kill-cam
+  // zoom since it lives in reference coords.
+  ctx.save();
+  ctx.fillStyle = 'rgba(245,245,240,0.13)';
+  ctx.font = '22px Bungee, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('@zeamayslab', game.w / 2, game.h / 2);
+  ctx.restore();
 }
 
 function draw() {

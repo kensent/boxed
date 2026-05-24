@@ -297,6 +297,16 @@
     opacity: 0.55;
   }
   .mute-btn.on { opacity: 0.9; border-color: var(--fg); }
+  /* Recording mode — clean Shorts-capture layout. Hides the restart/back
+     controls, vertically centres the fight screen, and lets tapping
+     anywhere outside the arena trigger the back action (see engine.js).
+     The arena-wrap is pinned to 360px so justify-content has leftover
+     space to distribute — otherwise flex:1 consumes all of it and the
+     centering becomes a no-op. */
+  body.recording .controls { display: none; }
+  body.recording #app > header { display: none; }
+  body.recording #fight-screen { justify-content: center; }
+  body.recording .arena-wrap { flex: 0 0 360px; height: 360px; }
 </style>
 </head>
 <body>
@@ -310,6 +320,7 @@
 <section class="screen active" id="select-screen">
   <div class="rules-note">FOG RING CLOSES IN AT 0:20 — LAST ONE LEFT WINS</div>
   <button id="mute-btn" class="mute-btn on" aria-label="toggle sound">SOUND: ON</button>
+  <button id="rec-btn" class="mute-btn" aria-label="toggle recording mode">REC: OFF</button>
   <div class="selectors">
     <div class="pick-slot red">
       <div class="label">RED</div>
