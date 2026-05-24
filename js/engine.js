@@ -846,7 +846,12 @@ const MELEE_SKEL_IFRAME = 0.35;
 // Reaper WAKE: per-target cooldown between wake-trail damage ticks. Caps the chip
 // from overlapping wake segments — without this, a fighter standing in a dense arc
 // would be ticked once per segment per frame. Tunable.
-const WAKE_HIT_GAP = 0.18;
+const WAKE_HIT_GAP = 0.2;
+// Each wake segment has a brief warmup before it can deal damage — the line
+// hasn't "settled" yet. Means Reaper's first 0.2s of crescent flight lays
+// down inert wake; once the arc is live (oldest segments past warmup), it
+// starts ticking damage.
+const WAKE_WARMUP = 0.2;
 
 // Damage-float debounce: a multi-hit burst keeps merging into one float as long
 // as hits arrive within this many ms of each other; once a gap this long passes
@@ -1589,6 +1594,7 @@ function step(dt) {
           x: p.x, y: p.y,
           radius: owner.wakeRadius,
           timer: owner.wakeLife, maxTimer: owner.wakeLife,
+          warmup: WAKE_WARMUP,                  // grace before this segment can damage
           dmg: owner.wakeDmg, kind: 'wake',
           team: p.team,
         });
@@ -1839,10 +1845,12 @@ function step(dt) {
   game.hazards = game.hazards.filter(h => {
     h.timer -= dt;
     if (h.timer <= 0) return false;
-    // Reaper WAKE — the only hazard kind currently in use (Cannoneer's fire pool
-    // was retired when EPICENTER became the passive). Dense overlapping segments
-    // gate damage on each TARGET's wakeHitCd (per-fighter, per-skeleton), not
-    // a per-segment cooldown.
+    // Reaper WAKE — the only hazard kind currently in use. Each segment has
+    // a warmup (h.warmup) that must elapse before it can deal damage — the
+    // line "hasn't bitten yet." Once warm, dense overlapping segments gate
+    // damage on each TARGET's wakeHitCd (per-fighter, per-skeleton), not on
+    // per-segment timing.
+    if (h.warmup > 0) { h.warmup -= dt; return true; }
     const target = h.team === 'red' ? blue : red;
     if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {
       damage(target, h.dmg, 'hazard');

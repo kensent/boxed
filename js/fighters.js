@@ -142,7 +142,7 @@ const FIGHTERS = [
     // its flight path every wakeRate seconds. Segments overlap into a visible arc-trail
     // and damage the enemy if they bounce through it; per-target wakeHitCd (in engine.js)
     // caps the tick rate so dense overlap can't double-dip.
-    wakeRate: 0.2, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
+    wakeRate: 0.075, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
     active: 'HARVEST — hurls a returning scythe; strikes coming and going',
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
