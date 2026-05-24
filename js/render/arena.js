@@ -1168,62 +1168,9 @@ function draw() {
     ctx.restore();
   });
 
-  game.mines.forEach(m => {
-    const pulse = Math.sin(m.life * 8) * 0.5 + 0.5;
-    const armed = m.armed <= 0;
-    // Mine = a small round bomb (matches the Sapper's own bomb identity). The
-    // old barrel/hexagon with grey bands read as a suitcase. Round body + fuse.
-    const r = m.size * 0.82;
-    // Team ring on the ground underneath.
-    ctx.strokeStyle = m.team === 'red' ? '#ff2e2e' : '#2e9eff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, m.size + 2, 0, Math.PI * 2);
-    ctx.stroke();
-    // Bomb body — dark sphere.
-    ctx.fillStyle = '#3a2614';
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, r, 0, Math.PI * 2);
-    ctx.fill();
-    // Soft highlight (upper-left) for the rounded 3D read.
-    ctx.strokeStyle = 'rgba(255,255,255,0.20)';
-    ctx.lineWidth = 1.8;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, r * 0.62, Math.PI * 1.05, Math.PI * 1.5);
-    ctx.stroke();
-    // Fuse collar + short fuse rising from the top.
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(m.x - r * 0.22, m.y - r - r * 0.28, r * 0.44, r * 0.34);
-    ctx.strokeStyle = armed ? `rgba(255,46,46,${0.55 + pulse * 0.45})` : '#555';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(m.x, m.y - r - r * 0.2);
-    ctx.lineTo(m.x + 3, m.y - r - r * 0.2 - 5);
-    ctx.stroke();
-    // Glowing ember at the fuse tip — only when armed.
-    if (armed) {
-      ctx.fillStyle = `rgba(255,140,26,${0.7 + pulse * 0.3})`;
-      ctx.beginPath();
-      ctx.arc(m.x + 3, m.y - r - r * 0.2 - 5, 1.6 + pulse, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `rgba(255,240,200,${pulse * 0.9})`;
-      ctx.beginPath();
-      ctx.arc(m.x + 3, m.y - r - r * 0.2 - 5, 0.9, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  });
-
-  // Skeletons (Necromancer minions) — small bone-white humanoid silhouettes with team-colored ring
+  // Skeletons (Necromancer minions) — small bone-white humanoid silhouettes.
+  // (No team-colour ring — dropped in lockstep with the fighter body ring.)
   game.skeletons.forEach(sk => {
-    const teamCol = sk.team === 'red' ? '#ff2e2e' : '#2e9eff';
-    // Team ring beneath
-    ctx.strokeStyle = teamCol;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(sk.x, sk.y, sk.size + 2, 0, Math.PI * 2);
-    ctx.stroke();
-    // Bone body — skull + cross-bones, rotated to face enemy (velocity during charge).
     const target = sk.team === 'red' ? game.blue : game.red;
     let skFacing;
     if (sk.chargeTimer > 0) {
@@ -1809,15 +1756,11 @@ function draw() {
       // every frame pre-arrival, which already started each fighter's voice
       // effects (shockwaves, blood-arcs, etc.) at small radius — making the
       // "hold" not actually hold. drawFighter early-returns on dead so we
-      // draw the sprite manually here (mirror's drawFighter's pose + team ring).
+      // draw the sprite manually here (matches drawFighter's pose; no team
+      // ring, in lockstep with drawFighter dropping its ring).
       ctx.save();
       ctx.translate(loser.x, loser.y);
       if (Math.cos(loser.lastFacing || 0) < 0) ctx.scale(-1, 1);
-      ctx.strokeStyle = loser.team === 'red' ? '#ff2e2e' : '#2e9eff';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
-      ctx.stroke();
       drawShape(ctx, loser);
       ctx.restore();
     } else {
@@ -1825,26 +1768,19 @@ function draw() {
       drawDeath(loser, prog);   // begins at frame 0 the moment the cam arrives
     }
 
-    // "K.O." + "<NAME> WINS" — both punch in once the death STARTS (on
-    // arrival), screen-space upper banner. K.O. is the universal kill
-    // punctuation; the WINS label below it names the winner in their team
-    // color. Both hold through the death window, then fade out together
-    // in the final 0.4s so the close-out is clean. (No celebration phase —
-    // the kill IS the climax; see Cut Celebration discussion.)
+    // "K.O." — universal kill punctuation, top banner. Punches in at
+    // arrival, holds through the death window, fades out in the final
+    // 0.4s so the close-out is clean.
     if (started) {
       const age = game.koArriveAt - game.koTimer;
-      // K.O. scale: slam in, settle to 1
       let koScale;
       if (age < 0.16) koScale = 2.6 - (age / 0.16) * 1.7;
       else if (age < 0.28) koScale = 0.9 + ((age - 0.16) / 0.12) * 0.1;
       else koScale = 1;
-      // Both texts fade out across the final 0.4s of the finish window so
-      // the screen is clean by the time we auto-return.
       const fadeAlpha = Math.max(0, Math.min(1, game.finishTimer / 0.4));
       const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // screen space
-      // K.O. — top banner, white with team-colour glow
       ctx.save();
       ctx.globalAlpha = fadeAlpha;
       ctx.translate(canvas.width / (2 * dpr), canvas.height * 0.22 / dpr);
@@ -1863,34 +1799,6 @@ function draw() {
       ctx.shadowBlur = 0;
       ctx.restore();
       ctx.globalAlpha = 1;
-      // <NAME> WINS — staggered slam-in slightly after K.O. so they hit as
-      // a two-beat (K.O. → name). Sub-banner below K.O., team-colour fill.
-      const nameAge = age - 0.18;
-      if (nameAge > 0) {
-        let nameScale;
-        if (nameAge < 0.16) nameScale = 1.9 - (nameAge / 0.16) * 0.9;
-        else if (nameAge < 0.28) nameScale = 1.0 + ((nameAge - 0.16) / 0.12) * 0.0;
-        else nameScale = 1;
-        ctx.save();
-        ctx.globalAlpha = fadeAlpha;
-        ctx.translate(canvas.width / (2 * dpr), canvas.height * 0.30 / dpr);
-        ctx.scale(nameScale, nameScale);
-        ctx.font = '900 28px Bungee, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-        ctx.lineJoin = 'round';
-        const txt = game.winner.name + ' WINS';
-        ctx.strokeText(txt, 0, 0);
-        ctx.shadowColor = wc;
-        ctx.shadowBlur = 14;
-        ctx.fillStyle = wc;
-        ctx.fillText(txt, 0, 0);
-        ctx.shadowBlur = 0;
-        ctx.restore();
-        ctx.globalAlpha = 1;
-      }
     }
   }
 

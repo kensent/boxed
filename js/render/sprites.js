@@ -1050,12 +1050,10 @@ function drawFighter(f) {
   else if (f.ability === 'riposte')  windup = meleeWindupHold(f, enemy, 0.3, 0.10);
   else if (f.ability === 'sweep')    windup = meleeWindupHold(f, enemy, 0.25, 0.10);
 
-  // Team-colour border ring — reads position and team allegiance.
-  ctx.strokeStyle = f.team === 'red' ? '#ff2e2e' : '#2e9eff';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, 0, FIGHTER_SIZE + 3, 0, Math.PI * 2);
-  ctx.stroke();
+  // (No team-colour border ring — removed for cinematic cleanliness. Team
+  // identity reads from the top HUD names + HP bars + the "<NAME> WINS"
+  // banner at finish; the persistent ring was the last "game-UI on the
+  // body" element and pulled viewers out of the arena.)
 
   // Charge telegraph (windup fighters) — the shared filling charge ring plus each
   // fighter's accent, drawn behind the body. Telegraphs "a big attack is coming."

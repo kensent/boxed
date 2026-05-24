@@ -468,7 +468,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], mines: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
+    projectiles: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, flashFrame: 0,
@@ -1309,17 +1309,6 @@ function step(dt) {
             }
             return true;
           });
-          // Mines on the path detonate ON Ronin.
-          game.mines = game.mines.filter(m => {
-            if (m.team === f.team || m.armed > 0) return true;
-            if (segDist(m.x, m.y) < FIGHTER_SIZE + m.size + 6) {
-              damage(f, m.dmg);
-              spawnImpact(m.x, m.y, 'mine', 0, 1);
-              sfx('impact', { kind: 'mine', big: 1 }, m.x);
-              return false;
-            }
-            return true;
-          });
           // Decoys on the line are cleaved too (each one ON the iai segment dies).
           // FOCUS only chains on a REAL hit — slicing a phantom doesn't grant the
           // refund (the cut connected with nothing of substance).
@@ -1836,29 +1825,6 @@ function step(dt) {
     return true;
   });
 
-  game.mines = game.mines.filter(m => {
-    m.life -= dt;
-    if (m.armed > 0) m.armed -= dt;
-    if (m.life <= 0) return false;
-    if (m.armed <= 0) {
-      const target = m.team === 'red' ? blue : red;
-      // Trigger radius extends 6px beyond contact — mines threaten passage, not just collision
-      if (!target.dead && dist(m, target) < FIGHTER_SIZE + m.size + 6) {
-        damage(target, m.dmg);
-        spawnImpact(m.x, m.y, 'mine', 0, 1); // big explosion burst
-        sfx('impact', { kind: 'mine', big: 1 }, m.x);
-        // Blast RADIUS passive: knock the target away from the mine
-        const bx = target.x - m.x, by = target.y - m.y;
-        const bd = Math.hypot(bx, by) || 1;
-        target.vx = bx / bd * 400;
-        target.vy = by / bd * 400;
-        target.blastTimer = 0.22;
-        return false;
-      }
-    }
-    return true;
-  });
-
   game.hazards = game.hazards.filter(h => {
     h.timer -= dt;
     if (h.timer <= 0) return false;
@@ -2032,20 +1998,6 @@ function step(dt) {
       return true;
     });
   });
-
-  // Mines — full mine damage on detonation contact.
-  game.mines.forEach(m => {
-    if (m.armed > 0) return;
-    game.skeletons = game.skeletons.filter(sk => {
-      if (sk.team === m.team || sk.hitCd > 0) return true;
-      if (dist(m, sk) < sk.size + m.size + 4) {
-        sk.hitCd = MELEE_SKEL_IFRAME;
-        if (damageSkeleton(sk, m.dmg)) return false;
-      }
-      return true;
-    });
-  });
-
 
   // Age transient impact bursts (visual only; empty in headless).
   game.impacts = game.impacts.filter(im => { im.life -= dt; return im.life > 0; });

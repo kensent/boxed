@@ -13,7 +13,6 @@ function endGame() {
   // (from drawFighter's dead-fighter early-return) would be visible and
   // wreck the celebration — keep all post-mortem damage off.
   game.projectiles = [];
-  game.mines = [];
   game.skeletons = [];
   game.hazards = [];
   // Resolve any still-"open" debounced damage float (e.g. the killing blow's)
