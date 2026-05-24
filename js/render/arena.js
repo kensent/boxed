@@ -1815,7 +1815,6 @@ function draw() {
       else if (age < 0.28) koScale = 0.9 + ((age - 0.16) / 0.12) * 0.1;
       else koScale = 1;
       const fadeAlpha = Math.max(0, Math.min(1, game.finishTimer / 0.4));
-      const wc = game.winner.team === 'red' ? '#ff2e2e' : '#2e9eff';
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // screen space
       ctx.save();
@@ -1829,7 +1828,9 @@ function draw() {
       ctx.strokeStyle = 'rgba(0,0,0,0.85)';
       ctx.lineJoin = 'round';
       ctx.strokeText('K.O.', 0, 0);
-      ctx.shadowColor = wc;
+      // Neutral white glow — K.O. is the universal kill punctuation; it
+      // doesn't pick sides (used to glow team-colour, removed for neutrality).
+      ctx.shadowColor = 'rgba(255,255,255,0.85)';
       ctx.shadowBlur = 20;
       ctx.fillStyle = '#fff';
       ctx.fillText('K.O.', 0, 0);

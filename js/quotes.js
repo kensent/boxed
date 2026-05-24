@@ -38,8 +38,10 @@
 // =============================================================================
 
 // === VICTORY QUOTES ==========================================================
-// Cheesy one-liners keyed 'winner_loser'. showWinnerOverlay() picks the entry
-// matching the actual outcome; falls back to '_default_' if missing.
+// Cheesy one-liners keyed 'winner_loser'. Currently unused — the winner-name
+// overlay that consumed them was retired alongside the celebration phase.
+// Kept as a data archive in case the outro grammar gains a quote slot later;
+// falls back to '_default_' if missing.
 //
 // Every quote must do two things at once: be cheesy/witty AND sound like the
 // character who says it. A quote that's only clever is wrong. A quote that's

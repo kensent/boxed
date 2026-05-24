@@ -390,9 +390,10 @@ huntTightBtn.addEventListener('click', async () => {
     pendingSeed = pick.seed;
     const wf = FIGHTERS.find(f => f.id === pick.winId);
     const tag = result.found ? 'TIGHT' : 'CLOSEST';
-    // e.g. "TIGHT — RONIN WINS ON 14 HP (vs 25 dmg) · TAP FIGHT"
+    // e.g. "TIGHT — RONIN WINS ON 14 HP (vs 25 dmg) · 12.3s · TAP FIGHT"
     huntTightBtn.textContent = tag + ' — ' + wf.name + ' WINS ON '
-      + Math.round(pick.winnerHp) + ' HP (vs ' + pick.loserDmg + ' DMG) · TAP FIGHT';
+      + Math.round(pick.winnerHp) + ' HP (vs ' + pick.loserDmg + ' DMG) · '
+      + pick.elapsed.toFixed(1) + 's · TAP FIGHT';
   } else if (wasCancelled) {
     huntTightBtn.textContent = 'HUNT CANCELLED';
     setTimeout(updateUI, 1500);
@@ -427,9 +428,10 @@ huntLowHpBtn.addEventListener('click', async () => {
     const wf = FIGHTERS.find(f => f.id === pick.winId);
     const tag = result.found ? 'CLOSE' : 'CLOSEST';
     const pctTxt = Math.round(pick.pct * 100);
-    // e.g. "CLOSE — JESTER WINS ON 18% HP (140/750) · TAP FIGHT"
+    // e.g. "CLOSE — JESTER WINS ON 18% HP (140/750) · 14.5s · TAP FIGHT"
     huntLowHpBtn.textContent = tag + ' — ' + wf.name + ' WINS ON '
-      + pctTxt + '% HP (' + Math.round(pick.winnerHp) + '/' + pick.winnerMax + ') · TAP FIGHT';
+      + pctTxt + '% HP (' + Math.round(pick.winnerHp) + '/' + pick.winnerMax + ') · '
+      + pick.elapsed.toFixed(1) + 's · TAP FIGHT';
   } else if (wasCancelled) {
     huntLowHpBtn.textContent = 'HUNT CANCELLED';
     setTimeout(updateUI, 1500);
@@ -647,8 +649,8 @@ function makeFighter(t, team, x, y) {
 // previewDeath(fighterId) — dev/review tool. Spins up a fake game state
 // with `fighterId` dying to a random opponent, skips the intro and combat,
 // jumps straight to the finish window so the kill-cam + bespoke death
-// ceremony play out. Auto-returns to the select screen when the finish
-// ends (via the normal loop's showWinnerOverlay path).
+// ceremony play out. Auto-returns to the select screen the instant the
+// finish window expires (loop() calls returnToSelect on finished).
 function previewDeath(fighterId) {
   const target = FIGHTERS.find(g => g.id === fighterId);
   if (!target) return;
@@ -891,7 +893,7 @@ function loop() {
     game.acc -= FIXED_DT;
   }
   draw();
-  if (finished) { showWinnerOverlay(); return; }
+  if (finished) { returnToSelect(); return; }
   requestAnimationFrame(loop);
 }
 

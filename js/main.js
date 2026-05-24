@@ -43,21 +43,3 @@ function endGame() {
   //  shatter in draw(), not here at the kill instant.)
 }
 
-// End-of-fight handoff. The visual outro is the kill-cam death ceremony
-// + the "K.O." / "<NAME> WINS" banner. The kill IS the climax — no
-// celebration phase (cut after Phase 2: it diluted the punch for Shorts
-// content). The closing image is the death tableau (loser residue, with
-// the winner still bouncing through the wider kill-cam frame). We just
-// hold briefly and auto-return to the character-select screen.
-//
-// Token-guarded: if the player taps RESTART (which starts a new fight and
-// bumps the token) before the timer fires, this stale timer no-ops so it
-// can't yank them out of the new fight.
-function showWinnerOverlay() {
-  if (!game || !game.winner) return;
-  const overlayToken = fightToken;
-  setTimeout(() => {
-    if (fightToken === overlayToken) returnToSelect();
-  }, 1200);
-}
-
