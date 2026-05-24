@@ -24,8 +24,17 @@ function renderRoster() {
         `<div class="stat"><div class="k">CD</div><div class="v">${g.cd}s</div></div>` +
         `<div class="stat"><div class="k">SPD</div><div class="v">${g.speed}</div></div>` +
       `</div>` +
-      `<div class="ability"><div class="row"><span class="tag act">ACT</span><span class="text">${g.active}</span></div><div class="row"><span class="tag pas">PAS</span><span class="text">${g.passive}</span></div></div>`;
+      `<div class="ability"><div class="row"><span class="tag act">ACT</span><span class="text">${g.active}</span></div><div class="row"><span class="tag pas">PAS</span><span class="text">${g.passive}</span></div></div>` +
+      `<div class="preview-row">` +
+        `<button class="preview-btn preview-die" data-id="${g.id}">PREVIEW K.O.</button>` +
+      `</div>`;
     card.addEventListener('click', () => onPick(g.id));
+    card.querySelectorAll('.preview-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        previewDeath(btn.dataset.id);
+      });
+    });
     rosterEl.appendChild(card);
   });
 }

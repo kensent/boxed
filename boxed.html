@@ -134,6 +134,16 @@
   .fighter-card.red-pick .ability .tag.pas, .fighter-card.blue-pick .ability .tag.pas { background: var(--bg); color: var(--fg); }
   .fighter-card .ability .text { opacity: 0.9; line-height: 1.25; }
   .pick-tag { position: absolute; top: -8px; right: -8px; background: var(--bg); color: var(--fg); font-family: 'Bungee', sans-serif; font-size: 9px; padding: 2px 5px; border: 2px solid currentColor; pointer-events: none; }
+  /* PREVIEW K.O. button (review tool — see previewDeath in engine.js) */
+  .fighter-card .preview-row { display: flex; gap: 3px; margin-top: 5px; }
+  .fighter-card .preview-btn {
+    flex: 1; font-family: 'Bungee', sans-serif; font-size: 7px; letter-spacing: 0.5px;
+    padding: 3px 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,80,80,0.35);
+    color: rgba(255,140,140,0.85); cursor: pointer; border-radius: 1px;
+  }
+  .fighter-card .preview-btn:hover { background: rgba(255,80,80,0.20); color: rgba(255,200,200,1); border-color: rgba(255,80,80,0.7); }
+  .fighter-card.red-pick .preview-btn, .fighter-card.blue-pick .preview-btn { background: rgba(0,0,0,0.20); border-color: rgba(0,0,0,0.35); color: rgba(0,0,0,0.75); }
+  .fighter-card.red-pick .preview-btn:hover, .fighter-card.blue-pick .preview-btn:hover { background: rgba(0,0,0,0.35); color: black; }
   button.cta { width: 100%; background: var(--yellow); color: var(--bg); border: 3px solid var(--fg); font-family: 'Bungee', sans-serif; font-size: 16px; letter-spacing: 2px; padding: 12px; cursor: pointer; transition: transform 0.08s; }
   button.cta:active { transform: scale(0.97); }
   button.cta:disabled { background: #333; color: #666; cursor: not-allowed; }

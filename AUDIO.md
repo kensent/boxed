@@ -3,7 +3,7 @@
 ## What's in scope
 Every synthesized sound event: ability casts (windup telegraphs + release impacts),
 hit reactions, defensive responses, arena interactions (wall, collision, death), and
-lifecycle sounds (K.O., win fanfare, UI). Ambient loops, idle textures, and
+lifecycle sounds (intro reveal, K.O., UI). Ambient loops, idle textures, and
 background music are out of scope — this is a purely event-driven sound system.
 
 ## Principles
@@ -47,8 +47,8 @@ background music are out of scope — this is a purely event-driven sound system
 8. **Pitch variation is cosmetic, not deterministic.** Repeated sounds get a few
    percent of random detune so no two hits are byte-identical. This uses
    `Math.random()` — *not* the seeded `rng()` or `vrng()` streams — so it has no
-   effect on balance or replay. Sounds that need exact pitch (win fanfare) use
-   `opts.exact`.
+   effect on balance or replay. Sounds that need exact pitch (intro reveal —
+   `introRiser` / `vsClash`) use `opts.exact`.
 
 9. **Audio and animation are designed as one system.** The visual beats (from
    ANIMATION.md) define the timing contract for corresponding audio moments.
@@ -217,55 +217,6 @@ own material, because death is bigger than the fighter:
 - **SCATTER** (Archer) — a bowstring snap (bandpass crack) followed by 6 small
   staggered impact tones, simulating arrows raining down. Light, bright, many-
   bodied. The only death sound with a distinct multi-event tail.
-
-### Celebration audio
-The winner's audio twin of the visual celebration (ANIMATION.md
-"Celebration"). Same Phase 1 / Phase 2 split as the visual side.
-
-**Shared contract** (survives into Phase 2): the celebration audio fires
-at celebration start (T = `FINISH_WINDOW - CAM_PULLBACK`, currently 2.0 s
-after the kill), gated by a render-side `game.celebSfxFired` flag
-(headless-safe — the flag is set in `draw()` so the balance harness
-never plays the fanfare). One-shot per fight.
-
-**Phase 1 placeholder** — `sfx('win')`, the generic victory fanfare.
-Temporary; will be replaced wholesale by per-fighter victory voices in
-Phase 2 (same way a per-fighter bespoke death replaces — not layers on
-top of — any generic death sound). The fanfare moved out of
-`showWinnerOverlay()` (which used to fire it AFTER celebration finished)
-into the celebration block so the arpeggio leads the beat instead of
-chasing it.
-
-**Phase 2 — per-fighter victory voices.** Follow the material-identity
-table — same grammar as death voices, but the *winner's* material.
-`CAM_PULLBACK` grew to 1.2 s when the first bespoke celebration landed;
-audio tails should fit within that window from the trigger time. The
-visual designs they pair with live in ANIMATION.md "Celebration"
-(archetypes and voices). Berserker (`celebTackle`) is the authored POC;
-the other 15 are designed-and-pending.
-
-- **BURST** — Berserker (low primal flesh-bellow rising 85→180 Hz +
-  three wet flesh-thumps escalating to the BOOM), Cannoneer (big
-  gunpowder cannon-boom + two follow-up powder pops + crackling fizzle
-  tail), Sapper (building metallic sizzle → sharp spark-pop → trailing
-  ember crackle)
-- **SHATTER** — Duelist (bright steel-ring + clean single high note
-  with decay), Jester (3 brittle hollow laughs + tinkling ceramic chime
-  tail), Hunter (tensioned coil-creak + hard metallic cable-crack + low
-  cable hum), Gambler (coin spin chime + gold cascade ding + small
-  jackpot arpeggio)
-- **DISSOLVE** — Priest (warm bell tone + 7-note ascending gold chime
-  sequence), Wizard (glassy harmonic shimmer + arcane chime rising into
-  sigil), Witch (bubbling cackle + cauldron pop), Warlock (low sub-bass
-  void hum + reverse-envelope absorption swell — inverted; the energy
-  implodes then claims)
-- **COLLAPSE** — Necromancer (hollow rattle + dark chime + bone
-  clatter), Reaper (bone clack + slow crescent hiss + wet decay),
-  Geomancer (heavy stone thump + dense metallic ley-line chord chime)
-- **CUT** — Ronin (single clean steel chime, long sustain → silence;
-  echoes the death's "stillness after the blade")
-- **SCATTER** — Archer (bowstring snap + arrow whistle volley +
-  staggered thuds as they land)
 
 ### Defensive responses & state cues
 The audio twin of the on-fighter state indicators (ANIMATION.md). An *active

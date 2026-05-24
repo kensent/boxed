@@ -963,11 +963,6 @@ function drawChargeRing(rgb, prog, held) {
 // touched. All state read here is visual-only — the sim/balance never reads it.
 function drawFighter(f) {
   if (f.dead) return;
-  // During the celebration window the winner is hand-drawn by drawCelebration
-  // with its bespoke per-fighter sprite transform (flex / swell / pose). Skip
-  // here so the regular body doesn't overlay the bespoke one. Mirror of the
-  // f.dead early-return that lets drawDeath own the loser's sprite.
-  if (game.winner === f && game.finishTimer < CAM_PULLBACK) return;
 
   const enemy = f.team === 'red' ? game.blue : game.red;
 
