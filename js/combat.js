@@ -18,56 +18,65 @@ function shake(mag) {
 
 function damage(target, dmg, srcKind, src) {
   if (target.dead) return;
-  // Jester DOPPELGANGER: every hit Jester actually takes spawns a phantom
-  // decoy at her current position. Decoys are stationary targets that absorb
-  // the NEXT incoming attack on Jester (decoys are added to defender.decoys
-  // and resolved as targets by pickTarget; hits that land on a decoy never
-  // reach this damage() call — the projectile/melee hit loops route them).
-  // So if we got HERE on a Jester hit, no decoy intercepted it; spawn a
-  // fresh one for the NEXT incoming attack.
-  if (target.ability === 'blink') {
-    target.decoys = target.decoys || [];
-    if (target.decoys.length >= target.decoyCap) {
-      target.decoys.shift();   // oldest fades to make room (continuous rotation)
+  // Hunter BARBED LINE reel-tick is PURE — bypasses every defensive layer
+  // (no Jester decoy spawn, no Duelist parry absorb, no Wizard Mana
+  // Shield reduction / orb consumption). The line is in the flesh already,
+  // there's no intermediate projectile to absorb. Stays fractional too:
+  // per-frame sub-1.0 ticks would round to 0 (or worse, get doubled by
+  // 0.5→1 rounding). Float text rounds the running total below.
+  const isPure = srcKind === 'reel';
+  if (!isPure) {
+    // Jester DOPPELGANGER: every hit Jester actually takes spawns a phantom
+    // decoy at her current position. Decoys are stationary targets that absorb
+    // the NEXT incoming attack on Jester (decoys are added to defender.decoys
+    // and resolved as targets by pickTarget; hits that land on a decoy never
+    // reach this damage() call — the projectile/melee hit loops route them).
+    // So if we got HERE on a Jester hit, no decoy intercepted it; spawn a
+    // fresh one for the NEXT incoming attack.
+    if (target.ability === 'blink') {
+      target.decoys = target.decoys || [];
+      if (target.decoys.length >= target.decoyCap) {
+        target.decoys.shift();   // oldest fades to make room (continuous rotation)
+      }
+      target.decoys.push({
+        x: target.x, y: target.y,
+        life: target.decoyLife,
+        decoy: true, dead: false,
+        // Visual fields so drawShape can render the phantom Jester.
+        shape: target.shape, color: target.color, accent: target.accent,
+        team: target.team,
+      });
     }
-    target.decoys.push({
-      x: target.x, y: target.y,
-      life: target.decoyLife,
-      decoy: true, dead: false,
-      // Visual fields so drawShape can render the phantom Jester.
-      shape: target.shape, color: target.color, accent: target.accent,
-      team: target.team,
-    });
-  }
-  // Duelist COUNTER — the RIPOSTE thrust's active window IS the parry. During
-  // it: melee hits are absorbed (no damage, no return tax) and projectiles are
-  // reflected back at their shooter (existing in-flight reflect in the
-  // projectile loop). There is NO separate counter-thrust proc — the thrust
-  // itself is Duelist's response, and its damage comes from the offensive
-  // contact during the dash, not a reactive thrust on incoming hits.
-  if (target.ability === 'riposte' && target.parryTimer > 0
-      && (srcKind === 'projectile' || (!srcKind && src && !src.dead))) {
-    target.negateFlash = 0.25;
-    sfx('parry', null, target.x);
-    return;
-  }
-  // Wizard: Mana Shield — shieldReduction dmg reduction per live orb, up to orbCap*shieldReduction.
-  // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,
-  // so the Wizard trades offense (orbs hitting the enemy) against defense.
-  if (target.ability === 'cast') {
-    const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team && !p.spent);
-    if (orbIdx !== -1) {
-      const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
-      dmg = dmg * (1 - orbCount * target.shieldReduction);
-      game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
-      // Absorb shimmer — discrete hits only (a drain/hazard DoT would stutter it).
-      if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('shield', null, target.x);
+    // Duelist COUNTER — the RIPOSTE thrust's active window IS the parry. During
+    // it: melee hits are absorbed (no damage, no return tax) and projectiles are
+    // reflected back at their shooter (existing in-flight reflect in the
+    // projectile loop). There is NO separate counter-thrust proc — the thrust
+    // itself is Duelist's response, and its damage comes from the offensive
+    // contact during the dash, not a reactive thrust on incoming hits.
+    if (target.ability === 'riposte' && target.parryTimer > 0
+        && (srcKind === 'projectile' || (!srcKind && src && !src.dead))) {
+      target.negateFlash = 0.25;
+      sfx('parry', null, target.x);
+      return;
     }
+    // Wizard: Mana Shield — shieldReduction dmg reduction per live orb, up to orbCap*shieldReduction.
+    // Each hit spends one orb. Out of orbs = no shield. More orbs = stronger shield,
+    // so the Wizard trades offense (orbs hitting the enemy) against defense.
+    if (target.ability === 'cast') {
+      const orbIdx = game.projectiles.findIndex(p => p.kind === 'orb' && p.team === target.team && !p.spent);
+      if (orbIdx !== -1) {
+        const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
+        dmg = dmg * (1 - orbCount * target.shieldReduction);
+        game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
+        // Absorb shimmer — discrete hits only (a drain/hazard DoT would stutter it).
+        if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('shield', null, target.x);
+      }
+    }
+    // Round to an honest integer before applying — what hits HP is exactly what
+    // the floating number shows (after all reductions). Fog uses the early-return
+    // path above and stays fractional (per-frame DoT would round to 0).
+    dmg = Math.round(dmg);
   }
-  // Round to an honest integer before applying — what hits HP is exactly what
-  // the floating number shows (after all reductions). Fog uses the early-return
-  // path above and stays fractional (per-frame DoT would round to 0).
-  dmg = Math.round(dmg);
   target.hp -= dmg;
   // Cumulative damage for feedback: a multi-hit burst (e.g. the Archer's
   // 4-arrow volley = four 7-dmg calls) should FEEL like its total, not like
@@ -80,8 +89,9 @@ function damage(target, dmg, srcKind, src) {
   // barrage becomes one number; two attacks with a real pause become two.
   // While open the number updates quietly (no re-punch, doesn't rise yet);
   // once a gap passes with no new hit it RESOLVES — one punch, then floats off.
-  // Drain is the exception: a long gap so its slow ticks stay one calm number.
-  const gap = (srcKind === 'drain' || srcKind === 'hazard') ? 1100 : BATCH_GAP;
+  // Drain / hazard / reel are the exceptions: long gap so their per-tick
+  // damage merges into one calm accumulating float instead of N tiny ones.
+  const gap = (srcKind === 'drain' || srcKind === 'hazard' || srcKind === 'reel') ? 1100 : BATCH_GAP;
   const burstMerge = target.dmgFloat && target.dmgFloat.open
     && (nowT - target.dmgFloat.lastHit) < gap;
   // RAW running total (not the ceil'd display total) drives the balance-relevant
@@ -93,11 +103,13 @@ function damage(target, dmg, srcKind, src) {
   // tick) skips the punchy feedback so a sustained beam doesn't machine-gun
   // the shake. (The old high-dmg hitStop frame-freeze was removed.)
   const big = Math.min(1, feedbackDmg / 260); // 0..1, ~1 at the heaviest hits
-  if (srcKind !== 'drain') {
+  if (srcKind === 'drain') {
+    target.flash = 0.12;
+  } else if (srcKind !== 'reel') {
+    // Reel ticks per-frame for the 0.3s tether — flash/shake would
+    // machine-gun. The accumulating float carries the feedback.
     target.flash = 0.14 + big * 0.20;
     shake(2 + big * 9);
-  } else {
-    target.flash = 0.12;
   }
   // Victim recoil — a melee body-contact hit (src present, no srcKind) knocks the
   // target's body back along the hit direction. Visual only: the sim reads neither
@@ -118,15 +130,15 @@ function damage(target, dmg, srcKind, src) {
   // passes with no new hit, at which point it punches once and floats off.
   {
     if (burstMerge) {
-      // Still in the burst — fold this hit into the open float (dmg is already
-      // the rounded integer that hit HP, so display == actual).
+      // Still in the burst — fold this hit into the open float. Bleed/reel
+      // dmg stays fractional, so the display rounds the running total.
       target.dmgFloat.total += dmg;
       target.dmgFloat.rawTotal += dmg;       // running sum for sim feedback
-      target.dmgFloat.text = '-' + target.dmgFloat.total;
+      target.dmgFloat.text = '-' + Math.round(target.dmgFloat.total);
       target.dmgFloat.lastHit = nowT;        // reset the debounce timer
-      target.dmgFloat.big = (srcKind === 'drain') ? 0.15 : big;
-      // Re-punch on every hit (drain excepted — its slow ticks stay calm).
-      if (srcKind !== 'drain') target.dmgFloat.age = 0;
+      target.dmgFloat.big = (srcKind === 'drain' || srcKind === 'reel') ? 0.15 : big;
+      // Re-punch on every hit (drain/reel excepted — their slow ticks stay calm).
+      if (srcKind !== 'drain' && srcKind !== 'reel') target.dmgFloat.age = 0;
     } else {
       // Burst ended (or first hit) — start a fresh float. If a previous float
       // is still on screen, spawn ABOVE it so successive bursts stack into a
@@ -137,8 +149,8 @@ function damage(target, dmg, srcKind, src) {
         spawnY = Math.min(spawnY, prevFloat.y - 16);
       }
       const f = { x: target.x, y: spawnY, vy: -40, life: 0.8,
-                  text: '-' + dmg, color: target.team === 'red' ? '#ff2e2e' : '#2e9eff',
-                  total: dmg, rawTotal: dmg, big: (srcKind === 'drain') ? 0.15 : big,
+                  text: '-' + Math.round(dmg), color: target.team === 'red' ? '#ff2e2e' : '#2e9eff',
+                  total: dmg, rawTotal: dmg, big: (srcKind === 'drain' || srcKind === 'reel') ? 0.15 : big,
                   age: 0, open: true, lastHit: nowT, gap: gap,
                   // Drain floats live for the whole channel (~1.2s) — long
                   // enough for the target to wander away from a fixed number.

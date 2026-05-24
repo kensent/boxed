@@ -165,6 +165,26 @@
   `stoneLifetime` decay — removed because the cap was always hit first in
   practice, and the decay's fade-out was visual noise rather than mechanical
   signal.
+- **`srcKind === 'reel'` is PURE damage** — bypasses every defensive layer
+  in `damage()`: no Jester decoy spawn, no Duelist parry absorb, no Wizard
+  Mana Shield reduction or orb consumption. Stays fractional (skips the
+  integer round) so per-frame sub-1.0 ticks don't round to 0 (or worse, get
+  doubled by 0.5→1 rounding); the float display rounds the running total.
+  Used by Hunter's BARBED LINE passive (applied during the 0.3s reel-in
+  tether, per-frame, scaled by drag distance). The per-pixel rate lives
+  on the HOOKER's template (`reelDmgPerPx`) and is read at tick time via
+  `tetherTarget.reelDmgPerPx` — do NOT add `reelDmgPerPx: 0` to the
+  `makeFighter` runtime defaults: the spread order (`...t` first, defaults
+  after) would silently override the template value to 0 and the passive
+  would do nothing. Future "pure" mechanics should reuse this srcKind or
+  follow the same template-only pattern.
+- **`game.bloodTrail` is render-only.** Initialized to `[]` in `buildGame`
+  but mutated (push + filter) exclusively inside `draw()` — never touched
+  by `step()` or the headless harness. Drops have `bornAt: performance.now()`
+  and fade over 1.2 s; they leave a visible bloody streak along the path
+  of the Hunter's reel-in. Balance-safe because `draw()` never runs in
+  headless; if you ever add a sim-path read of `bloodTrail`, you'll break
+  determinism.
 
 ## Tuning lever notes
 

@@ -1472,11 +1472,13 @@ function draw() {
   // Status visuals — two source→target connections, deliberately different in KIND
   // so a tether never reads like a drain. Drawn behind both fighters.
 
-  // Hunter CRIPPLING HOOK — the reel-in. NOTE: the tether lives on the REELED enemy
+  // Hunter BARBED LINE reel-in cable. NOTE: the tether lives on the REELED enemy
   // (f), and f.tetherTarget is the HUNTER (the anchor it's hauled toward). So the
   // Hunter is f.tetherTarget — pass it as the origin and the enemy (f) as the far
   // end, matching the in-flight call's (hunter, hooked-thing) order so the cable,
-  // studs, and hook read identically across both phases.
+  // studs, and hook read identically across both phases. (The wound indicator
+  // is drawn AFTER drawFighter so the sprite doesn't cover it — see the
+  // separate block below.)
   [game.red, game.blue].forEach(f => {
     if (f.tetherTimer > 0 && f.tetherTarget && !f.tetherTarget.dead && !f.dead) {
       drawHunterHook(f.tetherTarget.x, f.tetherTarget.y, f.x, f.y);
@@ -1555,6 +1557,41 @@ function draw() {
 
   drawFighter(game.red);
   drawFighter(game.blue);
+
+  // Hunter BARBED LINE blood trail — during reel, drop a red droplet at the
+  // body's current position each frame. Droplets persist + fade over ~1.2s,
+  // leaving a visible bloody path along the yanked body's trajectory. Trail
+  // is render-only (game.bloodTrail is initialized in buildGame, mutated only
+  // in draw() — headless never runs draw, so the list stays empty in the
+  // balance harness). Use performance.now() for time, no RNG (per gotcha).
+  const trailNow = performance.now();
+  [game.red, game.blue].forEach(f => {
+    if (f.tetherTimer <= 0 || !f.tetherTarget || f.tetherTarget.dead || f.dead) return;
+    const rate = f.tetherTarget.reelDmgPerPx || 0;
+    if (rate <= 0) return;
+    // Spawn one drop per frame at the body's current position. Slight
+    // jitter perpendicular to facing for the "sprayed" look.
+    const jitter = Math.sin(trailNow / 18) * 2.5;
+    game.bloodTrail.push({
+      x: f.x + jitter,
+      y: f.y + jitter * 0.5,
+      bornAt: trailNow,
+    });
+  });
+  // Tick + render trail drops. Drops drift slightly downward (gravity sag)
+  // and fade to alpha 0 over LIFE_MS.
+  const LIFE_MS = 1200;
+  game.bloodTrail = game.bloodTrail.filter(d => (trailNow - d.bornAt) < LIFE_MS);
+  for (const d of game.bloodTrail) {
+    const age = (trailNow - d.bornAt) / LIFE_MS;   // 0..1
+    const a = 1 - age;
+    const sag = age * age * 4;                      // gravity sag
+    const r = 2.2 - age * 1.2;                      // shrinks slightly
+    ctx.fillStyle = `rgba(160,15,15,${(a * 0.85).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y + sag, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Archer SHATTER — render the cushion: optional saturation halo at high
   // stack counts, then each stuck arrow (shaft + white head triangle + green

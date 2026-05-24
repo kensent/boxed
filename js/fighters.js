@@ -169,10 +169,20 @@ const FIGHTERS = [
     get active() { return `HEX BOLT — bouncing projectile, up to ${this.maxBounces} wall bounces`; },
     get passive() { return `WITCH'S MARK — marked enemies take +${Math.round(this.markBonus * 100)}% damage for ${this.markDuration}s`; },
   },
-  { id:'hunter',  name:'HUNTER',    hp:810,  speed:110, color:'#3a2818', accent:'#c89060', shape:'hook',
-    ability:'grapple', cd:1.5, dmg:180,
+  { id:'hunter',  name:'HUNTER',    hp:900,  speed:90, color:'#3a2818', accent:'#c89060', shape:'hook',
+    // BARBED LINE (passive) — synergistic with the hook's reel-in. While
+    // being reeled, the enemy takes PURE damage proportional to the
+    // distance dragged each frame. Long-range hooks (big drag distance)
+    // hurt; melee hooks (~0 drag) deal nothing extra — the synergy
+    // rewards using the reel mechanic, not point-blank cheese. "Pure"
+    // bypasses Wizard's Mana Shield (no orb spent), Duelist's parry,
+    // and Jester's decoy-spawn — the line is in the FLESH already, no
+    // intermediate projectile to absorb. Scope is tight: only ticks
+    // during the ~0.3s tether. Replaces CRIPPLING HOOK stun.
+    ability:'grapple', cd:1.6, dmg:150,
+    reelDmgPerPx: 0.3,
     active: 'GRAPPLING HOOK — fires a hook that wounds and reels the enemy in',
-    passive: 'CRIPPLING HOOK — a hooked enemy is briefly stunned',
+    passive: 'BARBED LINE — the reel tears pure damage; longer pulls hurt more',
   },
   { id:'warlock', name:'WARLOCK',   hp:570,  speed:100, color:'#2a0e2e', accent:'#c050ff', shape:'cowl',
     // drainHealRate 0.35 -> 0.50 (constant 50% lifesteal per tick); cd

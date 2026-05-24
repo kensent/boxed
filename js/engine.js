@@ -468,7 +468,7 @@ function buildGame(redT, blueT) {
     token: fightToken,
     red: makeFighter(redT, 'red', w * 0.2, h * 0.5),
     blue: makeFighter(blueT, 'blue', w * 0.8, h * 0.5),
-    projectiles: [], hazards: [], skeletons: [], floatTexts: [], impacts: [],
+    projectiles: [], hazards: [], skeletons: [], floatTexts: [], impacts: [], bloodTrail: [],
     over: false, finishTimer: 0, winner: null, elapsed: 0, lastT: performance.now(),
     timeScale: 1, koTimer: 0, acc: 0,
     shakeTime: 0, shakeMag: 0, flashFrame: 0,
@@ -617,6 +617,10 @@ function makeFighter(t, team, x, y) {
     embedded: [], embedFlash: 0,
     shattering: [], shatterFlash: 0,
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
+    // BARBED LINE per-pixel rate is read from tetherTarget (the hooker) at
+    // tick time — no need to capture it onto the target separately, and
+    // adding a runtime default here would silently override the template's
+    // reelDmgPerPx via the makeFighter spread order.
     tetherTimer: 0, tetherTarget: null, tetherStartX: 0, tetherStartY: 0,
     // Warlock drain channel state
     drainTimer: 0, drainTickTimer: 0, drainTarget: null, drainElapsed: 0, drainWhiffed: false,
@@ -836,12 +840,6 @@ const FIXED_DT = 1 / 60;
 const SKEL_HP = 180;
 const MELEE_SKEL_IFRAME = 0.35;
 
-// Hunter CRIPPLING HOOK: when a hook connects, the wounded enemy is STUNNED
-// for this long — frozen, unable to use their ability. This is the Hunter's
-// answer to single-hit counters: a stunned Reaper can't spin, a stunned Jester
-// can't blink, a stunned Duelist can't riposte. Must stay well under the hook
-// cooldown (1.5s) or it becomes a perma-lock. Balance lever.
-const CRIPPLE_STUN = 0.4;
 
 // Reaper WAKE: per-target cooldown between wake-trail damage ticks. Caps the chip
 // from overlapping wake segments — without this, a fighter standing in a dense arc
@@ -1146,12 +1144,13 @@ function step(dt) {
     }
 
     // Hunter tether: if this fighter is being reeled, tween toward the Hunter.
-    // The hook already dealt its damage on impact — this is just the reel-in
-    // motion that drags the enemy into close range.
+    // The hook already dealt its damage on impact — the tether tweens position
+    // and BARBED LINE ticks pure damage per pixel dragged this frame.
     if (f.tetherTimer > 0) {
       f.tetherTimer -= dt;
       const t = f.tetherTarget;
       if (t && !t.dead) {
+        const prevX = f.x, prevY = f.y;
         const progress = 1 - (f.tetherTimer / 0.3);
         // End position: pulled to just in front of the Hunter, stopping a
         // little outside body contact.
@@ -1163,6 +1162,15 @@ function step(dt) {
         const endY = t.y + dyh / dh * standoff;
         f.x = f.tetherStartX + (endX - f.tetherStartX) * progress;
         f.y = f.tetherStartY + (endY - f.tetherStartY) * progress;
+        // BARBED LINE tick — pure damage scaled by drag distance this frame.
+        // Long-range hooks drag fast/far (high per-frame distance = real
+        // damage); melee hooks drag ~0 (tiny damage). Per-pixel rate comes
+        // from the hooker (the tetherTarget) via template prop.
+        const rate = t.reelDmgPerPx || 0;
+        if (rate > 0) {
+          const dragPx = Math.hypot(f.x - prevX, f.y - prevY);
+          if (dragPx > 0) damage(f, dragPx * rate, 'reel');
+        }
         if (f.tetherTimer <= 0) {
           sfx('yank');
           f.tetherTarget = null;
@@ -1750,8 +1758,8 @@ function step(dt) {
         return false;
       }
       // Hook (Hunter): deals damage, tethers + reels the target, and triggers
-      // CRIPPLING HOOK — each hook that connects slows the wounded enemy, so
-      // they can't escape the next one. A flat per-hook debuff (no snowball).
+      // BARBED LINE — the barbed hook tears flesh during the reel, ticking
+      // pure damage per pixel of drag (see tether tick in step() below).
       if (p.kind === 'hook') {
         target.tetherTimer = 0.3;
         target.tetherTarget = p.hookSrc;
@@ -1762,7 +1770,8 @@ function step(dt) {
         // pushes in silent). No recoil here (the hook reels the target IN).
         spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5);
         sfx('impact', { kind: 'hook', big: 0.5 }, p.x);
-        target.stunTimer = Math.max(target.stunTimer, CRIPPLE_STUN);
+        // (BARBED LINE per-pixel rate is read in the tether tick from
+        // tetherTarget.reelDmgPerPx — no per-target capture needed.)
         return false;
       }
       // Witch hex: bonus damage if marked, then apply/refresh mark
