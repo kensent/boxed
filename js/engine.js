@@ -704,15 +704,14 @@ function startFight() {
 function playVsIntro(redT, blueT) {
   const intro = document.getElementById('vs-intro');
   const myGame = game; // capture — if a new fight starts, this won't match
-  // Fill each label: name + ability line. Ability line = active name ·
-  // passive name (the part of each string before the "—"). E.g.
-  // "RIPOSTE THRUST · EN GARDE".
+  // Fill each label: name + ACT row + PASSIVE row (stacked). Each is the
+  // part of the description string before the "—". Stacking on two rows
+  // keeps long ability names (e.g. "GRAPPLING HOOK · CRIPPLING HOLD") from
+  // overflowing the narrow CSS column at left:20%/80%.
   const fillLabel = (side, t) => {
     document.getElementById('vs-name-' + side).textContent = t.name;
-    const actName = t.active.split('—')[0].trim();
-    const pasName = t.passive.split('—')[0].trim();
-    document.getElementById('vs-ability-' + side).textContent =
-      actName + ' · ' + pasName;
+    document.getElementById('vs-act-' + side).textContent = t.active.split('—')[0].trim();
+    document.getElementById('vs-pas-' + side).textContent = t.passive.split('—')[0].trim();
   };
   fillLabel('red', redT);
   fillLabel('blue', blueT);

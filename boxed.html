@@ -251,11 +251,12 @@
   }
   .vs-red  .vs-name { color: var(--red); }
   .vs-blue .vs-name { color: var(--blue); }
-  .vs-ability {
+  .vs-act, .vs-pas {
     font-family: 'Bungee', sans-serif; font-size: 8px; letter-spacing: 0.4px;
-    opacity: 0.9; margin-top: 3px;
     text-shadow: 0 1px 4px rgba(0,0,0,0.85);
   }
+  .vs-act { opacity: 0.95; margin-top: 3px; }
+  .vs-pas { opacity: 0.75; margin-top: 1px; }
   .vs-badge {
     position: absolute;
     z-index: 2;
@@ -373,12 +374,14 @@
     <div class="vs-intro" id="vs-intro">
       <div class="vs-label vs-red" id="vs-red">
         <div class="vs-name" id="vs-name-red">—</div>
-        <div class="vs-ability" id="vs-ability-red"></div>
+        <div class="vs-act" id="vs-act-red"></div>
+        <div class="vs-pas" id="vs-pas-red"></div>
       </div>
       <div class="vs-badge" id="vs-badge">VS</div>
       <div class="vs-label vs-blue" id="vs-blue">
         <div class="vs-name" id="vs-name-blue">—</div>
-        <div class="vs-ability" id="vs-ability-blue"></div>
+        <div class="vs-act" id="vs-act-blue"></div>
+        <div class="vs-pas" id="vs-pas-blue"></div>
       </div>
     </div>
   </div>
