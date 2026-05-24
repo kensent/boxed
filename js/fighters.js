@@ -20,7 +20,7 @@ const FIGHTERS = [
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
   },
-  { id:'berserker',name:'BERSERKER', hp:1000, speed:145, color:'#a83232', accent:'#f5f5f0', shape:'axe',
+  { id:'berserker',name:'BERSERKER', hp:1000, speed:140, color:'#a83232', accent:'#f5f5f0', shape:'axe',
     // dmg is PER PASS (RAMPAGE multi-hits — see rampageHitGap below). Tuned for
     // ~3-5 hits per rampage at the small-arena geometry; whole-rampage payoff
     // is dmg × ~4, so this lever moves the matchup faster than it looks (~1 win
@@ -67,7 +67,7 @@ const FIGHTERS = [
   },
   { id:'sapper', name:'SAPPER',    hp:780,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
     // Internal ability id stays 'mine' — keys Sapper's BURST death + casing material.
-    ability:'mine', cd:1.4, dmg:200,
+    ability:'mine', cd:1.4, dmg:195,
     throwSpeed: 300, fuseTime: 1.5, blastRadius: 30,
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
     passive: 'BLAST RADIUS — the detonation knocks the enemy back and damages nearby skeletons',
@@ -146,7 +146,7 @@ const FIGHTERS = [
     active: 'HARVEST — hurls a returning scythe; strikes coming and going',
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
-  { id:'ronin',   name:'RONIN',     hp:920,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
+  { id:'ronin',   name:'RONIN',     hp:950,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
     // dmg 130 -> 118 -> 112 -> 106 -> 110 (across passes); cd unchanged 2.5.
     // The trim-and-bump dance: 112 ran 53.7% (top of band), so trimmed
     // to 106 (overshot to 48.1%); then bumped back to 110. cd is sharply
@@ -194,7 +194,7 @@ const FIGHTERS = [
     active: 'SIPHON — channels, leeching the enemy\'s life',
     get passive() { return `ENERVATE — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
-  { id:'gambler', name:'GAMBLER',   hp:900, speed:110, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
+  { id:'gambler', name:'GAMBLER',   hp:880, speed:110, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
     // HP 1000 -> 900 + speed 100 -> 110 after the DOUBLES rework. dmg is
     // restored to 50 (original). HP is the squishier lever at Gambler's low
     // base (~1 wr per ~11 HP, vs the roster-average ~1 wr per 40 HP); speed
