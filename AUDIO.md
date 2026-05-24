@@ -237,11 +237,35 @@ into the celebration block so the arpeggio leads the beat instead of
 chasing it.
 
 **Phase 2 — per-fighter victory voices.** Follow the material-identity
-table (Berserker bellows wet, Ronin sustains a clean steel chime, Warlock
-absorbs into a void hum) — same grammar as death voices, but the
-*winner's* material. When bespoke celebrations land, `CAM_PULLBACK`
-grows to ~1.2–1.5 s (see ANIMATION.md timing note); the audio's tail
-should fit that wider window without retuning the trigger time.
+table — same grammar as death voices, but the *winner's* material.
+`CAM_PULLBACK` grew to 1.2 s when the first bespoke celebration landed;
+audio tails should fit within that window from the trigger time. The
+visual designs they pair with live in ANIMATION.md "Celebration"
+(archetypes and voices). Berserker (`celebTackle`) is the authored POC;
+the other 15 are designed-and-pending.
+
+- **BURST** — Berserker (low primal flesh-bellow rising 85→180 Hz +
+  three wet flesh-thumps escalating to the BOOM), Cannoneer (big
+  gunpowder cannon-boom + two follow-up powder pops + crackling fizzle
+  tail), Sapper (building metallic sizzle → sharp spark-pop → trailing
+  ember crackle)
+- **SHATTER** — Duelist (bright steel-ring + clean single high note
+  with decay), Jester (3 brittle hollow laughs + tinkling ceramic chime
+  tail), Hunter (tensioned coil-creak + hard metallic cable-crack + low
+  cable hum), Gambler (coin spin chime + gold cascade ding + small
+  jackpot arpeggio)
+- **DISSOLVE** — Priest (warm bell tone + 7-note ascending gold chime
+  sequence), Wizard (glassy harmonic shimmer + arcane chime rising into
+  sigil), Witch (bubbling cackle + cauldron pop), Warlock (low sub-bass
+  void hum + reverse-envelope absorption swell — inverted; the energy
+  implodes then claims)
+- **COLLAPSE** — Necromancer (hollow rattle + dark chime + bone
+  clatter), Reaper (bone clack + slow crescent hiss + wet decay),
+  Geomancer (heavy stone thump + dense metallic ley-line chord chime)
+- **CUT** — Ronin (single clean steel chime, long sustain → silence;
+  echoes the death's "stillness after the blade")
+- **SCATTER** — Archer (bowstring snap + arrow whistle volley +
+  staggered thuds as they land)
 
 ### Defensive responses & state cues
 The audio twin of the on-fighter state indicators (ANIMATION.md). An *active

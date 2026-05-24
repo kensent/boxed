@@ -306,6 +306,60 @@ death's three-layer grammar):
 The shared contract above is the container; this is the content. Principle
 11 applies — every beat marks a moment, none run as ambient texture.
 
+**Camera budget.** Effects render inside the celeb-cam push-in (zoom
+`CAM_CELEB` 1.4, ~107 px from frozen-winner center to frame edge). All
+celebrations are body-anchored — nothing depends on visible perimeter or
+gameplay-anchored content. Burst/scatter effects clamp outward extent to
+~50–60 px. If a winner freezes very close to a wall, effects extending
+past the arena edge render against the dark border — reads as "energy
+overflowing," not broken.
+
+**Archetypes and voices** — grouped by death archetype for tonal continuity
+(the fighter's identity is consistent across both moments). Format:
+*sprite transform → voice effect → settling residue*. Berserker is the
+authored POC; the other 15 are designed-and-pending.
+
+- **BURST** — Berserker (chest-thump swell + rage tremor → crimson aura
+  + escalating boom·boom·BOOM shockwaves → radial crimson smear bars),
+  Cannoneer (rig recoils hard then cooling tremble → big muzzle BOOM +
+  gunpowder ring + pop·pop salute → 3 wheel/barrel ring fragments +
+  smoke wisp), Sapper (body swells + white-hot inner glow → contained
+  sparking burst → 5 sparkler-arc rays + fuse-scrap embers)
+- **SHATTER** — Duelist (blade stretches forward 1.0×→1.5× and holds the
+  thrust → thin horizontal slash flash + tip gleam → two thin steel-line
+  trails along the slash), Jester (mask halves snap apart-and-back ×3 via
+  hinge → red+blue diamond confetti burst → 4 diamond motes drifting in
+  slow scatter), Hunter (body coils backward then springs forward + holds
+  → cable-whip arc traces outward + copper barb spins free → shank stub +
+  barb shard), Gambler (body spins, settling on a winning tilt → 6 gold
+  coin motes spiral outward with edge-flash trails → 6 pip-dots arranged
+  in the winning sixes pattern)
+- **DISSOLVE** — Priest (lifts upward + grows slightly → gold halo
+  expands above + 7 motes rise in sequence → warm gold pool below body),
+  Wizard (lifts slightly + 4 orbs orbit faster and brighter → hexagram
+  sigil materializes above → fading hexagram lines), Witch (body
+  bobs/sways + hat tips → green vapor swirl rising → green puddle
+  settling at base), Warlock (contracts 1.0×→0.85× then expands once
+  1.10× and holds → void eye opens above + ripple radiates inward then
+  outward → dark void stain at base)
+- **COLLAPSE** — Necromancer (body stretches upward, skull glows → 3
+  small skeleton silhouettes briefly rise around body in salute then
+  fade → bone fragments + lingering purple glow), Reaper (rotates
+  slightly upward, hood pulls back → bone-arc crescent traces upward
+  trailing blood-red → blood arc settling into a small pool), Geomancer
+  (body stretches vertically becoming a standing stone → amber rune
+  circle materializes on the ground around body + 4 short ley-line rays
+  pulse outward → amber rune-mark scorched into the ground; the kit's
+  full-network identity is implied by the outward rays, not shown, since
+  wall-stones are outside the celeb-cam frame)
+- **CUT** — Ronin (holds absolutely still, slight upright sheathing
+  pose — the stillness IS the celebration, paralleling the death's
+  stillness → single gold gleam across the body, held → blade-tip glint
+  fading slowly)
+- **SCATTER** — Archer (body draws back briefly then thrusts forward and
+  holds → 5 arrow motes fire outward 360° → 3 arrows planted in ground
+  around body, fletching upright)
+
 ### Two rules under all of it
 1. **Visual-only & balance-safe.** These read fields set in the sim path, but the
    sim/balance never reads them back; spawners (`spawnImpact`, etc.) are
