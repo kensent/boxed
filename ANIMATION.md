@@ -65,6 +65,30 @@ built from — each a *shared structure* with a *per-fighter voice* (principle 9
 Built from a deliberate blank-canvas teardown (the old animation + particle system
 was deleted first); everything below is line/shape-drawn, no particle pool.
 
+### Intro reveal
+Arena-as-reveal Shorts cut, 1.7 s total. Lifecycle ceremony, not fighter-
+specific. The arena keeps its static play framing (zoom 1.0, full 300×300
+visible) under a soft dark vignette; two floating labels per side (name +
+ability summary "ACT · PASSIVE") fade in from 0.10s at CSS-screen positions
+`left:20%/80%, top:22%`, and the VS badge clashes in at 0.85s. The labels
+live in CSS-screen space (independent of the camera transform), so they
+don't track arena-internal coords.
+
+**Idle bob** — both fighters bob in place during the reveal. Sine-wave
+motion on (x,y) derived from `performance.now()`, ±1.5px × ±3px, anchored
+to the seeded start positions; velocity is never touched. `(x,y)` is
+snapshotted at intro start (`game.introSnap`) and restored exactly at
+intro end so the fight begins from the seed-determined opening state.
+The snap-back is sub-pixel because the bob amplitude is small. Drawn by
+`cosmeticIntroLoop` on its own RAF, gated by `introCosmeticOn` + a game
+token so a quick restart can't race a stale loop into the new fight.
+
+**Determinism contract**: `introPlaying` blocks `loop()` until the intro
+ends, so the sim never ticks during the reveal. Headless never calls
+`playVsIntro()` — the balance harness runs from frame 0 of the fight.
+Don't add anything to the intro that reads sim state, and don't move the
+bob to operate on velocity (that would corrupt the launch angle).
+
 ### Attack categories — "the fighter IS the weapon"
 Every fighter delivers its attack in one of three ways. The body itself reacts;
 we never float a separate weapon-effect around a static sprite.
@@ -201,6 +225,64 @@ push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
   blade at rest angle + gold tip)
 - **SCATTER** — Archer (bow springs then fades → bowstring snap flash + 6 arrows with
   fletching fly 360° → 4 arrows lying flat + green bow-arc fragment)
+
+### Celebration
+The winner's half of the finish — runs in parallel with the loser's death
+ceremony during the final `CAM_PULLBACK` seconds of `FINISH_WINDOW`. While
+the loser shatters at kill-cam arrival, the winner stays alive in the
+arena and gets a brief celebratory beat as the camera eases back to
+centre.
+
+**Shared contract** (structural — survives into Phase 2 unchanged, the way
+the death ceremony's camera/snap/K.O. frame survives across every bespoke
+death):
+- **Anchored to live winner position** (`winner.x, winner.y`) in
+  world/camera space. The winner is still sim-driven, so the celebration
+  tracks whatever the body is doing.
+- **Team color** — `#ff2e2e` red / `#2e9eff` blue. Every shape inherits
+  the winner's banner color so the celebration reads as theirs.
+- **`prog` 0→1 over `CAM_PULLBACK`** (currently 0.6 s — see timing note
+  below). Per-fighter bespoke celebrations key all beats on this same
+  prog scale so camera and audio stay in sync.
+- **Render contract**: the K.O. text block sits in screen space
+  (`ctx.setTransform`), so the celebration block must call `applyCamera()`
+  first to return to world/camera space before drawing. K.O. text fades
+  to clear over `(finishTimer - 0.3) / (CAM_PULLBACK - 0.3)` so the
+  celebration has the screen to itself when it lands. `drawCelebration`
+  runs only in `draw()` (headless-skipped).
+- **Finish-window hooks**: `endGame()` clears `game.hazards` (alongside
+  projectiles/mines/skeletons) so a lingering WAKE or burn can't kill the
+  winner during the wider `FINISH_WINDOW` (2.6 s vs the older 2.0 s).
+  `showWinnerOverlay()` is gutted to a 1.2 s `setTimeout` auto-return —
+  no overlay DOM. The kill-cam push-in + celebration carry the win
+  emotionally; the giant slamming winner-name was over-engineered.
+
+**Phase 1 placeholder visual** (`drawCelebration(winner, prog)` in
+`arena.js`) — temporary, replaced wholesale by per-fighter bespoke
+celebrations in Phase 2 (the same way you don't see a generic
+pulse on top of Berserker's bloodrage convulse in death). Currently:
+inner team-colour pulse ring at `FIGHTER_SIZE + 4 + prog*32`, an offset
+second pulse at `prog > 0.3` for double-tap rhythm, and an 8-mote radial
+burst completing by `prog ≈ 0.85`. The job is "stop the outro feeling
+empty until bespoke land," nothing more — don't preserve any of these
+shapes when authoring a per-fighter celebration unless they happen to be
+that fighter's identity.
+
+**Timing — `CAM_PULLBACK` will grow in Phase 2.** The current 0.6 s is a
+deliberate Phase 1 minimum: enough to register the generic pulse+burst,
+not so much that a placeholder drags the outro. Bespoke per-fighter
+celebrations need ~1.2–1.5 s of breathing room (matching `DEATH_DUR`'s
+allowance for bespoke deaths). Grow `CAM_PULLBACK` in lockstep when the
+first bespoke celebration lands — and re-tune `FINISH_WINDOW` so the
+total stays in Shorts-friendly territory.
+
+**Phase 2 — per-fighter celebrations.** Three-layer grammar (parallel to
+death's three-layer grammar): sprite transform (the body does something
+distinctly *theirs* — Berserker bellows, Ronin sheathes, Wizard summons
+sparkles) · voice effect (the energy of victory in the fighter's identity
+language) · settling residue (what's left as the camera pulls back). The
+shared contract above is the container; this is the content. Principle 11
+applies — every beat marks a moment, none run as ambient texture.
 
 ### Two rules under all of it
 1. **Visual-only & balance-safe.** These read fields set in the sim path, but the

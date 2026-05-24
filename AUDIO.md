@@ -70,6 +70,23 @@ Infrastructure that stays: `tone()` + `noise()` primitives, `panNode()`,
 `masterGain()` + limiter, `sfx()` interface. What gets rebuilt: the `SOUNDS`
 object, designed from scratch around material identity and the three-beat grammar.
 
+### Intro reveal
+Two-beat audio twin of the arena-as-reveal visuals (ANIMATION.md "Intro
+reveal"). Lifecycle sounds, not fighter-specific. Both use `opts.exact` so
+their pitch is reproducible — this is a UI beat, not a per-instance hit,
+and cosmetic detune would feel inconsistent across replays.
+
+- **`introRiser`** (T = 0, 0.85 s) — saw 110→520 Hz + triangle 220→1040 +
+  bandpass noise sweep 240→2200. Climbs across the label-fade-in, building
+  tension toward the clash.
+- **`vsClash`** (T = 0.85 s) — bandpass noise crack 1400→280 + falling
+  square 220→110 + triangle/sine chord at 660 / 990. Marks the VS-badge
+  punch-in: "fight is starting, attention here."
+
+Headless never calls `playVsIntro()`, so the balance harness is unaffected.
+A pending `vsClash` is guarded by a game-token check so a quick restart
+can't fire a stale beat into the new fight.
+
 ### Material identities — "the fighter IS the sound"
 Each fighter has one material. Every sound they make — cast, hit reaction, death —
 draws from it.
@@ -200,6 +217,31 @@ own material, because death is bigger than the fighter:
 - **SCATTER** (Archer) — a bowstring snap (bandpass crack) followed by 6 small
   staggered impact tones, simulating arrows raining down. Light, bright, many-
   bodied. The only death sound with a distinct multi-event tail.
+
+### Celebration audio
+The winner's audio twin of the visual celebration (ANIMATION.md
+"Celebration"). Same Phase 1 / Phase 2 split as the visual side.
+
+**Shared contract** (survives into Phase 2): the celebration audio fires
+at celebration start (T = `FINISH_WINDOW - CAM_PULLBACK`, currently 2.0 s
+after the kill), gated by a render-side `game.celebSfxFired` flag
+(headless-safe — the flag is set in `draw()` so the balance harness
+never plays the fanfare). One-shot per fight.
+
+**Phase 1 placeholder** — `sfx('win')`, the generic victory fanfare.
+Temporary; will be replaced wholesale by per-fighter victory voices in
+Phase 2 (same way a per-fighter bespoke death replaces — not layers on
+top of — any generic death sound). The fanfare moved out of
+`showWinnerOverlay()` (which used to fire it AFTER celebration finished)
+into the celebration block so the arpeggio leads the beat instead of
+chasing it.
+
+**Phase 2 — per-fighter victory voices.** Follow the material-identity
+table (Berserker bellows wet, Ronin sustains a clean steel chime, Warlock
+absorbs into a void hum) — same grammar as death voices, but the
+*winner's* material. When bespoke celebrations land, `CAM_PULLBACK`
+grows to ~1.2–1.5 s (see ANIMATION.md timing note); the audio's tail
+should fit that wider window without retuning the trigger time.
 
 ### Defensive responses & state cues
 The audio twin of the on-fighter state indicators (ANIMATION.md). An *active
