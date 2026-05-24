@@ -439,6 +439,18 @@ function resolveAim(f) {
         }
       }
     }
+    // AOE side-effect — skeletons in the pillar footprint take damage.
+    // The aim itself is still predicted at the ENEMY FIGHTER's position
+    // (locked at cast time, line 79-80); skeletons just happen to share
+    // the footprint. Makes JUDGMENT a real anti-swarm play vs Necromancer.
+    // DIVINE GRACE does NOT grant heal on skeleton hits — only the fighter-
+    // hit branch above heals. Skeletons aren't "souls saved," just bone
+    // that happens to be in the way of holy light.
+    game.skeletons = game.skeletons.filter(sk => {
+      if (sk.team === f.team) return true;   // own skeletons untouched
+      if (Math.hypot(sk.x - tx, sk.y - ty) >= f.pillarRadius + sk.size) return true;
+      return !damageSkeleton(sk, f.dmg);
+    });
   } else if (f.aimAbility === 'tackle') {
     // RAMPAGE — windup over: pick the aim NOW (release time) and launch at
     // ramming speed. Berserker uncoils toward wherever the enemy actually is,

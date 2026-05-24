@@ -979,6 +979,34 @@ function tryHitDecoy(pos, defender, hitRange) {
 }
 
 
+// damageSkeleton(sk, dmg, forceBurst) — the ONE path all damage to a
+// skeleton goes through. Hoisted to file scope so callers outside step()
+// can use it (e.g. JUDGMENT's AOE in abilities.js). Real damage numbers,
+// a damage float, death + Bone Burst. Returns true if killed.
+function damageSkeleton(sk, dmg, forceBurst) {
+  dmg = Math.round(dmg);
+  sk.hp -= dmg;
+  sk.flash = 0.12;
+  spawnFloat(sk.x, sk.y - sk.size - 4, '-' + dmg,
+             sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
+  if (sk.hp <= 0) {
+    // Bone Burst: shards erupt on death — enemy within 55px takes dmg.
+    // Punishes melee fighters rushing in to kill skeletons; ranged
+    // killers are safe. forceBurst overrides the distance check (Ronin
+    // iai uses this — the line cleaves regardless of standoff).
+    const enemy = sk.team === 'red' ? game.blue : game.red;
+    if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
+      damage(enemy, 170, 'bone');
+      sfx('boneBurst', null, sk.x);
+    } else {
+      sfx('boneCrumble', null, sk.x);
+    }
+    spawnImpact(sk.x, sk.y, 'bone', 0, 0.7);
+    return true;
+  }
+  return false;
+}
+
 // ============================================================================
 // === STEP (per-frame simulation) ============================================
 // Runs every frame at variable dt. Handles fighter movement, passive ticks
@@ -1887,30 +1915,6 @@ function step(dt) {
 
 
   // Skeletons (Necromancer minions) — slow persistent melee.
-  // damageSkeleton(): the ONE path all damage to a skeleton goes through. Real
-  // damage numbers, a damage float, death + Bone Ward. Returns true if killed.
-  function damageSkeleton(sk, dmg, forceBurst) {
-    dmg = Math.round(dmg);   // honest integer — display == actual
-    sk.hp -= dmg;
-    sk.flash = 0.12;
-    // Damage float over the skeleton, same style as fighter hits.
-    spawnFloat(sk.x, sk.y - sk.size - 4, '-' + dmg,
-               sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
-    if (sk.hp <= 0) {
-      // Bone Burst: shards erupt on death — any enemy within 55px takes dmg.
-      // Punishes melee fighters rushing in to kill skeletons; ranged killers are safe.
-      const enemy = sk.team === 'red' ? blue : red;
-      if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
-        damage(enemy, 170, 'bone');
-        sfx('boneBurst', null, sk.x);
-      } else {
-        sfx('boneCrumble', null, sk.x); // dies with no one in burst range
-      }
-      spawnImpact(sk.x, sk.y, 'bone', 0, 0.7); // bone shards erupt on death
-      return true;
-    }
-    return false;
-  }
 
   game.skeletons = game.skeletons.filter(sk => {
     if (sk.hp <= 0) { return false; } // already handled by damageSkeleton
