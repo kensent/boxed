@@ -1100,8 +1100,19 @@ function draw() {
   // are dim. The whole flash fades quadratically to nothing.
   [game.red, game.blue].forEach(f => {
     if (f.ability !== 'sigil' || f.sigilFlash <= 0 || !f.sigilLines || !f.sigilLines.length) return;
+    // Death fade — sigilFlash itself decays in sim-time (slow-mo 0.18x),
+    // so the natural fade is stretched to ~3.3 real seconds during the
+    // finish window. Overlay a real-time death fade so the lines linger
+    // briefly (so a SIGIL → BONE BURST kill reads), then disappear
+    // before the finish window ends. Same curve as the stones below.
+    let deathAlpha = 1;
+    if (f.dead) {
+      const since = FINISH_WINDOW - (game.koTimer || 0);
+      if (since >= 1.2) return;
+      if (since > 0.5) deathAlpha = 1 - (since - 0.5) / 0.7;
+    }
     const t = f.sigilFlash / f.sigilFlashDur;
-    const fade = t * t;
+    const fade = t * t * deathAlpha;
     ctx.save();
     ctx.lineCap = 'round';
     for (const link of f.sigilLines) {
@@ -1127,6 +1138,19 @@ function draw() {
   // by cap overflow.
   [game.red, game.blue].forEach(f => {
     if (f.ability !== 'sigil' || !f.stones || !f.stones.length) return;
+    // Death fade — stones linger briefly so the network identity reads at
+    // the moment of Geomancer's death, then fade out. Important for the
+    // SIGIL → BONE BURST chain where the SIGIL itself causes the kill;
+    // we want the network visible when the kill lands. 0–0.5s post-death
+    // = full alpha, 0.5–1.2s = linear fade to 0, 1.2s+ = gone.
+    let deathAlpha = 1;
+    if (f.dead) {
+      const since = FINISH_WINDOW - (game.koTimer || 0);
+      if (since >= 1.2) return;
+      if (since > 0.5) deathAlpha = 1 - (since - 0.5) / 0.7;
+    }
+    ctx.save();
+    ctx.globalAlpha = deathAlpha;
     f.stones.forEach(st => {
       const ang = Math.atan2(-st.ny, -st.nx);             // local +x = into-arena
       ctx.save();
@@ -1169,6 +1193,7 @@ function draw() {
       }
       ctx.restore();
     });
+    ctx.restore();   // pairs the outer save() that applied deathAlpha
   });
 
   // Priest JUDGMENT — windup target reticle at the locked predicted spot (world

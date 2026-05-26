@@ -372,6 +372,7 @@ function fireAbility(f, enemy) {
       // line are consumed (DOPPELGANGER substrate). BATCH_GAP merging
       // still aggregates the float text into a single readable number.
       const hitR = FIGHTER_SIZE + (f.lineWidth || 4) * 0.5;
+      const lineHalf = (f.lineWidth || 4) * 0.5;
       for (const link of links) {
         let hit = false;
         if (!enemy.dead && segIntersectsCircle(link.x1, link.y1, link.x2, link.y2,
@@ -387,8 +388,26 @@ function fireAbility(f, enemy) {
             }
           }
         }
+        // Skeletons on the line — same per-line economy as the enemy/decoy
+        // checks (each crossing damages once). Own-team skeletons skipped
+        // (Geomancer doesn't summon today, but the pattern stays symmetric
+        // and future-proof). Already-dead skeletons skipped so a skeleton
+        // killed by an earlier line in the same cast can't be re-damaged by
+        // later lines. Mirrors JUDGMENT's anti-swarm beat — the card's
+        // "burning anyone on the lines" reads literally.
+        for (const sk of game.skeletons) {
+          if (sk.team === f.team || sk.hp <= 0) continue;
+          if (segIntersectsCircle(link.x1, link.y1, link.x2, link.y2,
+                                  sk.x, sk.y, sk.size + lineHalf)) {
+            damageSkeleton(sk, f.dmg);
+            hit = true;
+          }
+        }
         link.hit = hit;
       }
+      // Cleanup skeletons killed by the SIGIL — damageSkeleton sets hp<=0
+      // but doesn't remove from the array (matches the JUDGMENT pattern).
+      game.skeletons = game.skeletons.filter(sk => sk.hp > 0);
       f.sigilLines = links;
       f.sigilWhiff = false;
       // Per-line chord chime — light staggered metallic chimes paint the

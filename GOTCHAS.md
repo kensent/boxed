@@ -95,6 +95,39 @@
   is the total. The pre-arrival "hold the intact sprite while the
   kill-cam pushes in" branch is gone with the kill-cam itself — the
   shatter starts at frame 0 the moment the finish window opens.
+- **Screen shake is render-only and deliberately sparse.** `shake(mag)`
+  (in `combat.js`) writes `game.shakeMag` / `game.shakeTime`; the sim
+  never reads them back, only the render path (`draw()` in
+  `render/arena.js`) and the decay tick in `advance()`. Balance-safe.
+  **Max-combining** is critical: a new smaller shake never overrides a
+  bigger ongoing one, so rapid sequential hits (Berserker rampage passes,
+  multi-orb wizard volleys, Archer arrows) don't compound into jitter —
+  the heaviest event in any 0.18s window wins. The shake hierarchy is:
+  - K.O. = 14, the **ceiling** (always; `main.js endGame`)
+  - Heaviest character moments = 7–9: Cannoneer BOMBARD impact (9, both
+    code paths — life-expire splash AND direct-contact), Sapper STICK
+    CHARGE detonation (9), Berserker RAMPAGE launch (7), Priest JUDGMENT
+    pillar landing (7), Geomancer SIGIL slam (3.75 → 9, scales with
+    active stone count `3 + stones * 0.75`)
+  - Cannoneer cannon muzzle = 6 (telegraph beat, deliberately lighter
+    than the impact — the firing IS its own moment but it shouldn't
+    rival the shell landing)
+  - Per-hit shake in `damage()` = `big * 9`, **gated at `big >= 0.15`**
+    (~40 dmg) so chip hits (arrows, hex bolts, coins, low-dmg fighter
+    casts) stay silent. The +2 baseline that the old shake had is gone
+    on purpose — every hit shaking is what made shake feel like ambient
+    noise instead of weight. Don't restore it; if a specific hit feels
+    under-weighted, fix that hit's dmg / recoilMag / spawnImpact instead.
+  - Drain and reel ticks (continuous DoT) explicitly **don't** shake —
+    they'd machine-gun otherwise. Same as the existing flash / impact
+    rule in `damage()`.
+  Spawn-shakes on multi-projectile abilities (Gambler's old Coin Nova /
+  Fortune's Barrage spawn shakes) were removed — a SPAWN isn't an impact
+  event; each projectile shakes via per-hit when it actually connects.
+  Same logic for any future multi-projectile kit: shake on hits, not on
+  fire. The character-signature shake on a charged release (Cannoneer
+  muzzle, Berserker rampage launch, Sapper detonation, etc.) is the
+  exception — those are the kit's *defining* beat, not a multi-spawn.
 - **Uniform "aim at nearest" targeting (DOPPELGANGER substrate).** Every fighter
   that aims at an enemy must route through `pickTarget(attacker, defender)` in
   `engine.js`, which returns the nearest of `{real defender, ...defender.decoys}`.
@@ -161,10 +194,31 @@
   to 120 instead, so first bounces arrive ~1s into the fight).
 - **Geomancer stones don't expire on a timer.** `maxStones` cap-eviction
   (oldest first, in `plantStone()`) is the only removal mechanism. Stones
-  render at full alpha; no fade-out. An earlier version had a 13s
-  `stoneLifetime` decay — removed because the cap was always hit first in
-  practice, and the decay's fade-out was visual noise rather than mechanical
-  signal.
+  render at full alpha during play; no fade-out. An earlier version had a
+  13s `stoneLifetime` decay — removed because the cap was always hit first
+  in practice, and the decay's fade-out was visual noise rather than
+  mechanical signal. **Exception: on Geomancer's death**, both the stones
+  and any active `sigilFlash` linger with a render-side fade — full alpha
+  for 0.5s post-death (so a SIGIL → BONE BURST kill stays readable at the
+  kill moment), linear fade over the next 0.7s, gone by 1.2s. The natural
+  `sigilFlash` decay (`sigilFlashDur` ~0.6s) is in sim-time, so under the
+  finish-window slow-mo (0.18×) it stretches to ~3.3 real seconds; the
+  death fade is in real-time and rides on top of the natural decay,
+  multiplied in via `deathAlpha`. Visual only — `f.sigilFlash` /
+  `f.stones` are never read by sim logic.
+- **Geomancer's SIGIL damages enemy skeletons on lines.** Each ley-line is
+  segment-tested against every enemy-team skeleton; a crossing routes
+  through `damageSkeleton(sk, f.dmg)`. Symmetric with Priest JUDGMENT's
+  pillar (AOE) and Ronin DRAW BLADE's segment cleave — both also hit
+  skeletons. Card text "burning anyone on the lines" reads literally.
+  Skipped own-team skeletons (`sk.team === f.team`) for symmetry even
+  though Geomancer doesn't summon today, plus already-dead ones (so a
+  skeleton killed by line N can't be re-damaged by line N+1; BONE BURST
+  fires exactly once). Cleanup filter `game.skeletons.filter(sk => sk.hp > 0)`
+  runs once after all lines resolve. Practically rarely changes a fight
+  outcome — line geometry vs skeleton positions only aligns sometimes
+  and Geomancer's `dmg` (80) takes 3 crossings to kill a skeleton
+  (`SKEL_HP` 180) — but the *card text* now matches the *behavior*.
 - **`srcKind === 'reel'` is PURE damage** — bypasses every defensive layer
   in `damage()`: no Jester decoy spawn, no Duelist parry absorb, no Wizard
   Mana Shield reduction or orb consumption. Used by Hunter's BARBED LINE
