@@ -609,14 +609,9 @@ function makeFighter(t, team, x, y) {
     iaiAngle: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
-    // Archer SHATTER state — embedded is the live cushion (each entry has a
-    // timer, world angle, and landing-burst `born`); embedFlash is the
-    // brief cluster shudder on a new landing. shattering is the post-burst
-    // residue: arrows flying outward over 0.4s after a SHATTER trigger.
-    // shatterFlash is the expanding ring at the moment of burst.
-    // Everything here is visual or sim-state; never read by balance code.
-    embedded: [], embedFlash: 0,
-    shattering: [], shatterFlash: 0,
+    // (Archer's SHATTER cushion-on-enemy was retired; VOLLEY redesigned to
+    // arc-rain + floor STAKES. No per-fighter SHATTER state needed any
+    // more — stakes live in game.hazards as 'stake' kind.)
     // Hunter tether state — the 0.3s reel-in tween after a hook connects.
     // BARBED LINE damage is read from tetherTarget (the hooker) at tick time —
     // reelStepPx (drag pixels per tick) and reelStepDmg (dmg per tick) live
@@ -1252,25 +1247,9 @@ function step(dt) {
     // Witch mark timer decay
     if (f.witchMarkTimer > 0) f.witchMarkTimer -= dt;
 
-    // SHATTER stacks decay (each on its own timer; iterate back-to-front so
-    // splices don't reshuffle the upcoming reads). `born` is the landing-burst
-    // countdown (visual only — never read by the sim).
-    if (f.embedded && f.embedded.length) {
-      for (let i = f.embedded.length - 1; i >= 0; i--) {
-        f.embedded[i].timer -= dt;
-        if (f.embedded[i].born > 0) f.embedded[i].born -= dt;
-        if (f.embedded[i].timer <= 0) f.embedded.splice(i, 1);
-      }
-    }
-    if (f.embedFlash > 0) f.embedFlash -= dt;
-    // SHATTER residue — scattered arrows fly outward over 0.4s after a burst.
-    if (f.shattering && f.shattering.length) {
-      for (let i = f.shattering.length - 1; i >= 0; i--) {
-        f.shattering[i].timer -= dt;
-        if (f.shattering[i].timer <= 0) f.shattering.splice(i, 1);
-      }
-    }
-    if (f.shatterFlash > 0) f.shatterFlash -= dt;
+    // (SHATTER cushion-on-enemy decay loops were retired with the Archer
+    // redesign — VOLLEY now arc-rains and missed arrows embed as floor
+    // STAKES, ticked in the game.hazards loop further down.)
 
     // Geomancer STANDING STONES — tick each planted stone's born-burst
     // (the small amber ring on plant); no lifetime decay (cap-eviction is
@@ -1393,6 +1372,25 @@ function step(dt) {
               if (segDist(d.x, d.y) < f.slashReach + FIGHTER_SIZE) d.dead = true;
             }
           }
+          // Archer STAKES on the line are cleaved too — the IAI teleports
+          // past intermediate positions, so without this stakes ON the
+          // dash line would never trigger via body overlap. Each cleaved
+          // stake bites Ronin for its chip dmg (the cut resists through
+          // the spike) and is then consumed. Visual + mechanical fix in
+          // one: Ronin's line clears the stake field but pays a small
+          // toll per stake — softens the Ronin-vs-Archer matchup
+          // without removing it.
+          game.hazards = game.hazards.filter(h => {
+            if (h.kind !== 'stake') return true;
+            if (h.team === f.team) return true;
+            if (segDist(h.x, h.y) < f.slashReach + h.radius) {
+              damage(f, h.dmg, 'hazard');
+              spawnImpact(h.x, h.y, 'arrow', 0, 0.4);
+              sfx('impact', { kind: 'arrow', big: 0.4 }, h.x);
+              return false;
+            }
+            return true;
+          });
           // Hit enemy on the line.
           if (!enemy.dead && segDist(enemy.x, enemy.y) < f.slashReach + FIGHTER_SIZE) {
             damage(enemy, f.dmg, undefined, f);
@@ -1515,6 +1513,54 @@ function step(dt) {
 
   game.projectiles = game.projectiles.filter(p => {
     if (p.spent) return false;
+    if (p.kind === 'rain') {
+      // Archer VOLLEY — stationary "rain" projectile. Lives for `volleyDelay`
+      // (set as p.life at spawn), then lands: damage on enemy/decoy at the
+      // landing spot, or spawn a 'stake' hazard (STAKES passive) if it
+      // missed. During the delay the projectile renders only as a floor
+      // landing-marker (in render/arena.js) — no in-air visual. Doesn't move.
+      p.life -= dt;
+      if (p.life > 0) return true;
+      const owner = p.team === 'red' ? red : blue;
+      if (owner.dead) return false;       // owner died mid-air: arrow lost
+      const target = p.team === 'red' ? blue : red;
+      const lx = p.landX, ly = p.landY;
+      // DOPPELGANGER: a closer decoy at the landing spot eats the arrow.
+      const decoy = tryHitDecoy({ x: lx, y: ly }, target, FIGHTER_SIZE + p.size);
+      if (decoy) {
+        spawnImpact(lx, ly, 'arrow', Math.PI / 2, 0.5);
+        sfx('impact', { kind: 'arrow', big: 0.5 }, lx);
+        return false;
+      }
+      // Enemy at landing spot? Damage directly.
+      if (!target.dead && Math.hypot(target.x - lx, target.y - ly) < FIGHTER_SIZE + p.size) {
+        const dmgOut = p.dmg;
+        damage(target, dmgOut, 'projectile');
+        const big = Math.min(1, dmgOut / 260);
+        spawnImpact(lx, ly, 'arrow', Math.PI / 2, big);
+        sfx('impact', { kind: 'arrow', big: big }, lx);
+        if (!target.dead) {
+          target.recoilTimer = 0.16; target.recoilDir = Math.PI / 2; target.recoilMag = big * 13;
+        }
+        return false;
+      }
+      // Missed — spawn a STAKES hazard on the arena floor. Deterministic lean
+      // per landing position so the same seed renders identically; never rng
+      // here (rng is reserved for sim decisions, vrng for cosmetic visuals).
+      game.hazards.push({
+        kind: 'stake',
+        team: p.team,
+        x: lx, y: ly,
+        timer: owner.stakeDur, maxTimer: owner.stakeDur,
+        dmg: Math.round(owner.dmg * owner.stakeDmgFrac),
+        radius: owner.stakeRadius,
+        leanRad: (((lx * 0.31 + ly * 0.17) % 1) - 0.5) * 0.35,
+      });
+      // Land thud — small puncture audio at the embed point.
+      spawnImpact(lx, ly, 'arrow', Math.PI / 2, 0.3);
+      sfx('impact', { kind: 'arrow', big: 0.3 }, lx);
+      return false;
+    }
     if (p.kind === 'charge') {
       // SAPPER STICK CHARGE — flies until it contacts the enemy, then STICKS to them
       // and a fuse ticks down to a detonation (damage + BLAST RADIUS knockback). A
@@ -1857,53 +1903,17 @@ function step(dt) {
         }
         target.witchMarkTimer = p.markDuration;
       }
-      // Archer SHATTER — each arrow embeds first; if that pushes the cushion to
-      // p.shatterAt, the whole cushion BURSTS. The trigger arrow's chip damage
-      // is folded into the burst (one big damage number rather than two stacked
-      // floats); the embedded arrows move to the `shattering` residue array for
-      // the fly-outward scatter visual; the cushion resets.
-      let shattered = false;
-      if (p.kind === 'arrow' && !target.dead) {
-        if (!target.embedded) target.embedded = [];
-        target.embedded.push({
-          timer: p.embedDur,
-          angle: Math.atan2(-p.vy, -p.vx),
-          born: 0.18,
-        });
-        target.embedFlash = 0.15;
-        if (target.embedded.length >= p.shatterAt) {
-          const stacks = target.embedded.length;
-          dmgOut = stacks * p.shatterPerStack;
-          target.shattering = target.embedded.map(s => ({
-            angle: s.angle,
-            timer: 0.4,
-          }));
-          target.embedded = [];
-          target.shatterFlash = 0.3;
-          shattered = true;
-        }
-      }
       damage(target, dmgOut, 'projectile');
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
       // + sfx ALWAYS fire even on a lethal hit (otherwise the kill lands silent
       // before the death ceremony's own audio); only the victim's recoil-shake
-      // needs the alive gate. On SHATTER the burst centres on the body
-      // (the cushion releases at once)
-      // rather than at the arrow's strike point.
+      // needs the alive gate.
       const hitAng = Math.atan2(p.vy, p.vx);
-      if (shattered) {
-        // Dedicated burst voice — wider crack + falling whoosh, distinct from
-        // a single arrow impact. Marks the climax of the SHATTER cycle.
-        spawnImpact(target.x, target.y, 'arrow', 0, 1);
-        sfx('shatterBurst', null, target.x);
-      } else {
-        const big = Math.min(1, dmgOut / 260);
-        spawnImpact(p.x, p.y, p.kind, hitAng, big);
-        sfx('impact', { kind: p.kind, big: big }, p.x);
-      }
+      const big = Math.min(1, dmgOut / 260);
+      spawnImpact(p.x, p.y, p.kind, hitAng, big);
+      sfx('impact', { kind: p.kind, big: big }, p.x);
       if (!target.dead) {
-        const recoilBig = shattered ? 1 : Math.min(1, dmgOut / 260);
-        target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = recoilBig * 13;
+        target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
       }
       return false;
     }
@@ -1913,11 +1923,25 @@ function step(dt) {
   game.hazards = game.hazards.filter(h => {
     h.timer -= dt;
     if (h.timer <= 0) return false;
-    // Reaper WAKE — the only hazard kind currently in use. Each segment has
-    // a warmup (h.warmup) that must elapse before it can deal damage — the
-    // line "hasn't bitten yet." Once warm, dense overlapping segments gate
-    // damage on each TARGET's wakeHitCd (per-fighter, per-skeleton), not on
-    // per-segment timing.
+    // Archer STAKES — upright floor arrows from a missed VOLLEY landing.
+    // Single-hit hazard: the FIRST enemy contact consumes the stake and
+    // deals chip damage. No warmup, no per-target gate — each stake is a
+    // one-shot. Walking through a dense patch eats one stake per body
+    // overlap (no double-dipping because contact removes the stake).
+    if (h.kind === 'stake') {
+      const target = h.team === 'red' ? blue : red;
+      if (!target.dead && Math.hypot(target.x - h.x, target.y - h.y) < h.radius + FIGHTER_SIZE) {
+        damage(target, h.dmg, 'hazard');
+        spawnImpact(h.x, h.y, 'arrow', Math.PI / 2, 0.35);
+        sfx('impact', { kind: 'arrow', big: 0.35 }, h.x);
+        return false;     // consumed
+      }
+      return true;        // still standing
+    }
+    // Reaper WAKE — each segment has a warmup (h.warmup) that must elapse
+    // before it can deal damage — the line "hasn't bitten yet." Once warm,
+    // dense overlapping segments gate damage on each TARGET's wakeHitCd
+    // (per-fighter, per-skeleton), not on per-segment timing.
     if (h.warmup > 0) { h.warmup -= dt; return true; }
     const target = h.team === 'red' ? blue : red;
     if (!target.dead && target.wakeHitCd <= 0 && dist(h, target) < h.radius) {

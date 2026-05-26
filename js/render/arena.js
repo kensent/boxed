@@ -1075,12 +1075,67 @@ function draw() {
     shaken = true;
   }
 
-  // Reaper WAKE hazard segments — clean crimson damage-zone markers.
-  // Just an outlined ring + small inner dot per segment; overlapping segments
-  // along the scythe's trajectory compose into the trail without per-segment
-  // visual noise. (Earlier paired-arc "slash" version was reading as messy
-  // with all the random per-segment rotation; this is the calmer alternative.)
+  // Hazards layer — dispatch by kind. Drawn before fighters so the floor
+  // layer reads as ground decoration (fighters render over the top).
+  const now = performance.now();
   (game.hazards || []).forEach(h => {
+    if (h.kind === 'stake') {
+      // Archer STAKES — upright arrow embedded point-first in the floor.
+      // Fades over the last 0.4s of its life. Slight per-stake lean is
+      // pre-rolled in the sim (h.leanRad). Tip pulse is time-derived
+      // (never rng in draw — see GOTCHAS).
+      const fade = Math.min(1, h.timer / 0.4);
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      ctx.globalAlpha = fade;
+      // Wooden shaft + arrowhead at bottom (point into floor) + feathers
+      // at top, tilted by per-stake lean. The arrowhead at the BOTTOM is
+      // critical for the silhouette to read as "arrow stuck point-down in
+      // floor" rather than "stick with chevron on top" (which viewers
+      // misread as an arrow pointing up).
+      ctx.save();
+      ctx.rotate(h.leanRad || 0);
+      // Shaft, arrowhead, and fletching colors match Archer's bow sprite
+      // (sprites.js bow case): dark brown shaft, WHITE arrowhead, RED
+      // fletching. One arrow vocabulary across the whole kit.
+      ctx.strokeStyle = '#5a4a2a';
+      ctx.lineWidth = 1.3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(0, -1);
+      ctx.lineTo(0, -14);
+      ctx.stroke();
+      // Arrowhead — small filled triangle at the bottom, apex pointing
+      // DOWN (into the floor). Half-embedded so the base is just above
+      // the floor and the apex pokes slightly past it.
+      ctx.fillStyle = '#f5f5f0';
+      ctx.beginPath();
+      ctx.moveTo(0, 1);
+      ctx.lineTo(-2, -3);
+      ctx.lineTo(2, -3);
+      ctx.closePath();
+      ctx.fill();
+      // Fletching — two thin feather-lines fanning UP and OUTWARD from
+      // the shaft top (away from the tip). Vertex at the shaft top, arms
+      // extending above it: clearly "feathers" rather than "arrowhead."
+      ctx.strokeStyle = '#c44';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.lineTo(-3, -18);
+      ctx.moveTo(0, -14);
+      ctx.lineTo(3, -18);
+      ctx.stroke();
+      ctx.restore();
+      // (Tip glow removed — the white arrowhead at the bottom is now
+      // the explicit "tip embedded in floor" tell; a pulsing green dot
+      // is both redundant and off-palette with the new arrow vocabulary.)
+      ctx.restore();
+      return;
+    }
+    // Reaper WAKE hazard segments — clean crimson damage-zone markers.
+    // Just an outlined ring + small inner dot per segment; overlapping
+    // segments along the scythe's trajectory compose into the trail.
     const fade = h.timer / h.maxTimer;               // 1 → 0
     ctx.strokeStyle = `rgba(180,20,20,${(fade * 0.7).toFixed(3)})`;
     ctx.lineWidth = 1.4;
@@ -1091,6 +1146,109 @@ function draw() {
     ctx.beginPath();
     ctx.arc(h.x, h.y, h.radius * 0.35, 0, Math.PI * 2);
     ctx.fill();
+  });
+
+  // Archer VOLLEY mid-flight — one continuous parabolic arc per arrow:
+  // the SAME arrow renders along its full path from Archer's position UP
+  // through the top of the arena and back DOWN to the landing spot. So:
+  //   t=0 to ~0.3 — arrow visible climbing up, exits arena top
+  //   t=~0.3 to ~0.7 — arrow off-screen (above arena, no draw)
+  //   t=~0.7 to 1 — arrow visible falling from off-screen back to landing
+  // The landing marker on the floor fades in then out as the arrow nears.
+  // At landing, the rain projectile is consumed (engine.js) and either
+  // spawns a stake or damages the enemy directly.
+  (game.projectiles || []).forEach(p => {
+    if (p.kind !== 'rain') return;
+    const t = 1 - (p.life / (p.maxLife || 0.6));     // 0 at fire, 1 at landing
+
+    // --- Parabolic arc from launch to landing ---
+    // Linear blend from launch to landing, plus an upward arc offset that
+    // peaks at t=0.5. ARC_HEIGHT controls peak height above the linear
+    // path; with launch+landing near the arena floor and ARC_HEIGHT=260,
+    // the apex is well above the arena top (so the arrow visibly exits
+    // the frame around t≈0.3 and re-enters around t≈0.7).
+    const ARC_HEIGHT = 260;
+    const arcOffset = -ARC_HEIGHT * 4 * t * (1 - t);  // 0 at t=0/1, -260 at t=0.5
+    const ax = p.launchX + (p.landX - p.launchX) * t;
+    const ay = p.launchY + (p.landY - p.launchY) * t + arcOffset;
+
+    // Tangent angle — sample the arc 0.01 step ahead and atan2 the delta.
+    const tN = Math.min(1, t + 0.01);
+    const arcOffsetN = -ARC_HEIGHT * 4 * tN * (1 - tN);
+    const axN = p.launchX + (p.landX - p.launchX) * tN;
+    const ayN = p.launchY + (p.landY - p.launchY) * tN + arcOffsetN;
+    const flightAngle = Math.atan2(ayN - ay, axN - ax);
+
+    // Don't bother drawing while the arrow is above the visible arena
+    // (saves work; canvas would clip naturally otherwise but skipping
+    // also skips the marker overdraw downstream).
+    const arrowVisible = ay >= -20;
+
+    // --- Arrow sprite, drawn only while inside the visible arena ---
+    if (arrowVisible) {
+      ctx.save();
+      ctx.translate(ax, ay);
+      ctx.rotate(flightAngle);
+      // Shaft, arrowhead, fletching match Archer's bow sprite — dark brown
+      // shaft, WHITE arrowhead, RED fletching. Local +x is flight direction.
+      ctx.strokeStyle = 'rgba(90,74,42,0.92)';
+      ctx.lineWidth = 1.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-9, 0);
+      ctx.lineTo(7, 0);
+      ctx.stroke();
+      // Arrowhead — small filled triangle at the TIP end (+x).
+      ctx.fillStyle = '#f5f5f0';
+      ctx.beginPath();
+      ctx.moveTo(7, 0);
+      ctx.lineTo(3, -2);
+      ctx.lineTo(3, 2);
+      ctx.closePath();
+      ctx.fill();
+      // Fletching — two thin angled lines fanning outward at the tail (-x).
+      ctx.strokeStyle = '#c44';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(-9, 0);
+      ctx.lineTo(-13, -3);
+      ctx.moveTo(-9, 0);
+      ctx.lineTo(-13, 3);
+      ctx.stroke();
+      // Speed trail — faint cream streak fading backward from the tail.
+      // Stronger during the descent phase (faster arrow = bigger trail).
+      const trailA = 0.20 + t * 0.35;
+      ctx.strokeStyle = `rgba(245,245,240,${trailA.toFixed(2)})`;
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(-9, 0);
+      ctx.lineTo(-22, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // --- Landing marker on floor ---
+    // Holds steady through the "in sky" phase (when the arrow is off-
+    // screen above the arena), so the viewer always knows where the kill
+    // zone is. Brightens slightly as landing nears. Fades out the last
+    // 15% so it doesn't compete with the arrow at impact.
+    const markerAlpha = (t < 0.85)
+      ? 0.35 + t * 0.4
+      : 0.35 + 0.85 * 0.4 * (1 - (t - 0.85) / 0.15);
+    if (markerAlpha > 0.04) {
+      const r = 12 - t * 6;                             // 12px → 6px tightening
+      ctx.strokeStyle = `rgba(125,255,138,${markerAlpha.toFixed(2)})`;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(p.landX, p.landY, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = `rgba(245,245,240,${(markerAlpha * 0.6).toFixed(2)})`;
+      ctx.beginPath();
+      ctx.arc(p.landX, p.landY, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   });
 
   // Geomancer SIGIL flash — amber ley-lines drawn between linked stones for
@@ -1675,117 +1833,9 @@ function draw() {
     }
   }
 
-  // Archer SHATTER — render the cushion: optional saturation halo at high
-  // stack counts, then each stuck arrow (shaft + white head triangle + green
-  // V-fletching) anchored at the body edge in its stored world angle. All
-  // angles are pre-rolled in the sim (no RNG in draw). Per-arrow landing burst
-  // pops outward when an arrow first sticks; the whole cluster brightens +
-  // thickens briefly each time a new stack lands (embedFlash). Skipped
-  // for dead fighters (the death ceremony owns the body at that point).
-  [game.red, game.blue].forEach(f => {
-    if (f.dead || !f.embedded || !f.embedded.length) return;
-    // Saturation halo — only when the cushion is dangerous (3+ stacks). Brighter
-    // and broader as it climbs to cap. A thin pulsing ring just outside the body,
-    // never a filled alpha disk (mobile GPU budget).
-    if (f.embedded.length >= 3) {
-      const stacks = f.embedded.length;
-      const base = 0.16 + (stacks - 3) * 0.06;          // 3=0.16, 4=0.22, 5=0.28
-      const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 110);
-      ctx.strokeStyle = `rgba(60,255,138,${(base * pulse).toFixed(3)})`;
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, FIGHTER_SIZE + 7, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // Cluster pulse (0..1) — fades to 0 as embedFlash drains. Drives the
-    // brief shaft-thicken + brighten across every arrow on a new stack landing.
-    const cluster = f.embedFlash > 0 ? f.embedFlash / 0.15 : 0;
-    f.embedded.forEach(s => {
-      const fade = Math.min(1, s.timer / 0.3);
-      const c = Math.cos(s.angle), si = Math.sin(s.angle);
-      const px = -si, py = c;
-      const headR = FIGHTER_SIZE * 0.92;                // arrowhead at body edge
-      const tailR = FIGHTER_SIZE + 12;                  // shaft tail outside
-      const hx = f.x + c * headR, hy = f.y + si * headR;
-      const tx = f.x + c * tailR, ty = f.y + si * tailR;
-      // Shaft — thicker + brighter during cluster pulse
-      const shaftA = (0.92 * fade) * (1 + cluster * 0.3);
-      ctx.strokeStyle = `rgba(232,222,184,${Math.min(1, shaftA).toFixed(3)})`;
-      ctx.lineWidth = 1.5 + cluster * 0.8;
-      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
-      // Arrowhead — small white triangle pointing INTO the body
-      const baseX = hx - c * 2.4, baseY = hy - si * 2.4;
-      ctx.fillStyle = `rgba(255,255,255,${(0.85 * fade).toFixed(3)})`;
-      ctx.beginPath();
-      ctx.moveTo(hx + c * 2.2, hy + si * 2.2);
-      ctx.lineTo(baseX + px * 2.0, baseY + py * 2.0);
-      ctx.lineTo(baseX - px * 2.0, baseY - py * 2.0);
-      ctx.closePath(); ctx.fill();
-      // Fletching — green V at the tail
-      const fA = (0.92 * fade) * (1 + cluster * 0.3);
-      ctx.strokeStyle = `rgba(60,255,138,${Math.min(1, fA).toFixed(3)})`;
-      ctx.lineWidth = 1.6 + cluster * 0.6;
-      ctx.beginPath();
-      ctx.moveTo(tx + px * 2.8, ty + py * 2.8);
-      ctx.lineTo(tx - c * 2.6, ty - si * 2.6);
-      ctx.lineTo(tx - px * 2.8, ty - py * 2.8);
-      ctx.stroke();
-      // Landing burst — a green ring expanding from the arrowhead, fading out
-      // over the first 0.18s of this arrow's life.
-      if (s.born > 0) {
-        const t = s.born / 0.18;                        // 1 at birth, 0 at end
-        const r = (1 - t) * 14 + 5;
-        ctx.strokeStyle = `rgba(60,255,138,${(t * 0.6).toFixed(3)})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(hx, hy, r, 0, Math.PI * 2); ctx.stroke();
-      }
-    });
-  });
-
-  // SHATTER burst — the moment of release. A bright green ring expands outward
-  // from the target's body; the previously embedded arrows fly out as residue
-  // in their stuck-in directions, fading. Both layers share the same set of
-  // per-fighter fields and live for 0.3s / 0.4s respectively (set in engine
-  // when the cushion crosses shatterAt).
-  [game.red, game.blue].forEach(f => {
-    if (f.dead) return;
-    // Expanding ring — peaks at burst, fades to nothing.
-    if (f.shatterFlash > 0) {
-      const t = 1 - f.shatterFlash / 0.3;               // 0 at burst, 1 at end
-      const r = FIGHTER_SIZE + t * 42;
-      const a = (1 - t) * 0.85;
-      ctx.strokeStyle = `rgba(60,255,138,${a.toFixed(3)})`;
-      ctx.lineWidth = 2.5 + (1 - t) * 1.5;
-      ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.stroke();
-      // Secondary inner ring — adds weight without an alpha-fill (mobile budget).
-      ctx.strokeStyle = `rgba(220,255,200,${(a * 0.6).toFixed(3)})`;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.72, 0, Math.PI * 2); ctx.stroke();
-    }
-    // Scattering arrows — fly outward from the body in their stuck-in angles.
-    if (f.shattering && f.shattering.length) {
-      f.shattering.forEach(s => {
-        const t = 1 - s.timer / 0.4;                    // 0 at burst, 1 at end
-        const fade = 1 - t;
-        const c = Math.cos(s.angle), si = Math.sin(s.angle);
-        const px = -si, py = c;
-        const r0 = FIGHTER_SIZE * 0.92 + t * 38;        // arrowhead flies out
-        const r1 = FIGHTER_SIZE + 12 + t * 38;          // tail too
-        const hx = f.x + c * r0, hy = f.y + si * r0;
-        const tx = f.x + c * r1, ty = f.y + si * r1;
-        ctx.strokeStyle = `rgba(232,222,184,${(0.9 * fade).toFixed(3)})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
-        ctx.strokeStyle = `rgba(60,255,138,${(0.9 * fade).toFixed(3)})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(tx + px * 2.5, ty + py * 2.5);
-        ctx.lineTo(tx - c * 2.4, ty - si * 2.4);
-        ctx.lineTo(tx - px * 2.5, ty - py * 2.5);
-        ctx.stroke();
-      });
-    }
-  });
+  // (Archer SHATTER cushion-on-enemy + burst render was retired with the
+  // VOLLEY redesign. STAKES floor hazards render in the hazards forEach
+  // above; in-flight rain projectiles render as landing markers there.)
 
   // Impact bursts — at the contact point, on top of the fighters they struck.
   game.impacts.forEach(drawImpact);

@@ -412,15 +412,10 @@ const Audio = (() => {
       noise(0.08, 0.09, 'highpass', 2400, { filterGlideTo: 3600 });
       noise(0.05, 0.05, 'bandpass', 1200);
     },
-    // Archer SHATTER burst — the moment the cushion of embedded arrows releases
-    // all at once. Distinct from a per-arrow `impact arrow` crack: a wider crack
-    // + a falling low whoosh as the energy disperses outward. Louder + longer
-    // than any single arrow hit because it's the climax of the cycle.
-    shatterBurst() {
-      noise(0.20, 0.34, 'bandpass', 2200, { filterGlideTo: 600 });
-      tone(900, 0.20, 'triangle', 0.18, { glideTo: 280 });
-      tone(1600, 0.16, 'sine', 0.10, { glideTo: 700 });
-    },
+    // (shatterBurst() removed with the Archer redesign — the old SHATTER
+    // cushion-on-enemy + multi-arrow burst was replaced by VOLLEY's
+    // arc-rain + floor STAKES. Per-arrow landings and stake consumptions
+    // use the existing `impact arrow` cue (thin sharp thunk).)
     // Reaper WAKE step-in tick — soft bone hiss as the crescent's trail bites
     // the enemy. Gated by per-target `wakeHitCd` (~0.2s) so it never machine-
     // guns; soft enough not to dominate over the HARVEST throw + impact.

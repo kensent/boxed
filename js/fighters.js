@@ -72,16 +72,21 @@ const FIGHTERS = [
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
     passive: 'SHOCKWAVE — the detonation knocks the enemy back and damages nearby skeletons',
   },
-  { id:'archer',  name:'ARCHER',    hp:730,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
-    // VOLLEY fan per cast + SHATTER: arrows embed visibly; the shatterAt-th arrow
-    // bursts the whole cushion for stacks × shatterPerStack damage in one number
-    // (the trigger arrow's chip is folded into the burst). Individual stacks
-    // decay slowly so a quiet archer doesn't carry a phantom cushion forever.
-    ability:'arrow', cd:0.7, dmg:30,
-    volleyArrows: 3, volleySpread: 0.18,
-    shatterAt: 5, shatterPerStack: 18, embedDur: 2.0,
-    active: 'VOLLEY — a fan of arrows on every cast, fired while moving',
-    get passive() { return `SHATTER — each landed arrow embeds in the enemy; the ${this.shatterAt}th bursts the whole cushion for ${this.shatterPerStack} damage per arrow`; },
+  { id:'archer',  name:'ARCHER',    hp:770,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
+    // VOLLEY — arrows fire on a high arc out of frame, then rain down at
+    // predicted landing points along the enemy's bounce trajectory after
+    // `volleyDelay`. Landing markers telegraph the kill-zones on the floor
+    // during the delay (readability over surprise — Shorts decision).
+    // STAKES (passive) — arrows that DON'T hit the enemy embed point-up in
+    // the arena floor as hazards for `stakeDur` seconds. Bouncing enemy
+    // passing through takes chip damage and consumes that stake. Over a
+    // 12-second fight the arena visibly fills with arrows — the kit's
+    // signature read.
+    ability:'arrow', cd:1.0, dmg:30,
+    volleyArrows: 8, volleySpread: 50, volleyDelay: 0.6,
+    stakeDur: 2.0, stakeDmgFrac: 0.5, stakeRadius: 6,
+    active: 'VOLLEY — arrows arc high and rain down at predicted spots, after a brief delay',
+    get passive() { return `STAKES — missed arrows embed point-up; enemies bouncing through take ${Math.round(this.stakeDmgFrac * 100)}% damage on contact, ${this.stakeDur}s lifetime`; },
   },
   { id:'jester',  name:'JESTER',    hp:820,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
     // cd 2.5 -> 2.0 -> 2.1 + dmg 130 -> 110 (across two passes). Identity

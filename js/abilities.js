@@ -84,20 +84,64 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'arrow': {
-      // VOLLEY — no windup, fan f.volleyArrows arrows in a narrow spread.
-      // SHATTER params ride on the projectile so a Duelist-parried arrow still
-      // contributes to (and triggers) the same shatter cycle on its new target.
-      const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
-      const spread = f.volleySpread;
+      // VOLLEY — high-arc rain. Arrows fire out of frame and land at
+      // predicted spots along the enemy's bounce trajectory after
+      // `volleyDelay` real-seconds. Each arrow becomes a 'rain' projectile
+      // with a fixed landing position (landX, landY); it doesn't move
+      // during the delay. On landing: damage if a fighter/decoy is at the
+      // spot, else spawn a 'stake' hazard (STAKES passive).
+      //
+      // Landing distribution — phyllotaxis (sunflower-seed) DISK around
+      // the enemy's predicted position. What makes Archer a *barrage* kit
+      // instead of a precision-strike kit like Priest JUDGMENT:
+      //   - Aim center predicts the enemy's position at landing time
+      //     (the only way to land hits at all under 0.6s lag — without
+      //     prediction the enemy has moved past every landing spot)
+      //   - But arrows SCATTER through a disk of radius `volleySpread`,
+      //     not concentrated at a single point. So the volley AREA is
+      //     centered on the enemy, but individual arrows are spread out:
+      //     a couple land close (likely hit), most land farther (likely
+      //     miss → STAKES). Different grammar from JUDGMENT's single
+      //     concentrated pillar at the predicted spot.
+      //   - Stakes accumulating around where the enemy bounces builds up
+      //     the kill-floor over the fight (the area-denial payoff)
+      const vxN = aim.vx || 0, vyN = aim.vy || 0;
+      // Clamp the DISK CENTER (not the individual arrows) so the
+      // phyllotaxis pattern stays a clean disk even when the enemy is
+      // hugging a wall. If we clamped per-arrow instead, the arrows that
+      // would land off-arena get pulled to the wall and the pattern
+      // collapses into a line. Margin = disk radius + half a fighter so
+      // the whole disk fits inside the arena.
+      const margin = f.volleySpread + FIGHTER_SIZE;
+      const cx = Math.max(margin, Math.min(game.w - margin, aim.x + vxN * f.volleyDelay));
+      const cy = Math.max(margin, Math.min(game.h - margin, aim.y + vyN * f.volleyDelay));
+      // Recoil direction is fixed UP (arrows fire skyward, so the body
+      // kicks back DOWN — fireDir = world up = -π/2 makes the standard
+      // fireKick recoil push the body in the +y direction).
+      const ang = -Math.PI / 2;
+      // Deterministic per-cast phase offset so the pattern orientation
+      // isn't identical every cast (derived from cast position, not rng —
+      // visual variety without consuming the seeded stream).
+      const phase = ((f.x * 0.07 + f.y * 0.11) % 1) * Math.PI * 2;
+      // Golden-angle phyllotaxis: positions spread evenly through the disk.
+      const GOLDEN = 2.39996;
       for (let i = 0; i < f.volleyArrows; i++) {
-        const a2 = ang + (i - (f.volleyArrows - 1) / 2) * spread;
+        const angle = i * GOLDEN + phase;
+        const dist = Math.sqrt((i + 0.5) / f.volleyArrows) * f.volleySpread;
+        // Center is already wall-margin-clamped above; arrows fit inside
+        // the arena without further per-arrow clamping.
+        const lx = cx + Math.cos(angle) * dist;
+        const ly = cy + Math.sin(angle) * dist;
         game.projectiles.push({
-          x: f.x, y: f.y, vx: Math.cos(a2) * 290, vy: Math.sin(a2) * 290,
-          team: f.team, dmg: f.dmg, life: 2.2,
-          kind: 'arrow', size: 3, homing: 0, angle: a2,
-          shatterAt: f.shatterAt,
-          shatterPerStack: f.shatterPerStack,
-          embedDur: f.embedDur,
+          x: lx, y: ly,                        // landing position (also where the marker draws)
+          vx: 0, vy: 0,                         // rain doesn't move during the delay
+          team: f.team, dmg: f.dmg, life: f.volleyDelay,
+          kind: 'rain', size: 3, homing: 0, angle: 0,
+          landX: lx, landY: ly,                // landing target
+          launchX: f.x, launchY: f.y,         // Archer's position at fire-time; the
+                                                // arrow's parabolic arc starts here
+          maxLife: f.volleyDelay,
+          noEdgeDespawn: true,                  // don't despawn at edges (rain is stationary)
         });
       }
       f.fireKick = 0.12; f.fireKickMax = 0.12; f.fireDir = ang; // light bowstring snap-back

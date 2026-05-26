@@ -309,8 +309,12 @@ function drawShape(c, f, hinge = 0) {
       break;
     }
     case 'bow': {
-      // Archer — drawn bow icon with nocked arrow flying forward.
-      // Bow curve (vertical, on the right side of icon)
+      // Archer — drawn bow icon. The whole body always faces world-up
+      // (drawFighter's isArcherSky branch), so local +x = world up = the
+      // bow's aiming direction. No additional rotation needed inside this
+      // case — bow + bowstring + arrow are drawn with their natural
+      // "forward = +x" geometry, which lines up with the firing direction.
+      // Bow curve (right side of icon = forward = up)
       c.strokeStyle = f.color;
       c.lineWidth = 3.5;
       c.lineCap = 'round';
@@ -336,7 +340,9 @@ function drawShape(c, f, hinge = 0) {
       c.moveTo(FIGHTER_SIZE * 0.85, -FIGHTER_SIZE * 0.12);
       c.lineTo(FIGHTER_SIZE * 0.85, FIGHTER_SIZE * 0.12);
       c.stroke();
-      // Arrow shaft
+      // Arrow shaft — nocked along the bow's spine (bowstring perpendicular
+      // to this axis). The whole bow is tilted via the outer rotate above,
+      // so the arrow naturally points 30° above the body's facing axis.
       c.strokeStyle = '#5a4a2a';
       c.lineWidth = 2.2;
       c.lineCap = 'round';
@@ -1155,25 +1161,10 @@ function drawFighter(f) {
   }
   // (Ronin FOCUS aura is now unified with the charge ring above — a HELD-full gold
   // ring communicates the FOCUS state. One ring, level conveys state.)
-  // VOLLEY (Archer) — green fan of arrowhead ticks aimed at the enemy: the next
-  // shot fans 4 arrows, telegraphed.
-  if (f.ability === 'arrow' && (f.shotCount % 4 === 3) && !f.dead && enemy && !enemy.dead) {
-    const aim = Math.atan2(enemy.y - f.y, enemy.x - f.x);
-    ctx.save();
-    ctx.rotate(aim);
-    ctx.strokeStyle = 'rgba(61,255,138,0.75)';
-    ctx.lineWidth = 1.6;
-    ctx.lineCap = 'round';
-    for (let i = 0; i < 3; i++) {
-      const off = (i - 1) * 0.22;
-      ctx.save();
-      ctx.translate((FIGHTER_SIZE + 6) * Math.cos(off), (FIGHTER_SIZE + 6) * Math.sin(off));
-      ctx.rotate(off);
-      ctx.beginPath(); ctx.moveTo(-3, -3); ctx.lineTo(2, 0); ctx.lineTo(-3, 3); ctx.stroke();
-      ctx.restore();
-    }
-    ctx.restore();
-  }
+  // (Old VOLLEY enemy-aimed fan telegraph removed — the new VOLLEY shoots
+  // arrows STRAIGHT UP and lands them at predicted floor spots. The landing
+  // markers (drawn in arena.js while rain projectiles are mid-flight) ARE
+  // the telegraph — they show the incoming kill-zones on the floor.)
   // (FOG state indicator removed with the closing-ring mechanic — fights are
   // resolved by fighters now, not pressured by an arena hazard.)
 
@@ -1183,12 +1174,19 @@ function drawFighter(f) {
   // projectile, so it faces its own velocity (the ramming direction it's
   // about to hit). Reads as "aimed at the next bounce" rather than
   // "still peeking at the enemy mid-charge."
+  // Archer exception: the kit's whole identity is "shoots arc volleys at
+  // the sky" — the bow is always pointed UP regardless of where the enemy
+  // is. Body therefore always faces world-up (canvas -y direction), so
+  // the bow + nocked arrow always read as "aimed skyward."
   const inRampage = f.ability === 'tackle' && f.dashTimer > 0;
+  const isArcherSky = f.ability === 'arrow';
   const facing = inRampage
     ? Math.atan2(f.vy, f.vx)
-    : (enemy && !enemy.dead)
-      ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
-      : (f.lastFacing || 0);
+    : isArcherSky
+      ? -Math.PI / 2
+      : (enemy && !enemy.dead)
+        ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
+        : (f.lastFacing || 0);
   f.lastFacing = facing;
 
   // ----- Victim recoil (shared: any fighter that just took a melee hit) -----
@@ -1498,23 +1496,11 @@ function drawFighter(f) {
     ctx.restore();
   }
 
-  // ===== ARCHER — bowstring snap (bespoke launch flash) =====================
-  // A short forward release streak + a perpendicular string-snap, fired green.
-  if (f.ability === 'arrow' && f.fireKick > 0) {
-    const prog = 1 - f.fireKick / f.fireKickMax;
-    const a = 1 - prog;
-    ctx.save();
-    ctx.translate(Math.cos(f.fireDir) * (FIGHTER_SIZE + 4), Math.sin(f.fireDir) * (FIGHTER_SIZE + 4));
-    ctx.rotate(f.fireDir);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = `rgba(61,255,138,${a.toFixed(3)})`;
-    ctx.lineWidth = 1.5 * a + 0.4;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(6 + prog * 14, 0); ctx.stroke();
-    const s = 5 * a;
-    ctx.lineWidth = 1 * a + 0.3;
-    ctx.beginPath(); ctx.moveTo(-2, -s); ctx.lineTo(-2, s); ctx.stroke();
-    ctx.restore();
-  }
+  // (Sprite-side VOLLEY launch flash removed — each rain projectile now
+  // renders its OWN continuous parabolic arc from Archer's launch
+  // position UP through the arena top and back DOWN to the landing spot.
+  // See arena.js for the arc rendering. The body still recoils via the
+  // standard fireKick recoil applied to Archer's sprite.)
 
   // ===== NECROMANCER — summoning circle (bespoke launch flash) ==============
   // Centred on the Necromancer (the dead rise at its feet, not forward): an
