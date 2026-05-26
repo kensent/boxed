@@ -72,7 +72,7 @@ const FIGHTERS = [
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
     passive: 'SHOCKWAVE — the detonation knocks the enemy back and damages nearby skeletons',
   },
-  { id:'archer',  name:'ARCHER',    hp:770,  speed:125, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
+  { id:'archer',  name:'ARCHER',    hp:770,  speed:120, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
     // VOLLEY — arrows fire on a high arc out of frame, then rain down at
     // predicted landing points along the enemy's bounce trajectory after
     // `volleyDelay`. Landing markers telegraph the kill-zones on the floor
@@ -82,9 +82,9 @@ const FIGHTERS = [
     // passing through takes chip damage and consumes that stake. Over a
     // 12-second fight the arena visibly fills with arrows — the kit's
     // signature read.
-    ability:'arrow', cd:1.0, dmg:30,
-    volleyArrows: 8, volleySpread: 50, volleyDelay: 0.6,
-    stakeDur: 2.0, stakeDmgFrac: 0.5, stakeRadius: 6,
+    ability:'arrow', cd:1.0, dmg:40,
+    volleyArrows: 6, volleySpread: 50, volleyDelay: 0.5,
+    stakeDur: 2.5, stakeDmgFrac: 0.5, stakeRadius: 6,
     active: 'VOLLEY — arrows arc high and rain down at predicted spots, after a brief delay',
     get passive() { return `STAKES — missed arrows embed point-up; enemies bouncing through take ${Math.round(this.stakeDmgFrac * 100)}% damage on contact, ${this.stakeDur}s lifetime`; },
   },
