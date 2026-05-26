@@ -1557,6 +1557,7 @@ function step(dt) {
           // is gated on a live target.
           spawnImpact(p.x, p.y, 'mine', 0, 1);
           sfx('impact', { kind: 'mine', big: 1 }, p.x);
+          shake(9);                  // STICK CHARGE detonation — biggest AOE in the roster
           if (!stuckTo.dead) {
             // BLAST RADIUS knockback — the explosion shoves the body AWAY FROM
             // the stick point (so a charge on the back blasts them forward; on
@@ -1716,6 +1717,7 @@ function step(dt) {
         }
         spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         sfx('impact', { kind: 'cannon', big: 1 }, p.x);
+        shake(9);   // BOMBARD impact — biggest single-shell event, matches Sapper detonation floor
       }
       return false;
     }
@@ -1826,6 +1828,7 @@ function step(dt) {
         damage(target, p.dmg, 'projectile');
         spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         sfx('impact', { kind: 'cannon', big: 1 }, p.x);
+        shake(9);   // BOMBARD impact — same shake floor as the landing-path above
         return false;
       }
       // Hook (Hunter): deals damage, tethers + reels the target, and triggers

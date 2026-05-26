@@ -343,6 +343,11 @@ function fireAbility(f, enemy) {
       // deterministic. No windup: the staff slam IS the cast.
       f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = 0;
       sfx('sigilCrack', null, f.x);
+      // Shake scales with the active stone count — a 1-stone SIGIL is one
+      // ley-line, an 8-stone SIGIL is 36 lines across the arena. Floor of
+      // ~3.75 so the staff slam always has weight; caps at 9 at max stones,
+      // matching the Cannoneer impact ceiling.
+      shake(3 + (f.stones?.length || 0) * 0.75);
       f.sigilLines = [];
       f.sigilFlash = f.sigilFlashDur;
       const stones = f.stones || [];
@@ -410,6 +415,7 @@ function resolveAim(f) {
     const tx = f.judgeX, ty = f.judgeY;
     spawnImpact(tx, ty, 'judgment', 0, 0.9);
     sfx('lightning', null, tx);
+    shake(7);                         // pillar landing — heavy AOE strike
     // Decoys caught in the pillar footprint are consumed first (the pillar is
     // AOE — it strikes everything in range). Real-Jester hit still happens
     // independently below.
@@ -465,6 +471,7 @@ function resolveAim(f) {
     f.dashTimer = f.rampageDur;
     f.rampageHitCd = 0;
     sfx('tackle', null, f.x);     // primal launch
+    shake(7);                      // coil uncoils — character-signature release
   } else if (f.aimAbility === 'cannon') {
     // BOMBARD — fire a heavy shell STRAIGHT at the picked target's CURRENT position
     // (no lead, no smart math: dumb heavy artillery, unlike Priest's predictive
@@ -482,7 +489,7 @@ function resolveAim(f) {
       splashRadius: f.splashRadius,   // passed through for the EPICENTER explosion visual
     });
     sfx('cannon', null, f.x);
-    shake(7); // muzzle kick
+    shake(6); // muzzle kick — character-signature artillery beat
     f.fireKick = 0.2; f.fireKickMax = 0.2; f.fireDir = ang; // visual: heavy recoil + muzzle blast
   } else if (f.aimAbility === 'wildcard') {
     // The die has settled — the face (gamblerRoll, 1-6) picks the attack
@@ -556,7 +563,8 @@ function resolveAim(f) {
         }
         // One throw sound for the whole ring burst — ten would be a noise wall.
         sfx('coinThrow', null, f.x);
-        shake(5);
+        // No spawn-shake — each coin's per-hit shake handles the weight when
+        // they actually connect (a multi-projectile SPAWN isn't an impact event).
       } else {
         // Fortune's Barrage — a sustained storm of coins toward the enemy.
         coin(angOffset, 330, 30);
@@ -568,7 +576,6 @@ function resolveAim(f) {
             homing: 30,
           });
         }
-        shake(8);
       }
     };
     firePattern(0);

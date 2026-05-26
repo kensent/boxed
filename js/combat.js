@@ -5,16 +5,32 @@
 // ============================================================================
 
 // --- Impact juice -----------------------------------------------------------
-// shake(mag): kick the screen-shake. mag is roughly "pixels of displacement".
-// Bigger hits call this with a bigger mag, so impact scales with damage.
+// shake(mag): kick the screen-shake. mag is roughly "pixels of displacement"
+// at the offset peak. Max-combines (a new small shake never overrides a
+// bigger ongoing one) so rapid sequential hits don't compound into jitter —
+// the heaviest event in any 0.18s window wins. Render-only: the sim never
+// reads game.shakeMag/shakeTime back, so shake is balance-safe. Decay is
+// handled in engine.js advance(); the actual canvas offset is in
+// render/arena.js draw(). Headless guard isn't needed because draw() never
+// runs headless and the decay's only observable effect is the offset.
+//
+// Shake hierarchy (clean-slate design):
+//   - K.O. = 14 (ceiling, in main.js endGame)
+//   - Heavy single hits via per-hit shake in damage() below
+//     (`big * 9`, gated at big >= 0.15 so chip hits stay silent)
+//   - Character-signature ability moments: Cannoneer muzzle kick, Berserker
+//     RAMPAGE launch, Sapper STICK CHARGE detonation, Geomancer SIGIL slam,
+//     Priest JUDGMENT pillar landing. Each calls shake(N) at its site.
 function shake(mag) {
-  // Disabled for the animation-system teardown (blank canvas). The setters are
-  // gone so the draw() shake transform stays inert. Rebuild with the new system.
-  return;
+  if (!game) return;
+  if (mag > game.shakeMag) {
+    game.shakeMag = mag;
+    game.shakeTime = 0.18;
+  }
 }
 // (hitStop / frame-freeze on high-dmg hits removed — see commit history.
 //  Was a deterministic sim pause for "feel" but it stuttered the fight tempo;
-//  the visual punch lives in the damage float + recoil + flash now.)
+//  the visual punch lives in the damage float + recoil + flash + shake now.)
 
 function damage(target, dmg, srcKind, src) {
   if (target.dead) return;
@@ -110,7 +126,11 @@ function damage(target, dmg, srcKind, src) {
     // Reel ticks per-frame for the 0.3s tether — flash/shake would
     // machine-gun. The accumulating float carries the feedback.
     target.flash = 0.14 + big * 0.20;
-    shake(2 + big * 9);
+    // Per-hit shake — gate at big >= 0.15 (~40 dmg) so chip hits (arrows,
+    // coins, hex bolts) don't shake the screen on every connect. Pure
+    // `big * 9` scaling — 0 at the threshold, 9 at max-dmg, ramps with
+    // weight. K.O. (14) still dominates.
+    if (big >= 0.15) shake(big * 9);
   }
   // Victim recoil — a melee body-contact hit (src present, no srcKind) knocks the
   // target's body back along the hit direction. Visual only: the sim reads neither
