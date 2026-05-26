@@ -1045,8 +1045,8 @@ function drawArenaBackdrop() {
   // Channel watermark — drawn in-world as a faded arena-floor decal (like
   // a centre-court logo). Low alpha so sprites/projectiles/death FX read
   // unambiguously above it; drawn here at the end of the backdrop so the
-  // entire fighter layer naturally renders on top. Scales with kill-cam
-  // zoom since it lives in reference coords.
+  // entire fighter layer naturally renders on top. Lives in reference
+  // coords so if a future camera move zooms in, it scales with the frame.
   ctx.save();
   ctx.fillStyle = 'rgba(245,245,240,0.13)';
   ctx.font = '22px Bungee, sans-serif';
@@ -1817,84 +1817,25 @@ function draw() {
   if (shaken) ctx.restore();
 
   // ===== HIT FEEDBACK — the death ceremony ==================================
-  // Death is the ceiling (ANIMATION.md #5). Three beats over the K.O. window:
-  // the loser SHATTERS in a big radial burst, a "K.O." punches in, and a white
-  // camera-snap frame caps the kill instant. Line-drawn, deterministic.
+  // Death is the ceiling (ANIMATION.md #5). Loser SHATTERS in a big radial
+  // burst, with a white camera-snap frame at the kill instant. Line-drawn,
+  // deterministic. The kill-cam push-in + K.O. text were removed — the
+  // shatter + flash + death voice + koHit boom are the kill stamp on their
+  // own, and the static camera keeps winner + loser + lingering items all
+  // framed at the climax.
   if (game.koTimer > 0 && game.winner) {
     const loser = game.winner === game.red ? game.blue : game.red;
-    // Hold the body FROZEN (death at frame 0) until the kill-cam has arrived on
-    // it — then the death "undoing" + K.O. play over the remaining window. So
-    // every kill reads: flash → push-in on the frozen body → it shatters. The
-    // `koTimer < 0.6` clause is a safety net so the death always plays even if the
-    // camera somehow never registers as arrived. `koArriveAt` = the koTimer value
-    // captured at arrival (fresh each fight; undefined on a new game object).
+    // Fire the kill stamp on the first frame of the finish window — no
+    // kill-cam to wait for. `koArriveAt` still tracks when the death
+    // ceremony began (used as the prog anchor below).
     if (game.koArriveAt == null) {
-      const centered = Math.hypot(camera.x - loser.x, camera.y - loser.y) < 12
-                    && (CAM_KILL - camera.zoom) < 0.07;
-      const elapsed = FINISH_WINDOW - game.koTimer;   // real time since the kill
-      if (centered || elapsed > KILLCAM_MAX_PUSH) {
-        game.koArriveAt = game.koTimer;
-        game.flashFrame = 0.12;                 // camera-snap flash, on the shatter
-        sfx('death', loser.ability, loser.x);   // death voice, synced to the shatter
-        sfx('koHit');                            // K.O. boom lands with the graphic
-      }
+      game.koArriveAt = game.koTimer;
+      game.flashFrame = 0.12;                 // camera-snap flash
+      sfx('death', loser.ability, loser.x);   // death voice
+      sfx('koHit');                            // K.O. boom
     }
-    const started = game.koArriveAt != null;
-    // Death plays over a fixed DEATH_DUR measured from arrival — full beat every
-    // kill, not compressed into whatever's left of the window.
-    if (!started) {
-      // Pre-arrival HOLD — show the loser's ORIGINAL sprite (no death animation
-      // layers running yet). The kill-cam pushes in on this intact body; once
-      // it arrives, drawDeath takes over and the per-fighter death sequence
-      // BEGINS from frame 0. The previous code called drawDeath(loser, 0)
-      // every frame pre-arrival, which already started each fighter's voice
-      // effects (shockwaves, blood-arcs, etc.) at small radius — making the
-      // "hold" not actually hold. drawFighter early-returns on dead so we
-      // draw the sprite manually here (matches drawFighter's pose; no team
-      // ring, in lockstep with drawFighter dropping its ring).
-      ctx.save();
-      ctx.translate(loser.x, loser.y);
-      if (Math.cos(loser.lastFacing || 0) < 0) ctx.scale(-1, 1);
-      drawShape(ctx, loser);
-      ctx.restore();
-    } else {
-      const prog = Math.min(1, (game.koArriveAt - game.koTimer) / DEATH_DUR);
-      drawDeath(loser, prog);   // begins at frame 0 the moment the cam arrives
-    }
-
-    // "K.O." — universal kill punctuation, top banner. Punches in at
-    // arrival, holds through the death window, fades out in the final
-    // 0.4s so the close-out is clean.
-    if (started) {
-      const age = game.koArriveAt - game.koTimer;
-      let koScale;
-      if (age < 0.16) koScale = 2.6 - (age / 0.16) * 1.7;
-      else if (age < 0.28) koScale = 0.9 + ((age - 0.16) / 0.12) * 0.1;
-      else koScale = 1;
-      const fadeAlpha = Math.max(0, Math.min(1, game.finishTimer / 0.4));
-      const dpr = window.devicePixelRatio || 1;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);          // screen space
-      ctx.save();
-      ctx.globalAlpha = fadeAlpha;
-      ctx.translate(canvas.width / (2 * dpr), canvas.height * 0.22 / dpr);
-      ctx.scale(koScale, koScale);
-      ctx.font = '900 52px Bungee, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-      ctx.lineJoin = 'round';
-      ctx.strokeText('K.O.', 0, 0);
-      // Neutral white glow — K.O. is the universal kill punctuation; it
-      // doesn't pick sides (used to glow team-colour, removed for neutrality).
-      ctx.shadowColor = 'rgba(255,255,255,0.85)';
-      ctx.shadowBlur = 20;
-      ctx.fillStyle = '#fff';
-      ctx.fillText('K.O.', 0, 0);
-      ctx.shadowBlur = 0;
-      ctx.restore();
-      ctx.globalAlpha = 1;
-    }
+    const prog = Math.min(1, (game.koArriveAt - game.koTimer) / DEATH_DUR);
+    drawDeath(loser, prog);
   }
 
   // White camera-snap frame at the kill instant — fills the whole viewport in

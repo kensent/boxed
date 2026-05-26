@@ -178,14 +178,15 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   indicator was removed with the fog mechanic itself.
 
 ### Death ceremony
-**Shared frame** (always), as a sequence: on the kill the body **freezes** intact
-while the kill-cam pushes in on it (the camera holds static at the arena centre
-during play; the K.O. is the only time it moves); once the camera arrives the body
-**shatters** (the per-fighter undoing below, over a fixed beat) as the white
-**camera-snap**, the **K.O.** punch-in, the death voice and the boom all land
-together — so the hit reads as one beat instead of leading the visual during the
-push-in. Slow-mo (sim `timeScale`) runs under all of it. Death is the ceiling
-(principle 5) — each fighter dies in a way no other does.
+**Shared frame** (always): on the kill the body immediately **shatters** (the
+per-fighter undoing below, over a fixed beat) while the white **camera-snap**,
+the death voice and the boom all land together as one beat. Camera stays
+static at the arena centre at zoom 1.0 — the old kill-cam push-in and "K.O."
+text overlay were both retired: the shatter + flash + audio is a complete kill
+stamp, and the full-arena framing keeps the winner and any lingering
+winner-owned items in shot at the climax. Slow-mo (sim `timeScale`) runs
+under all of it. Death is the ceiling (principle 5) — each fighter dies in a
+way no other does.
 
 **Three-layer grammar** — every bespoke death has exactly these layers in order:
 1. **Sprite transform** — the body makes one last move before vanishing (convulse, tumble,

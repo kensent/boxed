@@ -10,9 +10,9 @@ function endGame() {
   // projectile, mine, skeleton, hazard, or minion can't kill the victor
   // during the finish window. WINNER-owned items persist for visual
   // celebration ("Necromancer's skeletons march on after his victory,"
-  // "Wizard's orbs keep bouncing") — the dead loser sprite is held
-  // frozen until the kill-cam arrives, so a stray winner-owned hit on
-  // the corpse is harmless (damage on a dead target no-ops upstream).
+  // "Wizard's orbs keep bouncing") — and damage on the dead loser is a
+  // no-op in damage() (combat.js), so a winner-owned hit on the corpse
+  // during the shatter is harmless.
   const winnerTeam = game.winner.team;
   game.projectiles = game.projectiles.filter(p => p.team === winnerTeam);
   game.skeletons = game.skeletons.filter(sk => sk.team === winnerTeam);
@@ -49,7 +49,7 @@ function endGame() {
   // Cancel any in-progress channel/strike on either fighter — but leave
   // iaiStrike alone: it's purely a render-window flag (0.15s gold-slash
   // trail in render/sprites.js). Zeroing it nukes the slash visual on a
-  // killing Ronin cut, so the K.O. lands without the flash. Let it tick
+  // killing Ronin cut, so the kill lands without the flash. Let it tick
   // down naturally in the engine.js strike block. iaiWindup is gameplay
   // (holds the plant) but the windup phase is already over at the
   // moment a strike connects, so it's harmlessly 0 by the time we get
@@ -58,13 +58,13 @@ function endGame() {
     f.drainTimer = 0; f.drainTarget = null;
     f.tetherTimer = 0; f.tetherTarget = null;
   });
-  // Cinematic finish: slow-mo ramp, kill-cam push-in, then the shatter. The body
-  // holds frozen until the kill-cam arrives; then the death + "K.O." + camera-snap
-  // flash + sound all fire together (see the finish block in draw()) — nothing
-  // leads the visual.
+  // Finish: slow-mo ramp + the shatter. Camera stays static at the arena
+  // centre — the old kill-cam push-in was retired. The death ceremony, the
+  // camera-snap flash, and the death + koHit sfx all fire together on the
+  // first frame of the finish block in draw(), so the kill lands as one beat.
   game.finishTimer = FINISH_WINDOW;
   game.timeScale = 0.18;        // drops to near-frozen, ramps back up over the window
-  shake(14);                    // the heaviest shake in the game — it's the K.O.
+  shake(14);                    // the heaviest shake in the game — it's the kill
   game.koTimer = FINISH_WINDOW; // death-block lifetime; finishTimer ends the finish
   // (flashFrame, the koHit boom, and the death voice are all triggered at the
   //  shatter in draw(), not here at the kill instant.)

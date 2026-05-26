@@ -20,9 +20,13 @@
 7. The arena is a fixed **300×300 reference space**. Shrunk from 360 once the
    ability redesigns landed so melee dashes reliably connect under autonomous
    DVD movement — see GOTCHAS.md. The camera holds STATIC at the arena
-   centre at zoom 1.0 during play (full arena visible) and pushes in on the
-   loser on the K.O. (the kill-cam). Render-only — the sim never reads camera
-   state, so framing can't affect balance. (Tunables in `engine.js`.)
+   centre at zoom 1.0 — always (the full 300×300 stays framed through the
+   kill and the finish window). The old kill-cam push-in on the loser was
+   retired: the death ceremony + camera-snap flash + death voice + koHit
+   boom stamp the kill at full-arena view, and the static frame keeps the
+   winner and lingering winner-owned items in shot at the climax. Render-
+   only — the sim never reads camera state, so framing can't affect balance.
+   (Tunables in `engine.js`.)
 
 ## Roster
 

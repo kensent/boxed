@@ -13,12 +13,13 @@ other on its own merits. Mobile-targeted.
 - `js/` — all gameplay JavaScript, one concern per file:
   - `rng.js` · `fighters.js` · `matchups.js` · `quotes.js` · `audio.js`
   - `combat.js` · `particles.js` · `abilities.js` · `engine.js`
-    (`engine.js` owns the static-during-play / kill-cam-on-K.O. camera in the
-    fixed **300×300 reference space**; render-only, never feeds the sim. The old
-    dynamic follow-cam was disabled after the arena shrink — see GOTCHAS.md.)
+    (`engine.js` owns the camera in the fixed **300×300 reference space**;
+    it holds STATIC at arena centre, zoom 1.0 — always. Render-only, never
+    feeds the sim. The old dynamic follow-cam and the kill-cam push-in
+    were both retired — see GOTCHAS.md.)
   - `render/sprites.js` · `render/arena.js`
-    (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so they
-    scale with the kill-cam zoom — deliberately not CSS)
+    (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so
+    they stay aligned with sprites — deliberately not CSS)
   - `ui.js` (selection screen) · `main.js` (end-game lifecycle)
 - `boxedshard.js` — runs a slice of the balance simulation (currently 120
   matchups; `EXCLUDE_IDS` is empty — all 16 active fighters participate after

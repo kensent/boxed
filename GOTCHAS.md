@@ -61,40 +61,40 @@
   lot more than the same number meant at 360. Re-running balance after
   touching range values is non-optional.
 - **The camera (`engine.js`) is render-only — never feed it back into the
-  sim.** During play it holds STATIC at the arena centre at zoom 1.0 (the
-  whole 300×300 is framed). On the K.O. it becomes a kill-cam pushing in on
-  the loser. The dynamic follow-cam (pan deadzone + comfort/min zoom) was
-  disabled after the arena shrunk — the smaller arena already fits both
-  fighters in a static frame, so the pan/zoom was over-engineering. It
-  READS fighter positions (for the kill-cam target) but the sim must never
-  read `camera.*`. Two consequences worth knowing: (1) the arena grid +
-  border are drawn in-world by `drawArenaBackdrop` (NOT CSS) so they scale
-  with the kill-cam zoom — don't move them back to CSS. (2) Under the
-  camera transform, world coords ≠ screen coords (matters for screen-space
-  overlays — see next bullet).
-- **Screen-space overlays must reset the transform under the camera.** Anything that
-  should sit at a fixed screen position — the "K.O." graphic, the white camera-snap
-  flash — must `ctx.setTransform(...)` out of camera space first (CSS-px space for
-  the K.O., device space for the full-viewport flash), or it renders at *world*
-  coords (e.g. the arena centre) and drifts off-screen as the camera pans. The death
-  ceremony is the opposite: it's world-anchored at the loser's position, so it stays
-  in camera space. We shipped the K.O. at world centre once and it floated off — hence
+  sim.** It holds STATIC at the arena centre at zoom 1.0 — always. Both
+  prior camera behaviours have been retired: the dynamic follow-cam
+  (disabled after the arena shrink — the smaller arena already framed
+  both fighters fine) and the kill-cam push-in on the loser (retired
+  because the death ceremony + camera-snap flash + audio stamp the kill
+  on their own, and the static frame keeps winner + loser + lingering
+  winner-owned items all visible at the climax). The sim must never read
+  `camera.*`. Two consequences worth knowing: (1) the arena grid + border
+  are drawn in-world by `drawArenaBackdrop` (NOT CSS) so they stay
+  aligned with sprites under the camera transform — don't move them back
+  to CSS. (2) Under the camera transform, world coords ≠ screen coords
+  (matters for screen-space overlays — see next bullet).
+- **Screen-space overlays must reset the transform under the camera.** The
+  white camera-snap flash sits at a fixed *screen* position and must
+  `ctx.setTransform(...)` to device space first, or it renders at *world*
+  coords (e.g. the arena centre) and scales with whatever camera zoom
+  applied. The death ceremony is the opposite: it's world-anchored at
+  the loser's position, so it stays in camera space. We shipped a
+  finish-window graphic at world centre once and it floated off — hence
   this note.
-- **The finish is a sequence, and the death voice + K.O. boom fire from `draw()`, not
-  the sim path.** On the kill the loser's ORIGINAL sprite is drawn (intact, NO death
-  animation layers yet) until the kill-cam has pushed in on it (`game.koArriveAt`
-  captured at arrival); only then does `drawDeath` take over and the per-fighter
-  death sequence begin from frame 0, and the camera-snap `flashFrame` + the
-  `death`/`koHit` sfx are all triggered *there* (in the finish block of `draw()`)
-  so the snap/audio land with the shatter instead of leading it during the push-in.
-  An earlier version called `drawDeath(loser, 0)` every frame pre-arrival, but
-  `prog=0` already started each fighter's voice-effect layer at small radius —
-  the "hold" wasn't actually holding. The intact-sprite hold is drawn manually
-  in the death-ceremony block (drawFighter early-returns on dead). Don't "tidy"
-  the flash or those sfx back into `combat.js`/`endGame` — that reintroduces the
-  desync. Safe because `draw()` never runs headless and `sfx` is headless-guarded
-  regardless. Death progress is a fixed `DEATH_DUR` measured from arrival (not the
-  leftover window), so every kill gets its full beat; `FINISH_WINDOW` is the total.
+- **The finish is a sequence, and the death voice + koHit boom fire from
+  `draw()`, not the sim path.** On the kill, the death ceremony begins
+  immediately (`game.koArriveAt` is set on the first frame of the finish
+  window) and the camera-snap `flashFrame` + the `death`/`koHit` sfx are
+  all triggered *there* (in the finish block of `draw()`) so the snap and
+  audio land with the shatter. Don't "tidy" the flash or those sfx back
+  into `combat.js`/`endGame` — that loses the co-location and
+  reintroduces the old kill-instant-vs-shatter desync risk. Safe because
+  `draw()` never runs headless and `sfx` is headless-guarded regardless.
+  Death progress is a fixed `DEATH_DUR` measured from `koArriveAt` (not
+  the leftover window), so every kill gets its full beat; `FINISH_WINDOW`
+  is the total. The pre-arrival "hold the intact sprite while the
+  kill-cam pushes in" branch is gone with the kill-cam itself — the
+  shatter starts at frame 0 the moment the finish window opens.
 - **Uniform "aim at nearest" targeting (DOPPELGANGER substrate).** Every fighter
   that aims at an enemy must route through `pickTarget(attacker, defender)` in
   `engine.js`, which returns the nearest of `{real defender, ...defender.decoys}`.

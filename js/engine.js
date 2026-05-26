@@ -22,29 +22,19 @@ let fightToken = 0;
 const ARENA = 300;
 
 // --- Camera ----------------------------------------------------------------
-// During play the camera holds STATIC at the arena centre at zoom 1.0 — the
-// whole 300x300 arena is always framed. Disabled the dynamic follow-cam after
-// the arena shrink: a smaller arena already keeps both fighters comfortably
-// inside a static frame, and the dynamic pan/zoom that mattered for the old
-// 360 arena was now over-engineering. On the kill it becomes a KILL-CAM —
-// pushing in on the loser's death position (CAM_KILL, tighter than 1.0) so
-// the "K.O." frames the actual kill. The kill-cam smoothing time constants
-// (CAM_PAN_TAU/CAM_ZOOM_TAU) drive the push-in animation when the winner
-// resolves. Render-only — it reads fighter positions, but the sim never
-// reads camera state back, so balance is untouched. Grid + border are drawn
-// in-world (see drawArenaBackdrop) so they zoom with the camera on the kill.
-// CAM_KILL pushes in tight on the loser at the kill instant.
-const CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25, CAM_KILL = 1.7;
-// Finish/kill-cam timing (real seconds): the body holds frozen until the
-// kill-cam arrives (or KILLCAM_MAX_PUSH elapses, a fallback), then the death
-// plays over a fixed DEATH_DUR — so every kill, melee or ranged, gets its
-// full beat instead of racing the clock. FINISH_WINDOW is the total before
-// the outro auto-returns to the select screen.
-// FINISH_WINDOW = ~0.8s push-in + 1.2s death + ~0.4s post-death hold = 2.4s.
-// The post-death beat is just for the K.O./WINS text to fade out cleanly;
-// there is no celebration phase (cut after Phase 2 — the kill IS the climax
-// and the celebration was diluting it for Shorts content).
-const FINISH_WINDOW = 2.4, DEATH_DUR = 1.2, KILLCAM_MAX_PUSH = 0.8;
+// The camera holds STATIC at the arena centre at zoom 1.0 — always. The old
+// kill-cam push-in (zooming on the loser at the kill instant) was removed:
+// it took ~0.5–1s before the death even started, cropped the winner out of
+// frame at the climax, and the death ceremony + camera-snap flash + audio
+// already carry the kill moment without a zoom. Grid + border are drawn
+// in-world (see drawArenaBackdrop) so they stay aligned with sprites.
+// Render-only — the sim never reads camera state, so balance is untouched.
+const CAM_PAN_TAU = 0.06, CAM_ZOOM_TAU = 0.25;
+// Finish timing (real seconds): the death plays over a fixed DEATH_DUR
+// measured from the kill instant (no kill-cam wait). FINISH_WINDOW is the
+// total before the outro auto-returns to the select screen — slow-mo runs
+// underneath the whole thing.
+const FINISH_WINDOW = 2.4, DEATH_DUR = 1.2;
 const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;
@@ -59,28 +49,16 @@ function resizeCanvas() {
   ctx.setTransform(pxPerRef, 0, 0, pxPerRef, 0, 0);
 }
 
-// Update the camera target each drawn frame. During play the target is static
-// (centre, zoom 1) so this is a no-op after the first frame; on the kill it
-// becomes a smooth push-in onto the loser, then a pull-back to centre so the
-// closing frame holds BOTH fighters (winner standing, loser's residue) instead
-// of a tight crop on just the corpse.
+// Camera target is always static: arena centre, zoom 1.0 (the whole 300x300
+// is framed). The smoothing scaffolding is kept so future hooks (a deliberate
+// zoom, an opening reveal, etc.) can target a different value without
+// touching this code.
 function updateCamera() {
   if (!game) return;
-  const r = game.red, b = game.blue;
-  let tx, ty, tz;
-  if (game.winner) {
-    const loser = game.winner === r ? b : r;
-    // Kill-cam: push in on the loser's (frozen) death position. Holds for
-    // the entire finish window — the closing image is the death tableau.
-    tx = loser.x; ty = loser.y; tz = CAM_KILL;
-  } else {
-    // Live play: static at arena centre, zoom 1 (full 300x300 visible).
-    tx = ARENA / 2; ty = ARENA / 2; tz = 1;
-  }
+  const tx = ARENA / 2, ty = ARENA / 2, tz = 1;
   const now = performance.now();
   const dt = _camLastT ? Math.min(0.05, (now - _camLastT) / 1000) : 0;
   _camLastT = now;
-  // Frame-rate independent smoothing via time constants; first frame snaps.
   const smooth = tau => (camera.ready ? 1 - Math.exp(-dt / tau) : 1);
   const panK = smooth(CAM_PAN_TAU), zoomK = smooth(CAM_ZOOM_TAU);
   camera.x += (tx - camera.x) * panK;
@@ -674,9 +652,9 @@ function makeFighter(t, team, x, y) {
 
 // previewDeath(fighterId) — dev/review tool. Spins up a fake game state
 // with `fighterId` dying to a random opponent, skips the intro and combat,
-// jumps straight to the finish window so the kill-cam + bespoke death
-// ceremony play out. Auto-returns to the select screen the instant the
-// finish window expires (loop() calls returnToSelect on finished).
+// jumps straight to the finish window so the bespoke death ceremony plays
+// out. Auto-returns to the select screen the instant the finish window
+// expires (loop() calls returnToSelect on finished).
 function previewDeath(fighterId) {
   const target = FIGHTERS.find(g => g.id === fighterId);
   if (!target) return;
@@ -1574,8 +1552,9 @@ function step(dt) {
             return true;
           });
           // The explosion's visual + sound ALWAYS fire — even on a lethal detonation
-          // (a kill should still BOOM, with the impact landing before the kill-cam
-          // pushes in). Only the knockback is gated on a live target.
+          // (a kill should still BOOM, landing alongside the death ceremony's own
+          // flash and audio rather than being swallowed by it). Only the knockback
+          // is gated on a live target.
           spawnImpact(p.x, p.y, 'mine', 0, 1);
           sfx('impact', { kind: 'mine', big: 1 }, p.x);
           if (!stuckTo.dead) {
@@ -1694,8 +1673,9 @@ function step(dt) {
       }
       if (!target.dead && p.hitCd <= 0 && dist(p, target) < FIGHTER_SIZE + p.size) {
         damage(target, p.dmg, 'projectile');
-        // Impact + sfx ALWAYS fire — even on a lethal hit (the kill-cam jumps in
-        // silent otherwise). Only the victim's recoil-shake needs the alive gate.
+        // Impact + sfx ALWAYS fire — even on a lethal hit (otherwise the kill
+        // would land silent before the death ceremony's own audio). Only the
+        // victim's recoil-shake needs the alive gate.
         const big = Math.min(1, p.dmg / 260), ha = Math.atan2(p.vy, p.vx);
         spawnImpact(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
         sfx('impact', { kind: 'bone', big: big }, p.x);
@@ -1857,8 +1837,9 @@ function step(dt) {
         target.tetherStartX = target.x;
         target.tetherStartY = target.y;
         damage(target, p.dmg, 'projectile');
-        // Bite clink ALWAYS fires — even on a lethal hook (otherwise the kill-cam
-        // pushes in silent). No recoil here (the hook reels the target IN).
+        // Bite clink ALWAYS fires — even on a lethal hook (otherwise the kill
+        // would land silent before the death ceremony's own audio). No recoil
+        // here (the hook reels the target IN).
         spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5);
         sfx('impact', { kind: 'hook', big: 0.5 }, p.x);
         // (BARBED LINE per-pixel rate is read in the tether tick from
@@ -1901,9 +1882,10 @@ function step(dt) {
       }
       damage(target, dmgOut, 'projectile');
       // Impact feedback (Principle 5: weight scales with damage). A per-kind burst
-      // + sfx ALWAYS fire so the boom lands before the kill-cam push-in even on a
-      // lethal hit; only the victim's recoil-shake needs the alive gate. On
-      // SHATTER the burst centres on the body (the cushion releases at once)
+      // + sfx ALWAYS fire even on a lethal hit (otherwise the kill lands silent
+      // before the death ceremony's own audio); only the victim's recoil-shake
+      // needs the alive gate. On SHATTER the burst centres on the body
+      // (the cushion releases at once)
       // rather than at the arrow's strike point.
       const hitAng = Math.atan2(p.vy, p.vx);
       if (shattered) {
