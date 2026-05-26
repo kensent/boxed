@@ -93,9 +93,14 @@ DOES, not how it ANIMATES). Canonical fighters in parentheses.
 - **Returning boomerang + damaging trail** — a thrown projectile loops
   back to the caster, leaving a damaging zone along its flight path.
   (Reaper HARVEST + WAKE.)
-- **On-target stacking ramp + burst** — landed hits embed stacks on
-  the enemy that decay individually; reaching a stack threshold
-  detonates the whole cushion. (Archer SHATTER.)
+- **Predictive saturation rain + miss-becomes-stake** — the ACT scatters
+  multiple delayed AOE landings in a disk pattern around the enemy's
+  predicted position; arrows that miss embed in the arena floor as
+  persistent damaging hazards (the passive). Synergy emerges from the
+  spread: hits and misses both have value, the kit rewards area saturation
+  over precision. (Archer VOLLEY + STAKES — the predictive-but-spread
+  variant of the predictive zone-strike grammar above, paired with a
+  residue-as-passive payoff that no other kit has.)
 - **Sticky delayed burst** — a thrown projectile sticks on contact, a
   fuse ticks down, the detonation deals damage + knockback in a splash
   radius. (Sapper STICK CHARGE.)

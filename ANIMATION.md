@@ -106,7 +106,11 @@ we never float a separate weapon-effect around a static sprite.
 - **Ranged (10)** — a release **kick** along the firing axis + a bespoke launch
   flash (`fireKick`/`fireDir`). Three sub-shapes by gesture:
   - *Recoil* (3) — cannoneer, priest (staff-bolt), archer (bow): projectile
-    discharges from an implement, body recoils BACKWARD.
+    discharges from an implement, body recoils BACKWARD. Archer is a slight
+    variant — arrows arc UP out of frame and rain back down (not a straight
+    shot), so the bow recoil is DOWNWARD (reaction to the upward launch).
+    The body always faces world-up rather than the enemy, so the bow's
+    silhouette reads "aimed at the sky" matching the firing direction.
   - *Thrust* (6) — wizard, necromancer, witch, gambler, hunter, **sapper**: cast
     or throw, body thrusts FORWARD. Sapper joined this group when STICK CHARGE
     replaced the old drop-a-mine (it's now a thrown fused limpet).
@@ -138,10 +142,19 @@ from Sapper's radial mine-spokes) · lightning zap · orb rune-pop · hex splat
 · straight amber chord (Geomancer SIGIL — drawn between two wall-stones; the
 line *is* the impact primitive, geometrically distinct from anything else
 in the roster).
-The **SHATTER burst** (Archer's cushion releasing at 5 stacks) has its own
-expanding double-ring + arrow scatter, distinct from a per-arrow puncture.
-Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a heavy
-hit knocks the body back, a chip hit barely nudges (principle 5).
+Archer **VOLLEY arrows** reuse the **arrow puncture** primitive both on
+landing (rain arrow hits enemy) and on consumption (enemy steps into a
+floor STAKE). The unique grammar for VOLLEY isn't a new force-shape but
+the *parabolic-arc flight visual* + the *floor-embedded stake silhouette*:
+arrows fire from the Archer's position UP through the arena top
+(off-frame), arc back DOWN to the predicted landing zone, and either hit
+or embed point-first into the floor as upright stakes. Stakes share the
+bow-sprite's arrow vocabulary (dark brown shaft, white-tip arrowhead at
+the floor, red feather-line fletching at the top) so the kit's arrow
+silhouette reads consistently across nocked-on-bow, mid-flight, and
+embedded forms.
+Every hit also drives a **damage-scaled victim recoil** (`recoilMag`): a
+heavy hit knocks the body back, a chip hit barely nudges (principle 5).
 
 ### Charge telegraph — windup fighters (cannoneer, priest, ronin, berserker)
 A **charge ring** that fills like a clock, tightens inward, brightens, and flashes
@@ -164,10 +177,14 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   the real Jester: they're separate bodies enemies can target. (See the
   DOPPELGANGER substrate bullet in GOTCHAS.md for the universal "aim nearest"
   targeting rule that makes decoys load-bearing across every ability path.)
-- **Embedded arrows (Archer SHATTER)** — literal arrow shafts stuck in the
-  enemy's body, accumulating until the cushion bursts at 5 stacks. Each
-  stuck arrow has its own decay timer; a green halo pulses around the
-  enemy at 3+ stacks (the "about to shatter" tell).
+- **Floor stakes (Archer STAKES)** — upright arrows embedded point-first
+  in the arena floor. Not strictly an on-fighter state indicator (they
+  live in `game.hazards` as kind `'stake'`), but tracked here as part of
+  the kit's signature visual read: missed VOLLEY arrows accumulate as
+  stakes around the enemy's typical bounce path, and the arena visibly
+  fills with arrows over the fight. Each stake fades out over the last
+  0.4s of its 2.5s lifetime; bouncing enemy stepping onto one takes chip
+  damage and consumes it.
 - **Debuff / affliction = distinct non-ring forms** (so they never collide with
   the rings): stun **stars** (overhead), Witch's-mark **sigil** (on the body),
   slow **drag-trail** (ghosts lagging behind). DOUBLES (Gambler — formerly

@@ -162,9 +162,14 @@ hit's magnitude (`big`, 0..1):
   the impact mirror. Per-bounce, a heavy `stoneThump` (lowpass noise +
   earthen fundamental) marks each new runestone planting in the wall.
 
-The **SHATTER burst** (Archer's cushion releasing at 5 stacks) gets a *dedicated*
-sound (`shatterBurst`) — a wider crack + falling whoosh, not just a louder per-
-arrow impact. It's the climax of the cycle, so it gets its own voice.
+Archer **VOLLEY** uses the existing `arrow` cue + `impact arrow` family —
+no dedicated burst sound. The bowstring snap (`arrow` sfx, thin rising
+whistle) fires at cast with arrows arcing skyward; each rain arrow's
+landing plays `impact arrow` (wood puncture thunk) whether it hits the
+enemy directly or embeds as a floor stake; bouncing enemy stepping onto
+a stake plays the same puncture cue at slightly lower volume. The kit's
+arrow material identity stays consistent across all three impact sites
+(launch / landing / stake consumption).
 
 The **WAKE step-in** (Reaper crescent trail biting an enemy) gets a soft `wakeTick`
 hiss per damage tick, same exception as Cannoneer's incendiary `burn` — continuous

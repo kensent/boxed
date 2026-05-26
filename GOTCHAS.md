@@ -207,6 +207,39 @@
   death fade is in real-time and rides on top of the natural decay,
   multiplied in via `deathAlpha`. Visual only — `f.sigilFlash` /
   `f.stones` are never read by sim logic.
+- **Archer VOLLEY is one continuous parabolic arc per arrow, NOT
+  separate launch/sky/land visuals.** Each `rain` projectile renders
+  along its full flight from `(launchX, launchY)` (Archer's position at
+  cast time, captured at spawn) through the apex above the arena top
+  back down to `(landX, landY)`. The arrow is drawn only while
+  `ay >= -20` (inside the visible arena); above that it's naturally
+  off-screen. Don't refactor this into separate "launch flash" + "fall
+  visual" code paths — the unified arc keeps the visual story coherent
+  ("same arrow goes up, comes down here") and avoids the previous bug
+  where landing arrows looked summoned in place.
+- **Archer's body always faces world-up, not the enemy.** Override in
+  `render/sprites.js` drawFighter facing logic: when
+  `f.ability === 'arrow'`, facing = `-Math.PI / 2`. The kit's whole
+  identity is "shoots arc volleys at the sky," and tracking the enemy
+  with the bow created a visual disconnect (bow points at enemy, arrows
+  go up). Sky-up facing is consistent with the firing direction.
+- **VOLLEY's disk-center is wall-margin-clamped, not per-arrow.** The
+  phyllotaxis disk center is clamped to
+  `[volleySpread + FIGHTER_SIZE, game.w - volleySpread - FIGHTER_SIZE]`
+  before the per-arrow positions are computed. Per-arrow clamping (a
+  previous version) collapsed the pattern into a vertical line when the
+  enemy hugged a wall, because arrows that would have landed off-arena
+  got pinned to the wall edge. Center-clamping preserves the disk
+  shape (just shifts it inward when needed).
+- **Ronin's IAI cleaves Archer STAKES on the dash line.** Ronin's
+  teleport-overshoot skips intermediate body positions, so stakes
+  exactly on the dash line would never trigger via standard body-vs-
+  hazard overlap. The IAI strike block in `engine.js` explicitly
+  filters `game.hazards` for `kind === 'stake'` on the segment path,
+  consumes each, and chips Ronin for the stake's dmg. Visual + balance
+  fix: the stake field clears as Ronin dashes, AND he pays a toll per
+  cleaved stake. Softens the Archer-vs-Ronin matchup (1% → 17%)
+  without removing the hard-counter feel.
 - **Geomancer's SIGIL damages enemy skeletons on lines.** Each ley-line is
   segment-tested against every enemy-team skeleton; a crossing routes
   through `damageSkeleton(sk, f.dmg)`. Symmetric with Priest JUDGMENT's
@@ -252,21 +285,27 @@ knob. Confirm via `./balance.sh` regardless.
 
 - **Recursive multi-hit abilities have a multiplier damage lever, not a
   sum.** Berserker RAMPAGE (per-pass dmg × ~4 passes), Archer VOLLEY
-  (per-arrow dmg × 3-fan + SHATTER stacks), Geomancer SIGIL (per-line dmg
-  × ~4 crossings) all scale ~1 wr per 1 dmg, because each point applies
-  several times per cast. Reach for HP / cd to bring them into band;
-  damage moves the matchup faster than it looks (and going too low
-  collapses the kit — Gambler dmg 50 → 42 over-corrected by ~12 wr).
+  (per-arrow dmg × ~6 arrows, of which 1-2 land and the rest become
+  STAKES — both rain hits and stake chip use `f.dmg`), Geomancer SIGIL
+  (per-line dmg × ~4 crossings) all scale ~1 wr per 1 dmg, because each
+  point applies several times per cast. Reach for HP / cd to bring them
+  into band; damage moves the matchup faster than it looks (and going
+  too low collapses the kit — Gambler dmg 50 → 42 over-corrected by
+  ~12 wr).
 - **Standstill windows are stealth buffs.** Adding or extending a
   planted phase makes the launch geometry more predictable: enemies eat
   cleaner cuts when the fighter is rooted (Ronin's FOCUS-plant lifted
   him 56% → 64.6% silently; Berserker's coil makes his ramming direction
   trivially predictable). Expect to compensate via a *different* lever
   when adding/extending a standstill — usually HP or per-hit damage.
-- **Stacking-with-decay self-paces; don't add caps.** Archer's SHATTER
-  cushion has per-arrow decay (`embedDur`); the cushion can't build
-  forever because old arrows fall off as new ones land. Don't bolt on
-  an extra max-stack count or per-fight cap — the decay does that job.
+- **Floor-hazard residue self-paces via lifetime, not stack caps.**
+  Archer's STAKES use a per-stake `stakeDur` (2.5s); the floor field
+  can't grow unboundedly because old stakes expire as new VOLLEY casts
+  land. Don't bolt on an extra "max stakes alive" cap — the lifetime
+  does that job. (The current cap-and-evict patterns we DO use, like
+  Necromancer's `skelCap` and Geomancer's `maxStones`, exist because
+  those entities have NO natural decay. Stakes have decay, so a cap
+  would be redundant and add brittle code.)
 - **Per-fighter sensitivity is not uniform across the roster.** Pick the
   lever that's *gentle* for the fighter, not the gentle lever
   globally:
