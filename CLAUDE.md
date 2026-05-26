@@ -2,7 +2,7 @@
 
 BOXED is a YouTube-Shorts-style bouncing-arena fight simulator. Two fighters
 bounce DVD-style around a closed arena, use abilities on cooldowns, and the
-last one alive wins. Fights typically finish in 11-15s and there is no longer
+last one alive wins. Fights typically finish in 23-32s and there is no longer
 any artificial timeout (no closing ring / fog); a fighter wins by killing the
 other on its own merits. Mobile-targeted.
 

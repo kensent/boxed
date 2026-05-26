@@ -252,7 +252,21 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'raise': {
-      // Spawn a skeleton at current position — slow ground unit, persists until killed
+      // Spawn a skeleton at current position — slow ground unit, persists until killed.
+      // ARMY CAP — Necromancer can have at most f.skelCap of his own skeletons
+      // alive at once. On overflow, the OLDEST own-team skeleton is evicted
+      // (mirrors Geomancer's stone-cap eviction pattern in plantStone). This
+      // prevents the army snowballing infinitely in longer fights, which would
+      // otherwise compound — more skeletons = more chip = enemy dies faster
+      // = Necromancer's win rate runs away.
+      if (f.skelCap) {
+        let ownCount = 0;
+        for (const sk of game.skeletons) if (sk.team === f.team) ownCount++;
+        if (ownCount >= f.skelCap) {
+          const idx = game.skeletons.findIndex(sk => sk.team === f.team);
+          if (idx !== -1) game.skeletons.splice(idx, 1);
+        }
+      }
       const a = rng() * Math.PI * 2;
       game.skeletons.push({
         x: f.x + Math.cos(a) * 10,
@@ -329,7 +343,7 @@ function fireAbility(f, enemy) {
       game.projectiles.push({
         x: f.x, y: f.y,
         vx: Math.cos(ang) * 420, vy: Math.sin(ang) * 420,
-        team: f.team, dmg: f.dmg, life: 0.55,
+        team: f.team, dmg: f.dmg, life: 0.54,
         kind: 'hook', size: 5, homing: 0,
         hookSrc: f,
       });

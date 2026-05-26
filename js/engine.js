@@ -498,8 +498,10 @@ function simulateFightDetailed(redId, blueId, seed) {
   game = buildGame(redT, blueT);
   game.introPlaying = false; // no intro in a headless run
   let guard = 0;
-  // ~30s fight cap at 60fps = 1800 ticks; +finish window. 4000 is safe headroom.
-  while (!game.over && guard < 4000) { advance(); guard++; }
+  // Headless stalemate guard. With HP × 2 fights averaging ~25-30s + the
+  // 2.4s finish window, ~50s typical max; 6000 ticks = ~100s gives
+  // comfortable headroom for tail-of-distribution stalemates.
+  while (!game.over && guard < 6000) { advance(); guard++; }
   const winner = game.winner;
   const winId = winner ? winner.id : null;
   const loser = winner ? (winner === game.red ? game.blue : game.red) : null;
@@ -1003,7 +1005,7 @@ function damageSkeleton(sk, dmg, forceBurst) {
     // iai uses this — the line cleaves regardless of standoff).
     const enemy = sk.team === 'red' ? game.blue : game.red;
     if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
-      damage(enemy, 170, 'bone');
+      damage(enemy, 140, 'bone');
       sfx('boneBurst', null, sk.x);
     } else {
       sfx('boneCrumble', null, sk.x);
@@ -1052,10 +1054,10 @@ function step(dt) {
     // ---- PASSIVES ----
     // Priest: Divine Grace — heals only when JUDGMENT lands (see resolveAim),
     // not a continuous regen or per-cast heal.
-    // Berserker: Bloodrage — +rageBoost% speed when below 50% hp.
+    // Berserker: Bloodrage — +rageBoost% speed when below f.rageThreshold of max hp.
     // Apply via an effective speed multiplier (we adjust .speed at runtime; revert after).
     if (f.ability === 'tackle') {
-      const rageActive = f.hp < f.maxHp * 0.5;
+      const rageActive = f.hp < f.maxHp * f.rageThreshold;
       if (rageActive && !f.rageWasActive) sfx('bloodrage', null, f.x); // fires once on activation
       f.rageWasActive = rageActive;
       const targetSpeed = rageActive ? f.baseSpeed * (1 + f.rageBoost) : f.baseSpeed;

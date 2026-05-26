@@ -3,10 +3,11 @@
 ## Design principles
 
 1. Fights finish naturally — fighters win by killing the other, not on a
-   timer. The old closing-ring / fog mechanic was removed because it pressured
-   fights toward an artificial KO; with the post-shrink connection rate, fights
-   wrap in ~11–15s on their own. The headless sim has a 4000-tick guard
-   (~67s) only as a stalemate safety net.
+   timer. The old closing-ring / fog mechanic was removed because it
+   pressured fights toward an artificial KO; with the post-shrink
+   connection rate and the current HP scale, fights wrap in ~23–32s on
+   their own. The headless sim has a 6000-tick guard (~100s) only as a
+   stalemate safety net.
 2. Tune per-fighter, not with global multipliers.
 3. Character identity beats pure balance — hard counters are good content,
    not bugs. A fighter that wins most matchups and loses a few badly, landing

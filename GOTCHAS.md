@@ -161,11 +161,12 @@
   vulnerable 0.5s coil where Berserker drifts at 40% speed; enemies attack
   freely during it.
 - **The closing-ring fog mechanic is gone.** Don't add code that reads
-  `game.ringRadius`/`game.ringWarned`/`RING_START`/`RING_FULL` — they no longer
-  exist. Fights resolve naturally; the headless `simulateFightDetailed` 4000-tick
-  guard (~67s) is the only stalemate backstop. The balance harness tracks
-  `long%` (fights past 30s) as a stalemate-prone-matchup detector — see
-  `boxedshard.js`'s `LONG_FIGHT_THRESHOLD`.
+  `game.ringRadius`/`game.ringWarned`/`RING_START`/`RING_FULL` — they no
+  longer exist. Fights resolve naturally; the headless
+  `simulateFightDetailed` 6000-tick guard (~100s) is the only stalemate
+  backstop. The balance harness tracks `long%` (fights past 60s) as a
+  stalemate-prone-matchup detector — see `boxedshard.js`'s
+  `LONG_FIGHT_THRESHOLD`.
 - **Knight was retired and replaced by Geomancer.** Knight's melee-tank niche
   was a hard design corner under autonomous DVD movement — every prototype
   hit one of: un-tunable reactive timing, off-brand ranged, off-brand
@@ -289,6 +290,54 @@ knob. Confirm via `./balance.sh` regardless.
   (Berserker idle → rampage, blinked Jester) escape the pillar
   geometrically — no amount of damage tuning closes this gap. Hard
   counters here are content, not a bug to fix.
+
+## HP-scale tuning notes
+
+The HP scale was doubled from the original "punchy 13s avg" tuning to
+land the current 23–32s fight durations. Numbers below are about how
+balance behaves *under this scale*, not about the historical transition.
+
+- **HP scaling buffs sustain kits and nerfs burst kits — not symmetric.**
+  Doubling HP doesn't preserve matchup ratios. Kits whose value
+  *compounds over time* (Necromancer's bone burst chain, Geomancer's
+  stone network, Hunter's BARBED LINE chip, Wizard's mana shield
+  economy) are structurally stronger at longer durations. Kits whose
+  effect is *fixed-duration* (Jester's 3s decoys, Reaper's WAKE
+  crescent, Witch's mark window) are diluted. If you change HP scale
+  again, expect non-uniform rebalance — not a global multiplier on
+  damage. (Empirically: a naive HP × 2 landed Necromancer at 71% and
+  Jester at 37%; closing the 34pt spread to 4.3pt took dozens of
+  per-fighter tunings.)
+- **Most flat damage/HP literals are NOT proportional to fighter HP.**
+  Bone burst dmg (140), `SKEL_HP` (180), Priest `healOnHit` (18),
+  Hunter `reelStepDmg` (3) — these are absolute values, not relative.
+  Each one is a tunable in its own right: bone burst at 140 deals
+  ~9% of fighter HP under the current scale. Tune these per-fighter
+  for balance; don't scale them as a group. We tried scaling them all
+  × 2 once and it over-buffed Necromancer to 88% (skeletons twice as
+  durable + kills did twice as much).
+- **Sharp-threshold levers — tap, don't sweep.**
+  - Hunter hook **life**: 0.54 → 0.55 = +4 win-rate points. 0.01s of
+    range crosses a "barely-connects-vs-barely-misses" threshold.
+  - Ronin **cd**: 2.5 → 3.0 = −17 win-rate points (matches the
+    pre-existing 1 wr / 1% cd sensitivity rule).
+  - Bone burst **flat dmg**: 50 dmg = 14 win-rate points on Necromancer.
+    Mid-range tuning required (170 too strong, 120 too weak; 140 lands).
+  Use 1-step changes when tuning these.
+
+## Tunable patterns: cap-and-evict, template-prop thresholds
+
+- **`rageThreshold` on Berserker** — pattern note: when a "magic
+  constant" is tied to a single fighter's mechanic, prefer a template
+  prop in `fighters.js` over a hardcoded literal in `engine.js`. The
+  kit's stats stay in one place and the card text can render the live
+  value via getter. (Current: `rageThreshold: 0.4` for BLOODRAGE.)
+- **`skelCap` on Necromancer** — cap-and-evict pattern for army-builder
+  kits. Caps own-team skeleton count (current: 8). At cap, the oldest
+  own-team skeleton is evicted before the new spawn — mirrors
+  Geomancer's `maxStones` cap-eviction in `plantStone()`. Pattern fits
+  any future army-builder kit (or, equivalently, any kit that produces
+  a renewable resource that should have a ceiling).
 
 ## Card name vs internal name
 

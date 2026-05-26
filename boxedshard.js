@@ -56,7 +56,7 @@ const N = 500;
 // Fights that took longer than this (seconds) get counted as "long" — useful for
 // spotting stalemate-prone matchups now that the fog mechanic was removed and
 // nothing artificially shortens fights.
-const LONG_FIGHT_THRESHOLD = 30;
+const LONG_FIGHT_THRESHOLD = 60;
 // A "tight" fight is one where the winner barely survived — finished below this
 // fraction of their max HP. Captures the dramatic close-finish profile of a
 // matchup (per-fight, not the matchup's overall win rate). Must match the

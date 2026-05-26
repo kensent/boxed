@@ -12,7 +12,7 @@
 const FIGHTER_SIZE = 16;
 
 const FIGHTERS = [
-  { id:'priest',  name:'PRIEST',    hp:830,  speed:105, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
+  { id:'priest',  name:'PRIEST',    hp:1660, speed:105, color:'#f5f5f0', accent:'#ffe83d', shape:'cross',
     // Internal ability id stays 'lightning' — it keys Priest's DISSOLVE death,
     // charge telegraph, fire-recoil, and audio. The ability itself is now JUDGMENT.
     ability:'lightning', cd:1.6, dmg:115,
@@ -20,7 +20,7 @@ const FIGHTERS = [
     get active() { return `JUDGMENT — light pillar strikes the enemy's predicted spot, ${this.windupTime}s windup`; },
     get passive() { return `DIVINE GRACE — landing judgment heals ${this.healOnHit} hp`; },
   },
-  { id:'berserker',name:'BERSERKER', hp:1000, speed:140, color:'#a83232', accent:'#f5f5f0', shape:'axe',
+  { id:'berserker',name:'BERSERKER', hp:2000, speed:140, color:'#a83232', accent:'#f5f5f0', shape:'axe',
     // dmg is PER PASS (RAMPAGE multi-hits — see rampageHitGap below). Tuned for
     // ~3-5 hits per rampage at the small-arena geometry; whole-rampage payoff
     // is dmg × ~4, so this lever moves the matchup faster than it looks (~1 win
@@ -28,12 +28,12 @@ const FIGHTERS = [
     // (further trim) -> 82 -> 80 (HP bump to 1000 compensates the dmg trim).
     ability:'tackle', cd:1.7, dmg:80,
     windupTime: 0.5,
-    rageBoost: 0.33,
+    rageBoost: 0.33, rageThreshold: 0.4,
     rampageDur: 1.1, rampageSpeedMult: 4, rampageHitGap: 0.22,
     get active() { return `RAMPAGE — ${this.windupTime}s coil, then charges and ricochets off walls, hitting on each pass`; },
-    get passive() { return `BLOODRAGE — +${Math.round(this.rageBoost * 100)}% speed under 50% hp`; },
+    get passive() { return `BLOODRAGE — +${Math.round(this.rageBoost * 100)}% speed under ${Math.round(this.rageThreshold * 100)}% hp`; },
   },
-  { id:'wizard',  name:'WIZARD',    hp:800,  speed:100, color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
+  { id:'wizard',  name:'WIZARD',    hp:1600, speed:100, color:'#9d4edd', accent:'#ffe83d', shape:'spellbook',
     // HP 850 -> 800 to compensate for the orbSpeed offensive buff below;
     // orb travel speed is the chosen lever (rather than dmg/cd/shieldReduction)
     // because the kit's flavour is homing pressure, and faster orbs = harder
@@ -45,7 +45,7 @@ const FIGHTERS = [
     get active() { return `MANA ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
-  { id:'geomancer',name:'GEOMANCER', hp:1100, speed:120, color:'#7a6852', accent:'#e8a020', shape:'menhir',
+  { id:'geomancer',name:'GEOMANCER', hp:2200, speed:120, color:'#7a6852', accent:'#e8a020', shape:'menhir',
     // STANDING STONES (passive) — every wall-bounce drives a runestone into
     // the wall at the contact point. Stones are inert markers, glowing
     // amber; they persist at full alpha (no time decay) and are evicted at
@@ -59,20 +59,20 @@ const FIGHTERS = [
     // crossing. dmg is per-line; a single cast can stack 0..many.
     // Speed 120 (above the median 100) — the kit's input is wall bounces,
     // so faster movement = faster network buildup. No corner pre-seed.
-    ability:'sigil', cd:2.5, dmg:80,
+    ability:'sigil', cd:3.5, dmg:80,
     maxStones: 8, linksPerStone: 2,
     sigilFlashDur: 0.6, lineWidth: 4,
     get active() { return `SIGIL — slams the staff; amber ley-lines fire between him and every planted stone, burning anyone on the lines`; },
     get passive() { return `STANDING STONES — each wall-bounce drives a runestone into the wall (max ${this.maxStones}); SIGIL connects them all to him`; },
   },
-  { id:'sapper', name:'SAPPER',    hp:780,  speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
+  { id:'sapper', name:'SAPPER',    hp:1560, speed:120, color:'#5a3a1f', accent:'#ff2e2e', shape:'keg',
     // Internal ability id stays 'mine' — keys Sapper's BURST death + casing material.
     ability:'mine', cd:1.4, dmg:195,
     throwSpeed: 300, fuseTime: 1.5, blastRadius: 30,
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
     passive: 'SHOCKWAVE — the detonation knocks the enemy back and damages nearby skeletons',
   },
-  { id:'archer',  name:'ARCHER',    hp:770,  speed:120, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
+  { id:'archer',  name:'ARCHER',    hp:1540, speed:120, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
     // VOLLEY — arrows fire on a high arc out of frame, then rain down at
     // predicted landing points along the enemy's bounce trajectory after
     // `volleyDelay`. Landing markers telegraph the kill-zones on the floor
@@ -88,14 +88,14 @@ const FIGHTERS = [
     active: 'VOLLEY — arrows arc high and rain down at predicted spots, after a brief delay',
     get passive() { return `STAKES — missed arrows embed point-up; enemies bouncing through take ${Math.round(this.stakeDmgFrac * 100)}% damage on contact, ${this.stakeDur}s lifetime`; },
   },
-  { id:'jester',  name:'JESTER',    hp:820,  speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
+  { id:'jester',  name:'JESTER',    hp:1600, speed:120, color:'#e8d8b8', accent:'#ff2e2e', shape:'mask',
     // cd 2.5 -> 2.0 -> 2.1 + dmg 130 -> 110 (across two passes). Identity
     // is harassment, not assassination, so more frequent blinks + lower
     // per-stab damage fits the kit shape. The 2.0 cd lifted Jester from
     // 44.7% to 53.9% (top of band after Cannoneer trim); 2.1 pulls back
     // slightly — Jester is very cd-sensitive (~1 wr per ~1.5% cd change;
     // 2.0 → 2.2 over-corrected to 40%). 2.1 targets ~50%.
-    ability:'blink', cd:2.1, dmg:110,
+    ability:'blink', cd:2.1, dmg:120,
     // DOPPELGANGER replaces UNCANNY DODGE: every hit Jester takes spawns a
     // stationary phantom decoy at her current position. Decoys are valid
     // targets for every enemy ability (uniform "aim nearest" targeting); a
@@ -105,7 +105,7 @@ const FIGHTERS = [
     active: 'PUNCHLINE — teleports behind enemy and stabs',
     get passive() { return `DECOY — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
   },
-  { id:'cannoneer',name:'CANNONEER',hp:1030, speed:85,  color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
+  { id:'cannoneer',name:'CANNONEER',hp:2060, speed:85, color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
     // dmg 360 -> 340 (keeping splashMinFrac 0.4). The 400 dmg + 0 floor
     // ran Cannoneer at 56.3%; switching to 360 + 0.4 floor (added edge
     // rewards) landed him at 54.3%, still slightly top-heavy. This trim
@@ -113,27 +113,28 @@ const FIGHTERS = [
     // History: 400 + 0 = 56.3%, 360 + 0.4 = 54.3%, 340 + 0.4 targets ~50%.
     // (Earlier 340 + 0.3 floor over-corrected to 47%; the higher floor
     // is what keeps near-misses meaningful here.)
-    ability:'cannon', cd:3.0, dmg:340,
+    ability:'cannon', cd:3.1, dmg:340,
     windupTime: 1.0, splashRadius: 55, splashMinFrac: 0.4,
     get active() { return `BOMBARD — ${this.windupTime}s windup, then a heavy shell that splashes on landing`; },
     get passive() { return `EPICENTER — damage peaks at the blast center, falling off to ${Math.round(this.splashMinFrac * 100)}% at the splash edge`; },
   },
-  { id:'duelist', name:'DUELIST',   hp:950,  speed:100, color:'#1a1a2e', accent:'#c0c0e8', shape:'rapier',
+  { id:'duelist', name:'DUELIST',   hp:1900, speed:100, color:'#1a1a2e', accent:'#c0c0e8', shape:'rapier',
     // cd 1.7 -> 1.6 (more frequent ripostes); speed 115 -> 100 to
     // compensate. Speed is sharply sensitive at Duelist (~0.6 wr per
     // 1 speed in tuning trials): 105 ran 53.1%, 95 dropped to 46.8%,
     // 100 targets ~50%. Cast cadence dominates damage output; speed
     // cut tones down idle closing pressure between casts.
-    ability:'riposte', cd:1.6, dmg:250, strikeReach:10,
+    ability:'riposte', cd:1.6, dmg:240, strikeReach:10,
     active: 'RIPOSTE — dash in and thrust on reach',
     passive: 'EN GARDE — the thrust parries melee hits and reflects projectiles',
   },
-  { id:'necromancer',name:'NECROMANCER',hp:810, speed:100, color:'#3a2a4a', accent:'#e8e0d0', shape:'scythe',
-    ability:'raise', cd:2.5, dmg:65,
-    active: 'ANIMATE BONE — summons a slow skeleton, no cap',
+  { id:'necromancer',name:'NECROMANCER',hp:1620, speed:100, color:'#3a2a4a', accent:'#e8e0d0', shape:'scythe',
+    ability:'raise', cd:3.0, dmg:65,
+    skelCap: 8,
+    get active() { return `ANIMATE BONE — summons a slow skeleton (max ${this.skelCap} alive; oldest replaced on overflow)`; },
     passive: 'BONE BURST — skeletons explode on death, damaging nearby foes',
   },
-  { id:'reaper',  name:'REAPER',    hp:870, speed:105, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
+  { id:'reaper',  name:'REAPER',    hp:1740, speed:105, color:'#1a0e0e', accent:'#aa0000', shape:'sickles',
     // HP is the balance lever; dmg/cd tuned for pace. cd is the post-catch RECOVERY
     // (one crescent in flight at a time — the flight round-trip dominates the throw
     // cycle; see abilities.js). dmg 180 -> 135 to compensate for HARVEST's
@@ -147,17 +148,17 @@ const FIGHTERS = [
     // its flight path every wakeRate seconds. Segments overlap into a visible arc-trail
     // and damage the enemy if they bounce through it; per-target wakeHitCd (in engine.js)
     // caps the tick rate so dense overlap can't double-dip.
-    wakeRate: 0.075, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 15,
+    wakeRate: 0.075, wakeRadius: 14, wakeLife: 0.8, wakeDmg: 20,
     active: 'HARVEST — hurls a returning scythe; strikes coming and going',
     passive: 'WAKE — the scythe leaves a damaging arc along its flight path',
   },
-  { id:'ronin',   name:'RONIN',     hp:950,  speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
+  { id:'ronin',   name:'RONIN',     hp:1900, speed:100, color:'#2a1a1a', accent:'#e8c020', shape:'katana',
     // dmg 130 -> 118 -> 112 -> 106 -> 110 -> 105 (across passes); cd unchanged 2.5.
     // The trim-and-bump dance: 112 ran 53.7% (top of band), so trimmed
     // to 106 (overshot to 48.1%); then bumped back to 110. cd is sharply
     // sensitive at Ronin (~1 wr per 1% cd change — earlier 2.5→2.7
     // experiments over-corrected by ~10 wr), so kept at 2.5.
-    ability:'iai', cd:2.5, dmg:105,
+    ability:'iai', cd:2.5, dmg:95,
     windupTime: 0.5,
     // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
     // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%
@@ -168,13 +169,13 @@ const FIGHTERS = [
     get active() { return `DRAW BLADE — ${this.windupTime}s windup, then a heavy line-cut through the enemy and beyond`; },
     passive: 'CLEAN CUT — landing a cut skips the next windup AND refunds the cooldown — chained cuts strike instantly',
   },
-  { id:'witch',   name:'WITCH',     hp:780,  speed:100, color:'#2d4a2a', accent:'#7dff3d', shape:'hat',
+  { id:'witch',   name:'WITCH',     hp:1560, speed:100, color:'#2d4a2a', accent:'#7dff3d', shape:'hat',
     ability:'hex', cd:1.5, dmg:110,
     maxBounces: 5, markBonus: 0.5, markDuration: 3.0,
     get active() { return `HEX — bouncing projectile, up to ${this.maxBounces} wall bounces`; },
     get passive() { return `WITCH'S MARK — marked enemies take +${Math.round(this.markBonus * 100)}% damage for ${this.markDuration}s`; },
   },
-  { id:'hunter',  name:'HUNTER',    hp:900,  speed:90, color:'#3a2818', accent:'#c89060', shape:'hook',
+  { id:'hunter',  name:'HUNTER',    hp:1800, speed:90, color:'#3a2818', accent:'#c89060', shape:'hook',
     // BARBED LINE (passive) — synergistic with the hook's reel-in. While
     // being reeled, the enemy takes PURE damage proportional to the
     // distance dragged each frame. Long-range hooks (big drag distance)
@@ -189,7 +190,7 @@ const FIGHTERS = [
     active: 'THE HOOK — fires a hook that wounds and reels the enemy in',
     passive: 'BARBED LINE — the reel tears pure damage; longer pulls hurt more',
   },
-  { id:'warlock', name:'WARLOCK',   hp:570,  speed:100, color:'#2a0e2e', accent:'#c050ff', shape:'cowl',
+  { id:'warlock', name:'WARLOCK',   hp:1140, speed:100, color:'#2a0e2e', accent:'#c050ff', shape:'cowl',
     // drainHealRate 0.35 -> 0.50 (constant 50% lifesteal per tick); cd
     // 2.2 -> 2.6 to compensate the heal buff; slowRate unchanged at 0.6.
     // Each drain tick heals dmg * 0.5 (constant). Identity shift: fewer
@@ -199,7 +200,7 @@ const FIGHTERS = [
     active: 'SIPHON — channels, leeching the enemy\'s life',
     get passive() { return `WITHER — tethered enemies move at ${Math.round(this.slowRate * 100)}% speed, drain heals ${Math.round(this.drainHealRate * 100)}%`; },
   },
-  { id:'gambler', name:'GAMBLER',   hp:880, speed:110, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
+  { id:'gambler', name:'GAMBLER',   hp:1760, speed:110, color:'#1a3a2a', accent:'#ffd23d', shape:'dice',
     // HP 1000 -> 900 + speed 100 -> 110 after the DOUBLES rework. dmg is
     // restored to 50 (original). HP is the squishier lever at Gambler's low
     // base (~1 wr per ~11 HP, vs the roster-average ~1 wr per 40 HP); speed
