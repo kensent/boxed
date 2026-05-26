@@ -1179,9 +1179,16 @@ function drawFighter(f) {
 
   // Orientation: face the enemy. Mirror rather than rotate past vertical so the
   // sprite never goes upside-down (forward is local +x).
-  const facing = (enemy && !enemy.dead)
-    ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
-    : (f.lastFacing || 0);
+  // Berserker RAMPAGE exception: during the dash window the body IS the
+  // projectile, so it faces its own velocity (the ramming direction it's
+  // about to hit). Reads as "aimed at the next bounce" rather than
+  // "still peeking at the enemy mid-charge."
+  const inRampage = f.ability === 'tackle' && f.dashTimer > 0;
+  const facing = inRampage
+    ? Math.atan2(f.vy, f.vx)
+    : (enemy && !enemy.dead)
+      ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
+      : (f.lastFacing || 0);
   f.lastFacing = facing;
 
   // ----- Victim recoil (shared: any fighter that just took a melee hit) -----

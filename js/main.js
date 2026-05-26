@@ -6,15 +6,17 @@
 function endGame() {
   if (game.winner) return;
   game.winner = game.red.dead ? game.blue : game.red;
-  // The outcome is decided — clear every hazard still in play so a stray
+  // The outcome is decided — drop every LOSER-owned hazard so a stray
   // projectile, mine, skeleton, hazard, or minion can't kill the victor
-  // during the (now wider) finish window. The new winner overlay is a
-  // transparent vignette over the arena, so a vanished-winner sprite
-  // (from drawFighter's dead-fighter early-return) would be visible and
-  // wreck the celebration — keep all post-mortem damage off.
-  game.projectiles = [];
-  game.skeletons = [];
-  game.hazards = [];
+  // during the finish window. WINNER-owned items persist for visual
+  // celebration ("Necromancer's skeletons march on after his victory,"
+  // "Wizard's orbs keep bouncing") — the dead loser sprite is held
+  // frozen until the kill-cam arrives, so a stray winner-owned hit on
+  // the corpse is harmless (damage on a dead target no-ops upstream).
+  const winnerTeam = game.winner.team;
+  game.projectiles = game.projectiles.filter(p => p.team === winnerTeam);
+  game.skeletons = game.skeletons.filter(sk => sk.team === winnerTeam);
+  game.hazards = game.hazards.filter(h => h.team === winnerTeam);
   // Jester DOPPELGANGER — when Jester dies, her remaining phantom decoys
   // shatter (mirrors the on-consume visual). Without this they'd silently
   // sit in the arena during the finish window, confusing the closing
@@ -44,10 +46,16 @@ function endGame() {
     if (ft.open) { ft.open = false; ft.age = 0; }
     ft.life = Math.min(ft.life, 0.25);
   });
-  // Cancel any in-progress channel/strike on either fighter for the same reason.
+  // Cancel any in-progress channel/strike on either fighter — but leave
+  // iaiStrike alone: it's purely a render-window flag (0.15s gold-slash
+  // trail in render/sprites.js). Zeroing it nukes the slash visual on a
+  // killing Ronin cut, so the K.O. lands without the flash. Let it tick
+  // down naturally in the engine.js strike block. iaiWindup is gameplay
+  // (holds the plant) but the windup phase is already over at the
+  // moment a strike connects, so it's harmlessly 0 by the time we get
+  // here on a kill — no need to zero it either.
   [game.red, game.blue].forEach(f => {
     f.drainTimer = 0; f.drainTarget = null;
-    f.iaiStrike = 0; f.iaiWindup = 0;
     f.tetherTimer = 0; f.tetherTarget = null;
   });
   // Cinematic finish: slow-mo ramp, kill-cam push-in, then the shatter. The body
