@@ -55,9 +55,12 @@
   #seed-input { flex: 1; min-width: 0; background: #161616; border: 2px solid #333; color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 6px 8px; }
   #seed-input::placeholder { color: #555; }
   #seed-input:focus { outline: none; border-color: var(--yellow); }
-  #seed-clear { flex-shrink: 0; background: #161616; border: 2px solid #333; color: var(--fg); font-size: 13px; width: 30px; height: 30px; cursor: pointer; transition: transform 0.08s, border-color 0.12s; }
-  #seed-clear:hover { border-color: var(--fg); }
-  #seed-clear:active { transform: scale(0.92); }
+  #seed-clear,
+  #fullscreen-btn { flex-shrink: 0; background: #161616; border: 2px solid #333; color: var(--fg); font-size: 13px; width: 30px; height: 30px; cursor: pointer; transition: transform 0.08s, border-color 0.12s; }
+  #seed-clear:hover,
+  #fullscreen-btn:hover { border-color: var(--fg); }
+  #seed-clear:active,
+  #fullscreen-btn:active { transform: scale(0.92); }
   .hunt-btn { width: 100%; background: #161616; color: var(--yellow); border: 2px dashed var(--yellow); font-family: 'Bungee', sans-serif; font-size: 11px; letter-spacing: 1px; padding: 9px; cursor: pointer; margin-bottom: 8px; transition: transform 0.08s, background 0.12s; }
   .hunt-btn:hover { background: #1f1c0a; }
   .hunt-btn:active { transform: scale(0.98); }
@@ -339,6 +342,7 @@
     <label class="seed-label" for="seed-input">SEED</label>
     <input id="seed-input" type="text" inputmode="numeric" placeholder="random each fight" autocomplete="off" />
     <button id="seed-clear" title="clear — random each fight">↻</button>
+    <button id="fullscreen-btn" title="toggle fullscreen (Esc to exit)">⛶</button>
   </div>
   <button id="hunt-btn" class="hunt-btn" style="display:none;">HUNT THE UPSET</button>
   <button id="hunt-tight-btn" class="hunt-btn" style="display:none;">HUNT A TIGHT FIGHT</button>

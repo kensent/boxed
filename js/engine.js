@@ -418,6 +418,20 @@ huntLowHpBtn.addEventListener('click', async () => {
   }
 });
 
+// Fullscreen toggle — Browser Fullscreen API, gated on a user gesture
+// (the click itself). Esc exits via the browser's default handler;
+// the fullscreenchange event would let us update the button icon if
+// we wanted a separate "exit" glyph, but the single ⛶ reads cleanly
+// in both states. Catches are silent — some browsers reject on
+// already-in/out-of fullscreen or when the user denies the prompt.
+document.getElementById('fullscreen-btn').addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+});
+
 // returnToSelect() — tear down the fight and show the character-select screen.
 // Used by the tap-outside-arena handler below and by the auto-return
 // timer after a victory.
