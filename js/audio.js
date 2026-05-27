@@ -1,11 +1,12 @@
 // ============================================================================
 // === AUDIO ==================================================================
 // Self-contained Web Audio synth. No files — every sound is generated from
-// oscillators + noise + envelopes. sfx(name) plays a sound; muted by default.
+// oscillators + noise + envelopes. sfx(name) plays a sound. Always on —
+// the mute toggle was retired with the rest of the chrome for the
+// permanent Shorts-capture layout.
 // ============================================================================
 const Audio = (() => {
   let ctx = null;
-  let muted = false; // default ON — flip via the speaker toggle on the select screen
 
   // Lazily create the AudioContext on first use (browsers require a user
   // gesture before audio can start; the select-screen taps satisfy that).
@@ -657,7 +658,6 @@ const Audio = (() => {
     // play(name, arg, x) — optional x is an arena x-coordinate (0..arenaW);
     // it's converted to a stereo pan so the sound comes from where it happened.
     play(name, arg, x) {
-      if (muted) return;
       const fn = SOUNDS[name];
       if (!fn) return;
       _curPan = (x == null || !_arenaW) ? null
@@ -666,12 +666,6 @@ const Audio = (() => {
       _curPan = null;
     },
     setArenaWidth(w) { _arenaW = w; },
-    isMuted() { return muted; },
-    toggle() {
-      muted = !muted;
-      if (!muted) ac(); // unlock context on un-mute
-      return muted;
-    },
   };
 })();
 function sfx(name, arg, x) { if (headless) return; Audio.play(name, arg, x); }

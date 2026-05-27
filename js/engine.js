@@ -418,13 +418,6 @@ huntLowHpBtn.addEventListener('click', async () => {
   }
 });
 
-const muteBtn = document.getElementById('mute-btn');
-muteBtn.addEventListener('click', () => {
-  const nowMuted = Audio.toggle();
-  muteBtn.textContent = nowMuted ? 'SOUND: OFF' : 'SOUND: ON';
-  muteBtn.classList.toggle('on', !nowMuted);
-  if (!nowMuted) sfx('select'); // brief blip to confirm sound is live
-});
 // returnToSelect() — tear down the fight and show the character-select screen.
 // Used by the tap-outside-arena handler below and by the auto-return
 // timer after a victory.
