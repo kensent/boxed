@@ -1365,23 +1365,6 @@ function drawFighter(f) {
     ctx.restore();
   }
 
-  // ----- Duelist COUNTER — reactive riposte jab toward the attacker ---------
-  // Same puncture motif, fired toward counterDir (not the facing) when COUNTER
-  // triggers off a melee hit. A quick flick, no body lunge.
-  if (f.ability === 'riposte' && f.counterAnim > 0) {
-    const a = f.counterAnim / 0.16;                  // 1 → 0
-    ctx.save();
-    ctx.rotate(f.counterDir);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = `rgba(200,200,235,${(a * 0.85).toFixed(3)})`;
-    ctx.lineWidth = 1.6 * a + 0.3;
-    ctx.beginPath();
-    ctx.moveTo(FIGHTER_SIZE * 0.6, 0);
-    ctx.lineTo(FIGHTER_SIZE + 14, 0);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   // ===== REAPER — bleeding crescent slash (bespoke impact) ==================
   // A whirling blade carves an ARC, so the force signature is a crescent (the
   // fourth distinct primitive — circle / bar / line / ARC). The Reaper's VOICE on

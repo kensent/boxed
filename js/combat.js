@@ -183,10 +183,10 @@ function damage(target, dmg, srcKind, src) {
   }
   if (target.hp <= 0) {
     target.dead = true;
-    endGame();  // death sound fires when the kill-cam arrives + body shatters (draw)
+    endGame();  // death sound + camera-snap flash fire from draw() at koArriveAt
   }
-  // (Duelist's COUNTER auto-thrust is now gated on the parry window — see the
-  // melee-parry block at the top of this function. Outside the parry window,
-  // melee hits land clean with no counter response.)
+  // (Duelist's reactive COUNTER auto-thrust was retired — the parry window IS
+  // the response now, see the melee-parry block at the top of this function.
+  // Outside the parry window, melee hits land clean with no counter visual.)
   return dmg;
 }

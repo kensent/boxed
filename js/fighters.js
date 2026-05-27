@@ -60,7 +60,7 @@ const FIGHTERS = [
     // Speed 120 (above the median 100) — the kit's input is wall bounces,
     // so faster movement = faster network buildup. No corner pre-seed.
     ability:'sigil', cd:3.5, dmg:80,
-    maxStones: 8, linksPerStone: 2,
+    maxStones: 8,
     sigilFlashDur: 0.6, lineWidth: 4,
     get active() { return `SIGIL — slams the staff; amber ley-lines fire between him and every planted stone, burning anyone on the lines`; },
     get passive() { return `STANDING STONES — each wall-bounce drives a runestone into the wall (max ${this.maxStones}); SIGIL connects them all to him`; },

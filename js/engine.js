@@ -593,7 +593,7 @@ function makeFighter(t, team, x, y) {
     // angle) drive the body recoil/thrust at release and each fighter's muzzle flash.
     fireKick: 0, fireKickMax: 0.2, fireDir: 0,
     aimTimer: 0, aimAngle: 0, aimAbility: null,
-    shotCount: 0, trail: [],
+    trail: [],
     slowTimer: 0,
     // Jester DOPPELGANGER state — decoys is the live phantom roster (each
     // entry { x, y, life, dead, decoy:true, shape, color, accent } so pickTarget
@@ -602,10 +602,9 @@ function makeFighter(t, team, x, y) {
     blinkFx: 0, blinkFromX: 0, blinkFromY: 0,
     decoys: [],
     // Duelist
-    lastX: x, lastY: y,
-    parryTimer: 0, counterAnim: 0, counterDir: 0,
+    parryTimer: 0,
     // Reaper
-    sweepTimer: 0, sweepHit: false, crescentOut: false, wakeHitCd: 0,
+    sweepTimer: 0, crescentOut: false, wakeHitCd: 0,
     // Ronin
     iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focused: false,
     iaiAngle: 0,
@@ -642,8 +641,7 @@ function makeFighter(t, team, x, y) {
     // identity is "the fighter IS one of his own stones" — Geo himself is
     // a node in the SIGIL network alongside these (see abilities.js).
     // sigilLines + sigilFlash drive the brief amber-line visual after a cast.
-    // sigilWhiff flags a no-network cast that refunds the cd shortly.
-    stones: [], sigilLines: [], sigilFlash: 0, sigilWhiff: false,
+    stones: [], sigilLines: [], sigilFlash: 0,
   };
 }
 
@@ -1155,7 +1153,6 @@ function step(dt) {
     }
     if (f.ability === 'riposte') {
       if (f.parryTimer > 0) f.parryTimer -= dt;
-      if (f.counterAnim > 0) f.counterAnim -= dt;
     }
     // Archer leaves a fading motion trail
     if (f.ability === 'arrow') {
@@ -1247,10 +1244,7 @@ function step(dt) {
 
     // Reaper: scythe sweep — visual spin only; the execute-scaled hit lands on the
     // single in-range frame during the dash (see the dash branch above).
-    if (f.ability === 'sweep' && f.sweepTimer > 0) {
-      f.sweepTimer -= dt;
-      if (f.sweepTimer <= 0) f.sweepHit = false;
-    }
+    if (f.ability === 'sweep' && f.sweepTimer > 0) f.sweepTimer -= dt;
 
     // Hunter tether: if this fighter is being reeled, tween toward the Hunter.
     // The hook already dealt its damage on impact — the tether tweens position

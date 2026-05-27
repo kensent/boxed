@@ -24,10 +24,8 @@ function segIntersectsCircle(x1, y1, x2, y2, cx, cy, r) {
 // and never cross the arena interior where the enemy lives. All-pairs
 // guarantees cross-arena lines; the fighter-as-node contributes radial lines
 // FROM his position to each wall-stone (high-crossing-probability paths).
-// linksPerStone is unused in this topology; kept on the fighter object in
-// case future tunings want to clamp network density. Returns
-// [{x1,y1,x2,y2}, …].
-function computeSigilLinks(nodes, _linksPerStone) {
+// Returns [{x1,y1,x2,y2}, …].
+function computeSigilLinks(nodes) {
   const out = [];
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
@@ -444,16 +442,12 @@ function fireAbility(f, enemy) {
       const stones = f.stones || [];
       // Self is node 0; wall-stones follow. Self-lines emanate from the
       // fighter's CURRENT position at cast time (captured in the link
-      // endpoints — they don't track him during the flash).
+      // endpoints — they don't track him during the flash). Engine freezes
+      // Geomancer's cdTimer until the first stone is planted (engine.js
+      // step()'s ability-fire gate), so nodes.length is guaranteed >= 2 by
+      // the time we reach this case — no safety net needed.
       const nodes = [{ x: f.x, y: f.y }].concat(stones);
-      if (nodes.length < 2) {
-        // Safety net — engine skips the cast when stones is empty, so this
-        // path is only reachable if stones somehow empties mid-cast.
-        f.sigilWhiff = true;
-        break;
-      }
-      const links = computeSigilLinks(nodes, f.linksPerStone);
-      if (links.length === 0) { f.sigilWhiff = true; break; }
+      const links = computeSigilLinks(nodes);
       // Hit detection — enemy body radius + half line thickness defines the
       // crossing zone. Each line is independently tested against the enemy
       // and every decoy; lines that hit fire their own damage() call (NOT
@@ -500,7 +494,6 @@ function fireAbility(f, enemy) {
       // but doesn't remove from the array (matches the JUDGMENT pattern).
       game.skeletons = game.skeletons.filter(sk => sk.hp > 0);
       f.sigilLines = links;
-      f.sigilWhiff = false;
       // Per-line chord chime — light staggered metallic chimes paint the
       // network in audio (more lines = denser chord). Routed through a single
       // sfx call so the headless guard stops the timer fan-out at the audio
