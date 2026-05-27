@@ -186,8 +186,10 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   0.4s of its 2.5s lifetime; bouncing enemy stepping onto one takes chip
   damage and consumes it.
 - **Debuff / affliction = distinct non-ring forms** (so they never collide with
-  the rings): stun **stars** (overhead), Witch's-mark **sigil** (on the body),
-  slow **drag-trail** (ghosts lagging behind). DOUBLES (Gambler — formerly
+  the rings): Witch's-mark **sigil** (on the body), slow **drag-trail** (ghosts
+  lagging behind). (Stun stars were retired with the CRIPPLING HOOK mechanic —
+  Hunter's hook now wounds + reels via BARBED LINE instead of stunning.)
+  DOUBLES (Gambler — formerly
   LOADED DICE) is a momentary **"lucky" pop** above the head (a trigger
   marker, not a state), reused for the new passive: the pop fires the
   instant consecutive matched WILDCARD rolls trigger DOUBLES (Dealer's

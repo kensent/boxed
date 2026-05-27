@@ -304,7 +304,7 @@ const VICTORY_QUOTES = {
   'warlock_reaper':      "The harvest went straight to me.",
   'warlock_ronin':       "A long wind-up is a long gift.",
   'warlock_witch':       "Two curses walked in. One walked out.",
-  'warlock_hunter':      "I waited through the stun.",
+  'warlock_hunter':      "You reeled me closer. Thanks.",
   'warlock_gambler':     "The drain doesn't care what you rolled.",
 
   // GAMBLER wins

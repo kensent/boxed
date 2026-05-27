@@ -594,7 +594,7 @@ function makeFighter(t, team, x, y) {
     fireKick: 0, fireKickMax: 0.2, fireDir: 0,
     aimTimer: 0, aimAngle: 0, aimAbility: null,
     shotCount: 0, trail: [],
-    slowTimer: 0, stunTimer: 0,
+    slowTimer: 0,
     // Jester DOPPELGANGER state — decoys is the live phantom roster (each
     // entry { x, y, life, dead, decoy:true, shape, color, accent } so pickTarget
     // + drawShape can treat them uniformly). Decoy spawn happens in combat.js
@@ -736,8 +736,8 @@ function playVsIntro(redT, blueT) {
   const myGame = game; // capture — if a new fight starts, this won't match
   // Fill each label: name + ACT row + PASSIVE row (stacked). Each is the
   // part of the description string before the "—". Stacking on two rows
-  // keeps long ability names (e.g. "GRAPPLING HOOK · CRIPPLING HOLD") from
-  // overflowing the narrow CSS column at left:20%/80%.
+  // keeps long ability names from overflowing the narrow CSS column at
+  // left:20%/80%.
   const fillLabel = (side, t) => {
     document.getElementById('vs-name-' + side).textContent = t.name;
     document.getElementById('vs-act-' + side).textContent = t.active.split('—')[0].trim();
@@ -826,8 +826,8 @@ function updateHp() {
 }
 
 // (The DOM status-badge system was removed: every status now reads on the fighter
-// itself — armed/rage/focus rings, stun stars, mark sigil, slow drag-trail, the
-// loaded pop — so a HUD badge row would just double-report.)
+// itself — armed/rage/focus rings, mark sigil, slow drag-trail, the loaded pop —
+// so a HUD badge row would just double-report.)
 
 // Fixed simulation timestep. The loop accumulates real time and advances the
 // sim in exact FIXED_DT chunks — so the fight is fully deterministic from its
@@ -1030,6 +1030,37 @@ function damageSkeleton(sk, dmg, forceBurst) {
   return false;
 }
 
+// decayTimers(obj, dt, fields) — tick each listed countdown toward zero,
+// floor at zero so a negative value can't accumulate. Reserved for timers
+// with NO "trigger something at zero" side-effect: the field's only job is
+// to be > 0 (effect active) or <= 0 (effect over). Timers that need to
+// FIRE logic at zero — dashTimer's velocity reset, parryTimer's window
+// close, drain/aim cadences — still tick inline so the zero-trigger is
+// visible at the site that owns it. Future fields with a zero-trigger
+// MUST NOT join this list, or the trigger silently never runs.
+function decayTimers(obj, dt, fields) {
+  for (const k of fields) {
+    if (obj[k] > 0) obj[k] -= dt;
+  }
+}
+
+// Universal fighter-state decay set — render/effect timers that all just
+// "be > 0 then be over." Co-located with step()'s tail call so the
+// contract (no zero-trigger) is verifiable at a glance.
+const FIGHTER_DECAY = [
+  'flash',          // hit-flash white tint
+  'negateFlash',    // parry/dodge negate flash
+  'meleeImpact',    // melee body squash
+  'recoilTimer',    // non-melee victim knockback
+  'fireKick',       // ranged discharge gesture
+  'blastTimer',     // Sapper blast-knockback override window
+  'slowTimer',      // slow effect — checked elsewhere while > 0
+  'wakeHitCd',      // Reaper WAKE per-target i-frame
+];
+
+// Skeleton decay set — same contract, narrower set.
+const SKELETON_DECAY = ['hitCd', 'wakeHitCd', 'flash'];
+
 // ============================================================================
 // === STEP (per-frame simulation) ============================================
 // Runs every frame at variable dt. Handles fighter movement, passive ticks
@@ -1050,19 +1081,13 @@ function step(dt) {
 
   [red, blue].forEach(f => {
     if (f.dead) return;
-    // Stunned fighters (Hunter's CRIPPLING HOOK) are frozen — no self-movement.
-    // The hook's tether reel still repositions them (it sets x/y directly).
-    // NOTE: only movement is frozen — passives below still tick (a stunned
-    // Priest keeps regenerating, a stunned Berserker keeps Bloodrage).
-    if (f.stunTimer <= 0) {
-      f.x += f.vx * dt;
-      f.y += f.vy * dt;
-      const bounced = bounce(f, w, h);
-      // RAMPAGE — each wall ricochet mid-rampage squashes the body so the bounce
-      // reads as a slam (visual only; the sim never reads meleeImpact back).
-      if (bounced && f.ability === 'tackle' && f.dashTimer > 0) {
-        setMeleeImpact(f, 0.14);
-      }
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    const bounced = bounce(f, w, h);
+    // RAMPAGE — each wall ricochet mid-rampage squashes the body so the bounce
+    // reads as a slam (visual only; the sim never reads meleeImpact back).
+    if (bounced && f.ability === 'tackle' && f.dashTimer > 0) {
+      setMeleeImpact(f, 0.14);
     }
 
     // ---- PASSIVES ----
@@ -1475,9 +1500,7 @@ function step(dt) {
     // network means no cast, same as Warlock out of range.
     if (!(f.ability === 'sigil' && (!f.stones || !f.stones.length))) f.cdTimer -= dt;
     // Warlock can't recast while a drain channel is still active.
-    // A stunned fighter (Hunter's CRIPPLING HOOK) can't act — the cdTimer stays
-    // ready, so they fire the instant the stun ends (cooldown isn't wasted).
-    if (f.cdTimer <= 0 && !f.dead && f.aimTimer <= 0 && f.drainTimer <= 0 && f.stunTimer <= 0) {
+    if (f.cdTimer <= 0 && !f.dead && f.aimTimer <= 0 && f.drainTimer <= 0) {
       const target = f === red ? blue : red;
       if (!target.dead) {
         fireAbility(f, target);
@@ -1516,18 +1539,7 @@ function step(dt) {
         return false;
       });
     }
-    if (f.flash > 0) f.flash -= dt;
-    if (f.negateFlash > 0) f.negateFlash -= dt;
-    if (f.meleeImpact > 0) f.meleeImpact -= dt;
-    if (f.recoilTimer > 0) f.recoilTimer -= dt;
-    if (f.fireKick > 0) f.fireKick -= dt;
-    if (f.blastTimer > 0) f.blastTimer -= dt;
-    // Tick slow timer
-    if (f.slowTimer > 0) f.slowTimer -= dt;
-    // Tick stun timer (Hunter's CRIPPLING HOOK)
-    if (f.stunTimer > 0) f.stunTimer -= dt;
-    // Reaper WAKE per-target damage cooldown
-    if (f.wakeHitCd > 0) f.wakeHitCd -= dt;
+    decayTimers(f, dt, FIGHTER_DECAY);
   });
 
   // Apply (and release) the slow effect. A slowed fighter's velocity is
@@ -2053,9 +2065,7 @@ function step(dt) {
     if (sk.x > w - sk.size) { sk.x = w - sk.size; sk.vx = -Math.abs(sk.vx); }
     if (sk.y < sk.size) { sk.y = sk.size; sk.vy = Math.abs(sk.vy); }
     if (sk.y > h - sk.size) { sk.y = h - sk.size; sk.vy = -Math.abs(sk.vy); }
-    if (sk.hitCd > 0) sk.hitCd -= dt;
-    if (sk.wakeHitCd > 0) sk.wakeHitCd -= dt;
-    if (sk.flash > 0) sk.flash -= dt;
+    decayTimers(sk, dt, SKELETON_DECAY);
     return true;
   });
 

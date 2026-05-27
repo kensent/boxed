@@ -194,7 +194,7 @@ const FIGHTERS = [
     // bypasses Wizard's Mana Shield (no orb spent), Duelist's parry,
     // and Jester's decoy-spawn — the line is in the FLESH already, no
     // intermediate projectile to absorb. Scope is tight: only ticks
-    // during the ~0.3s tether. Replaces CRIPPLING HOOK stun.
+    // during the ~0.3s tether.
     ability:'grapple', cd:1.6, dmg:150,
     reelStepPx: 10, reelStepDmg: 3,
     active: 'THE HOOK — fires a hook that wounds and reels the enemy in',

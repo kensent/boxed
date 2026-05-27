@@ -370,8 +370,8 @@ function fireAbility(f, enemy) {
     }
     case 'grapple': {
       // Hunter: fires a hook projectile. On hit it deals damage AND tethers the
-      // enemy, reeling them in. CRIPPLING HOOK (passive) slows the hooked enemy
-      // — applied in the projectile-hit code.
+      // enemy, reeling them in. BARBED LINE (passive) ticks pure damage per
+      // pixel of drag during the reel — applied in the tether tick in step().
       const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
       game.projectiles.push({
         x: f.x, y: f.y,

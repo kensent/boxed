@@ -1603,17 +1603,6 @@ function drawFighter(f) {
     }
     ctx.restore();
   }
-  // STUNNED — yellow stars orbiting above the head (the universal stun read).
-  if (f.stunTimer > 0 && !f.dead) {
-    const cy = -(FIGHTER_SIZE + 14);
-    const t = performance.now() / 280;
-    ctx.fillStyle = '#ffd23d';
-    for (let i = 0; i < 3; i++) {
-      const ang = (i / 3) * Math.PI * 2 + t;
-      drawStar(ctx, Math.cos(ang) * 9, cy + Math.sin(ang) * 3, 4, 2.6, 1.1);
-      ctx.fill();
-    }
-  }
   // DOUBLES (Gambler) — a brief gold "lucky" pop the instant DOUBLES fires
   // (consecutive matched WILDCARD rolls trigger the Dealer's Blessing — the
   // pattern fires twice): a star + sparkle burst above the head, expanding
@@ -1638,6 +1627,6 @@ function drawFighter(f) {
   }
 
   ctx.restore();
-  // No in-arena name label — the HUD already names both fighters, and dropping it
-  // declutters the space above the head so the stun stars read clearly.
+  // No in-arena name label — the HUD already names both fighters, and dropping
+  // it declutters the space above the head for the on-fighter status reads.
 }
