@@ -144,7 +144,7 @@ function fireAbility(f, enemy) {
           noEdgeDespawn: true,                  // don't despawn at edges (rain is stationary)
         });
       }
-      f.fireKick = 0.12; f.fireKickMax = 0.12; f.fireDir = ang; // light bowstring snap-back
+      setFireKick(f, 0.12, ang); // light bowstring snap-back
       break;
     }
     case 'tackle': {
@@ -177,7 +177,7 @@ function fireAbility(f, enemy) {
         kind: 'charge', size: 7, homing: 0, angle: ang,
         stuck: false, fuse: f.fuseTime, fuseTotal: f.fuseTime,
       });
-      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw gesture
+      setFireKick(f, 0.16, ang); // throw gesture
       break;
     }
     case 'cast': {
@@ -205,7 +205,7 @@ function fireAbility(f, enemy) {
       if (toSpawn > 0) {
         sfx('cast', null, f.x);
         // visual: thrust the spellbook forward + a rune flare as the orbs release
-        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x);
+        setFireKick(f, 0.18, Math.atan2(aim.y - f.y, aim.x - f.x));
       }
       break;
     }
@@ -230,7 +230,7 @@ function fireAbility(f, enemy) {
       // Clamp to arena
       f.x = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, tx));
       f.y = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, ty));
-      f.meleeImpact = 0.26; f.meleeImpactMax = 0.26; // mask gape-then-snap + pinch effect
+      setMeleeImpact(f, 0.26); // mask gape-then-snap + pinch effect
       // AOE burst at the landing point.
       const R = f.blinkAoeRadius;
       if (!enemy.dead && dist(f, enemy) < R + FIGHTER_SIZE) {
@@ -307,8 +307,11 @@ function fireAbility(f, enemy) {
         team: f.team, hp: SKEL_HP, maxHp: SKEL_HP, dmg: f.dmg, size: 8,
         attackCd: 0.5, spin: 0, hitCd: 0, wakeHitCd: 0, flash: 0,
         chargeTimer: 0, chargeHit: false,
+        // Merge handle for damageSkeleton's burst-debounced float — see
+        // engine.js damageSkeleton(). null on spawn; first hit allocates.
+        dmgFloat: null,
       });
-      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x); // raise gesture (thrust)
+      setFireKick(f, 0.18, Math.atan2(aim.y - f.y, aim.x - f.x)); // raise gesture (thrust)
       break;
     }
     case 'sweep': {
@@ -330,7 +333,7 @@ function fireAbility(f, enemy) {
       f.crescentOut = true;
       f.sweepWhiff = false;
       sfx('sweep', null, f.x);   // only on a real throw (whiff retries are silent)
-      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw gesture (thrust)
+      setFireKick(f, 0.16, ang); // throw gesture (thrust)
       break;
     }
     case 'iai': {
@@ -362,7 +365,7 @@ function fireAbility(f, enemy) {
         markDuration: f.markDuration,
         spin: 0,
       });
-      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // hex conjure (thrust)
+      setFireKick(f, 0.16, ang); // hex conjure (thrust)
       break;
     }
     case 'grapple': {
@@ -377,7 +380,7 @@ function fireAbility(f, enemy) {
         kind: 'hook', size: 5, homing: 0,
         hookSrc: f,
       });
-      f.fireKick = 0.16; f.fireKickMax = 0.16; f.fireDir = ang; // throw the hook (thrust)
+      setFireKick(f, 0.16, ang); // throw the hook (thrust)
       break;
     }
     case 'drain': {
@@ -396,7 +399,7 @@ function fireAbility(f, enemy) {
         f.drainElapsed = 0;
         sfx('drain', null, f.x); // sustained beam drone — only on a real connect
         f.drainWhiffed = false;
-        f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = Math.atan2(aim.y - f.y, aim.x - f.x); // channel lock-on reach
+        setFireKick(f, 0.18, Math.atan2(aim.y - f.y, aim.x - f.x)); // channel lock-on reach
       } else {
         f.drainWhiffed = true;
       }
@@ -429,7 +432,7 @@ function fireAbility(f, enemy) {
       // (or a decoy) at the cast frame deals f.dmg per crossing. The flash
       // window (sigilFlashDur) is purely visual — damage is single-frame,
       // deterministic. No windup: the staff slam IS the cast.
-      f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = 0;
+      setFireKick(f, 0.18, 0);
       sfx('sigilCrack', null, f.x);
       // Shake scales with the active stone count — a 1-stone SIGIL is one
       // ley-line, an 8-stone SIGIL is 36 lines across the arena. Floor of
@@ -520,8 +523,7 @@ function resolveAim(f) {
     // JUDGMENT lands at the locked predicted spot. The pillar + ground-ring is a
     // headless-guarded spawn; the strike sound is the Priest's holy bell ('lightning').
     const tx = f.judgeX, ty = f.judgeY;
-    spawnImpact(tx, ty, 'judgment', 0, 0.9);
-    sfx('lightning', null, tx);
+    hitFx(tx, ty, 'judgment', 0, 0.9, undefined, 'lightning');
     shake(7);                         // pillar landing — heavy AOE strike
     // Decoys caught in the pillar footprint are consumed first (the pillar is
     // AOE — it strikes everything in range). Real-Jester hit still happens
@@ -597,7 +599,7 @@ function resolveAim(f) {
     });
     sfx('cannon', null, f.x);
     shake(6); // muzzle kick — character-signature artillery beat
-    f.fireKick = 0.2; f.fireKickMax = 0.2; f.fireDir = ang; // visual: heavy recoil + muzzle blast
+    setFireKick(f, 0.2, ang); // visual: heavy recoil + muzzle blast
   } else if (f.aimAbility === 'wildcard') {
     // The die has settled — the face (gamblerRoll, 1-6) picks the attack
     // pattern. Every face throws spinning gold COINS; higher faces are worth
@@ -609,7 +611,7 @@ function resolveAim(f) {
     // doubling by phase-shifting the second ring's angles by π/N so the
     // 20 doubled coins interleave evenly around the circle.
     const ang = Math.atan2(aim.y - f.y, aim.x - f.x);
-    f.fireKick = 0.18; f.fireKickMax = 0.18; f.fireDir = ang; // coin throw (thrust)
+    setFireKick(f, 0.18, ang); // coin throw (thrust)
     // The die has just settled on its face — a hard clack, brighter on a
     // high roll (5-6) to signal the lucky result before the coins fly.
     sfx(f.gamblerRoll >= 5 ? 'diceLandBig' : 'diceLand', null, f.x);

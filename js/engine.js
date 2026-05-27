@@ -987,21 +987,44 @@ function damageSkeleton(sk, dmg, forceBurst) {
   dmg = Math.round(dmg);
   sk.hp -= dmg;
   sk.flash = 0.12;
-  spawnFloat(sk.x, sk.y - sk.size - 4, '-' + dmg,
-             sk.team === 'red' ? '#ff2e2e' : '#2e9eff');
+  // Burst-merging damage float — mirrors the BATCH_GAP debounce in
+  // combat.js damage() so multi-hit bursts on a skeleton (Geomancer
+  // SIGIL's ~3 ley-lines crossing one stack in the same cast, Reaper
+  // wake re-ticks, Priest JUDGMENT AOE on multiple skeletons clipping
+  // the same one) merge into ONE accumulating "-N" float instead of
+  // stacking identical "-dmg" copies at the same screen position.
+  // Without this merge the float looked like a single hit even when
+  // the HP took several — players saw "-80" then a kill on a 240-HP
+  // skeleton and couldn't see why. Same lifecycle as fighter dmgFloat:
+  // the engine.js floatTexts update loop reads ft.open/lastHit/gap
+  // uniformly.
+  const nowT = performance.now();
+  const color = sk.team === 'red' ? '#ff2e2e' : '#2e9eff';
+  const burstMerge = sk.dmgFloat && sk.dmgFloat.open
+    && (nowT - sk.dmgFloat.lastHit) < BATCH_GAP;
+  if (burstMerge) {
+    sk.dmgFloat.total += dmg;
+    sk.dmgFloat.rawTotal += dmg;
+    sk.dmgFloat.text = '-' + Math.round(sk.dmgFloat.total);
+    sk.dmgFloat.lastHit = nowT;
+    sk.dmgFloat.age = 0;
+  } else {
+    const ft = { x: sk.x, y: sk.y - sk.size - 4, vy: -40, life: 0.8,
+                 text: '-' + dmg, color,
+                 total: dmg, rawTotal: dmg,
+                 age: 0, open: true, lastHit: nowT, gap: BATCH_GAP };
+    game.floatTexts.push(ft);
+    sk.dmgFloat = ft;
+  }
   if (sk.hp <= 0) {
     // Bone Burst: shards erupt on death — enemy within 55px takes dmg.
     // Punishes melee fighters rushing in to kill skeletons; ranged
     // killers are safe. forceBurst overrides the distance check (Ronin
     // iai uses this — the line cleaves regardless of standoff).
     const enemy = sk.team === 'red' ? game.blue : game.red;
-    if (!enemy.dead && (forceBurst || dist(sk, enemy) < 55)) {
-      damage(enemy, 140, 'bone');
-      sfx('boneBurst', null, sk.x);
-    } else {
-      sfx('boneCrumble', null, sk.x);
-    }
-    spawnImpact(sk.x, sk.y, 'bone', 0, 0.7);
+    const burst = !enemy.dead && (forceBurst || dist(sk, enemy) < 55);
+    if (burst) damage(enemy, 140, 'bone');
+    hitFx(sk.x, sk.y, 'bone', 0, 0.7, undefined, burst ? 'boneBurst' : 'boneCrumble');
     return true;
   }
   return false;
@@ -1038,7 +1061,7 @@ function step(dt) {
       // RAMPAGE — each wall ricochet mid-rampage squashes the body so the bounce
       // reads as a slam (visual only; the sim never reads meleeImpact back).
       if (bounced && f.ability === 'tackle' && f.dashTimer > 0) {
-        f.meleeImpact = 0.14; f.meleeImpactMax = 0.14;
+        setMeleeImpact(f, 0.14);
       }
     }
 
@@ -1139,7 +1162,7 @@ function step(dt) {
         if (f.rampageHitCd <= 0) {
           const decoyHit = tryHitDecoy(f, enemy, FIGHTER_SIZE + FIGHTER_SIZE);
           if (decoyHit) {
-            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18;
+            setMeleeImpact(f, 0.18);
             f.rampageHitCd = f.rampageHitGap;
             // Ricochet off the decoy's position like a wall bumper.
             const nl = Math.hypot(f.x - decoyHit.x, f.y - decoyHit.y) || 1;
@@ -1148,7 +1171,7 @@ function step(dt) {
             if (vdot < 0) { f.vx -= 2 * vdot * ux; f.vy -= 2 * vdot * uy; }
           } else if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE) {
             damage(enemy, f.dmg, undefined, f);
-            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash on each pass
+            setMeleeImpact(f, 0.18); // impact squash on each pass
             f.rampageHitCd = f.rampageHitGap;
             // Carom off the enemy like a round bumper — reflect the ramming velocity
             // about the center-to-center normal (speed preserved). Gated by the i-frame
@@ -1172,7 +1195,7 @@ function step(dt) {
           const decoyHit = tryHitDecoy(f, enemy, FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach);
           if (decoyHit) {
             f.dashHit = true;
-            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18;
+            setMeleeImpact(f, 0.18);
             f.dashTimer = 0;
             const a = Math.atan2(f.vy, f.vx);
             f.vx = Math.cos(a) * f.speed;
@@ -1180,7 +1203,7 @@ function step(dt) {
           } else if (!enemy.dead && dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + f.strikeReach) {
             damage(enemy, f.dmg, undefined, f);
             f.dashHit = true;
-            f.meleeImpact = 0.18; f.meleeImpactMax = 0.18; // impact squash + bespoke effect
+            setMeleeImpact(f, 0.18); // impact squash + bespoke effect
             f.dashTimer = 0;
             const a = Math.atan2(f.vy, f.vx);
             f.vx = Math.cos(a) * f.speed;
@@ -1399,8 +1422,7 @@ function step(dt) {
             if (h.team === f.team) return true;
             if (segDist(h.x, h.y) < f.slashReach + h.radius) {
               damage(f, h.dmg, 'hazard');
-              spawnImpact(h.x, h.y, 'arrow', 0, 0.4);
-              sfx('impact', { kind: 'arrow', big: 0.4 }, h.x);
+              hitFx(h.x, h.y, 'arrow', 0, 0.4);
               return false;
             }
             return true;
@@ -1542,8 +1564,7 @@ function step(dt) {
       // DOPPELGANGER: a closer decoy at the landing spot eats the arrow.
       const decoy = tryHitDecoy({ x: lx, y: ly }, target, FIGHTER_SIZE + p.size);
       if (decoy) {
-        spawnImpact(lx, ly, 'arrow', Math.PI / 2, 0.5);
-        sfx('impact', { kind: 'arrow', big: 0.5 }, lx);
+        hitFx(lx, ly, 'arrow', Math.PI / 2, 0.5);
         return false;
       }
       // Enemy at landing spot? Damage directly.
@@ -1551,11 +1572,8 @@ function step(dt) {
         const dmgOut = p.dmg;
         damage(target, dmgOut, 'projectile');
         const big = Math.min(1, dmgOut / 260);
-        spawnImpact(lx, ly, 'arrow', Math.PI / 2, big);
-        sfx('impact', { kind: 'arrow', big: big }, lx);
-        if (!target.dead) {
-          target.recoilTimer = 0.16; target.recoilDir = Math.PI / 2; target.recoilMag = big * 13;
-        }
+        hitFx(lx, ly, 'arrow', Math.PI / 2, big);
+        applyRecoil(target, Math.PI / 2, big);
         return false;
       }
       // Missed — spawn a STAKES hazard on the arena floor. Deterministic lean
@@ -1571,8 +1589,7 @@ function step(dt) {
         leanRad: (((lx * 0.31 + ly * 0.17) % 1) - 0.5) * 0.35,
       });
       // Land thud — small puncture audio at the embed point.
-      spawnImpact(lx, ly, 'arrow', Math.PI / 2, 0.3);
-      sfx('impact', { kind: 'arrow', big: 0.3 }, lx);
+      hitFx(lx, ly, 'arrow', Math.PI / 2, 0.3);
       return false;
     }
     if (p.kind === 'charge') {
@@ -1615,8 +1632,7 @@ function step(dt) {
           // (a kill should still BOOM, landing alongside the death ceremony's own
           // flash and audio rather than being swallowed by it). Only the knockback
           // is gated on a live target.
-          spawnImpact(p.x, p.y, 'mine', 0, 1);
-          sfx('impact', { kind: 'mine', big: 1 }, p.x);
+          hitFx(p.x, p.y, 'mine', 0, 1);
           shake(9);                  // STICK CHARGE detonation — biggest AOE in the roster
           if (!stuckTo.dead) {
             // BLAST RADIUS knockback — the explosion shoves the body AWAY FROM
@@ -1738,11 +1754,8 @@ function step(dt) {
         // would land silent before the death ceremony's own audio). Only the
         // victim's recoil-shake needs the alive gate.
         const big = Math.min(1, p.dmg / 260), ha = Math.atan2(p.vy, p.vx);
-        spawnImpact(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
-        sfx('impact', { kind: 'bone', big: big }, p.x);
-        if (!target.dead) {
-          target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = big * 13;
-        }
+        hitFx(p.x, p.y, 'bone', ha, big);            // reuse bone-shard impact (reaper material)
+        applyRecoil(target, ha, big);
         p.hitCd = 0.2;
       }
       if (p.phase === 'out') {
@@ -1775,8 +1788,7 @@ function step(dt) {
             damage(tgtC, p.dmg * falloff, 'projectile');
           }
         }
-        spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
-        sfx('impact', { kind: 'cannon', big: 1 }, p.x);
+        hitFx(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         shake(9);   // BOMBARD impact — biggest single-shell event, matches Sapper detonation floor
       }
       return false;
@@ -1886,8 +1898,7 @@ function step(dt) {
       // touched by the blast.
       if (p.kind === 'cannon') {
         damage(target, p.dmg, 'projectile');
-        spawnImpact(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
-        sfx('impact', { kind: 'cannon', big: 1 }, p.x);
+        hitFx(p.x, p.y, 'cannon', 0, 1, p.splashRadius);
         shake(9);   // BOMBARD impact — same shake floor as the landing-path above
         return false;
       }
@@ -1903,8 +1914,7 @@ function step(dt) {
         // Bite clink ALWAYS fires — even on a lethal hook (otherwise the kill
         // would land silent before the death ceremony's own audio). No recoil
         // here (the hook reels the target IN).
-        spawnImpact(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5);
-        sfx('impact', { kind: 'hook', big: 0.5 }, p.x);
+        hitFx(p.x, p.y, 'hook', Math.atan2(p.vy, p.vx), 0.5);
         // (BARBED LINE per-pixel rate is read in the tether tick from
         // tetherTarget.reelDmgPerPx — no per-target capture needed.)
         return false;
@@ -1924,11 +1934,8 @@ function step(dt) {
       // needs the alive gate.
       const hitAng = Math.atan2(p.vy, p.vx);
       const big = Math.min(1, dmgOut / 260);
-      spawnImpact(p.x, p.y, p.kind, hitAng, big);
-      sfx('impact', { kind: p.kind, big: big }, p.x);
-      if (!target.dead) {
-        target.recoilTimer = 0.16; target.recoilDir = hitAng; target.recoilMag = big * 13;
-      }
+      hitFx(p.x, p.y, p.kind, hitAng, big);
+      applyRecoil(target, hitAng, big);
       return false;
     }
     return true;
@@ -1946,8 +1953,7 @@ function step(dt) {
       const target = h.team === 'red' ? blue : red;
       if (!target.dead && Math.hypot(target.x - h.x, target.y - h.y) < h.radius + FIGHTER_SIZE) {
         damage(target, h.dmg, 'hazard');
-        spawnImpact(h.x, h.y, 'arrow', Math.PI / 2, 0.35);
-        sfx('impact', { kind: 'arrow', big: 0.35 }, h.x);
+        hitFx(h.x, h.y, 'arrow', Math.PI / 2, 0.35);
         return false;     // consumed
       }
       return true;        // still standing
@@ -2006,9 +2012,8 @@ function step(dt) {
           damage(target, sk.dmg);
           // Bone clash on the dash-attack connect + a light (chip-scaled) knockback.
           const ha = Math.atan2(target.y - sk.y, target.x - sk.x);
-          spawnImpact(target.x, target.y, 'bone', ha, 0.35);
-          sfx('impact', { kind: 'bone', big: 0.35 }, target.x);
-          target.recoilTimer = 0.16; target.recoilDir = ha; target.recoilMag = Math.min(1, sk.dmg / 260) * 13;
+          hitFx(target.x, target.y, 'bone', ha, 0.35);
+          applyRecoil(target, ha, Math.min(1, sk.dmg / 260));
           sk.chargeHit = true;
           sk.attackCd = SKEL_CHARGE_CD;
           sk.chargeTimer = 0;

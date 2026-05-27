@@ -128,6 +128,45 @@
   fire. The character-signature shake on a charged release (Cannoneer
   muzzle, Berserker rampage launch, Sapper detonation, etc.) is the
   exception — those are the kit's *defining* beat, not a multi-spawn.
+- **Hit-feedback funnels live in `particles.js` — don't inline.** Four
+  helpers consolidate the visual+state mutations every hit / cast fires.
+  Use them instead of re-typing the underlying field-sets:
+  - `hitFx(x, y, kind, dir, big, radius?, sfxName?)` — spawns the impact
+    visual + plays the audio twin. Default audio is `sfx('impact', { kind,
+    big }, x)` (the generic per-kind impact family); pass `sfxName` to
+    override with a bespoke cue (Priest JUDGMENT uses `'lightning'`,
+    skeleton death uses `'boneBurst'`/`'boneCrumble'`). `radius` is only
+    for impacts with a falloff edge (Cannoneer EPICENTER). Every
+    `spawnImpact` call goes through this — `grep -c spawnImpact
+    js/engine.js js/abilities.js` should stay 0.
+  - `setFireKick(f, dur, dir)` — ranged discharge gesture (was `f.fireKick
+    = N; f.fireKickMax = N; f.fireDir = ang;` triplet, 11 sites).
+  - `setMeleeImpact(f, dur)` — melee body squash (was `f.meleeImpact = N;
+    f.meleeImpactMax = N;` pair, 6 sites).
+  - `applyRecoil(target, dir, big)` — non-melee victim knockback (was
+    `if (!target.dead) { target.recoilTimer = 0.16; target.recoilDir = D;
+    target.recoilMag = big * 13; }` block, 4 sites). The dead-guard is
+    folded in. The MELEE body-contact recoil set inside `damage()`
+    stays separate on purpose — it's kind-aware (`!srcKind` gate).
+  These are all visual-only / headless-guarded; `./balance.sh` must
+  remain bit-identical after touching any of them.
+- **Multi-hit damage floats on skeletons merge via BATCH_GAP, same as
+  fighters.** Every `damageSkeleton` call goes through the burst-merge
+  in `engine.js` — if a previous float is still "open" (within
+  BATCH_GAP ms of the last hit), the new dmg folds into the running
+  total instead of spawning a fresh `-N` text at the same screen
+  position. Skeletons carry a `dmgFloat` handle (mirrors
+  `target.dmgFloat` on fighters); the engine's `floatTexts` update
+  loop resolves both kinds the same way. The bug this fixes: SIGIL's
+  all-pairs network can drop 3 ley-lines onto one skeleton in the
+  same cast — without the merge, all 3 floats spawned at the same
+  `(sk.x, sk.y - sk.size - 4)` point and stacked into a single visible
+  "-80" while HP took the full 240. Skeleton was the only entity
+  type with this gap (projectile/MELEE_CLEAVE paths gate via
+  `sk.hitCd = MELEE_SKEL_IFRAME` so they can't multi-hit in one frame;
+  SIGIL is the outlier because it fires all lines simultaneously).
+  Future entity types with their own damage path should follow the
+  same `dmgFloat` + BATCH_GAP pattern.
 - **Uniform "aim at nearest" targeting (DOPPELGANGER substrate).** Every fighter
   that aims at an enemy must route through `pickTarget(attacker, defender)` in
   `engine.js`, which returns the nearest of `{real defender, ...defender.decoys}`.
