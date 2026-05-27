@@ -962,6 +962,10 @@ function pickTarget(attacker, defender) {
 // to `pos` than the real defender, mark that decoy dead and return it. The
 // caller should treat this as the projectile/strike being absorbed (despawn,
 // no damage to real defender). Returns null when no decoy intercepts.
+// Note: only marks `dead = true`; the shatter visual is spawned ONCE in the
+// decoy update loop when the dead decoy is reaped — see step()'s blink block.
+// That keeps the visual feedback in a single place no matter how the decoy
+// dies (tryHitDecoy / SIGIL line / JUDGMENT pillar / DRAIN lock-on).
 function tryHitDecoy(pos, defender, hitRange) {
   if (!defender.decoys || !defender.decoys.length) return null;
   const realD = defender.dead ? Infinity : dist(pos, defender);
@@ -970,20 +974,7 @@ function tryHitDecoy(pos, defender, hitRange) {
     const dd = dist(pos, d);
     if (dd < bestD) { best = d; bestD = dd; }
   }
-  if (best) {
-    best.dead = true;
-    // Visual shatter — small diamond-mote burst (Jester's SHATTER death in
-    // miniature) so the consumed decoy reads as "absorbed and shattered"
-    // rather than silently vanishing. Render-only, headless-skipped.
-    if (!headless && game && game.impacts) {
-      game.impacts.push({
-        x: best.x, y: best.y,
-        kind: 'decoyShatter',
-        dir: 0, mag: 0.5, radius: 0,
-        life: 0.30, maxLife: 0.30,
-      });
-    }
-  }
+  if (best) best.dead = true;
   return best;
 }
 
@@ -1084,12 +1075,33 @@ function step(dt) {
     // Jester DOPPELGANGER: decoy lifecycle. Decay each decoy's life; cull on
     // timeout or `dead` flag (set by the projectile/melee hit loops when a
     // decoy absorbs an attack). Iterate back-to-front for safe splice.
+    // Visual feedback for a CONSUMED decoy (dead === true) lives here, as
+    // the single canonical "decoy was hit" callsite — every attacker that
+    // marks a decoy dead (tryHitDecoy, SIGIL, JUDGMENT, DRAIN, PUNCHLINE)
+    // routes through this reap step, so the shatter burst plays uniformly
+    // no matter who killed the phantom. A natural life-out (life <= 0) is
+    // silent (the decoy fades on its own animation).
     if (f.ability === 'blink') {
       if (f.blinkFx > 0) f.blinkFx -= dt;
       if (f.decoys && f.decoys.length) {
         for (let i = f.decoys.length - 1; i >= 0; i--) {
-          f.decoys[i].life -= dt;
-          if (f.decoys[i].life <= 0 || f.decoys[i].dead) f.decoys.splice(i, 1);
+          const d = f.decoys[i];
+          d.life -= dt;
+          if (d.dead) {
+            // Small diamond-mote burst (Jester's SHATTER death in miniature).
+            // Render-only, headless-guarded so the sim path stays unchanged.
+            if (!headless && game && game.impacts) {
+              game.impacts.push({
+                x: d.x, y: d.y,
+                kind: 'decoyShatter',
+                dir: 0, mag: 0.5, radius: 0,
+                life: 0.30, maxLife: 0.30,
+              });
+            }
+            f.decoys.splice(i, 1);
+          } else if (d.life <= 0) {
+            f.decoys.splice(i, 1);
+          }
         }
       }
     }

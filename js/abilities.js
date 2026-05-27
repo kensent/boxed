@@ -210,22 +210,52 @@ function fireAbility(f, enemy) {
       break;
     }
     case 'blink': {
-      // Teleport behind enemy's heading. Brief invuln during the blink itself.
+      // PUNCHLINE — teleport behind the aim target's heading, then burst
+      // f.dmg in a small radius around the landing point. AOE catches the
+      // real enemy + any surviving decoys + enemy-team skeletons in radius,
+      // so Jester can't whiff against a Necromancer's army or be fooled by
+      // a decoy sitting in the old single-target stab arc.
+      //
+      // Teleport reads aim.* (DOPPELGANGER substrate, line 47): if a closer
+      // decoy was picked, Jester ports behind the phantom — the burst still
+      // catches whatever is actually in radius. Predictive heading uses
+      // aimVX/aimVY which collapses to 0 for stationary decoys (the port
+      // lands "behind" the decoy along whatever its inherited heading
+      // would be — for a still target, that's the +x axis).
       f.blinkFromX = f.x; f.blinkFromY = f.y; f.blinkFx = 0.3; // depart anchor + streak timer
-      const enemyHeading = Math.atan2(enemy.vy, enemy.vx);
-      const behindAng = enemyHeading + Math.PI;
-      const tx = enemy.x + Math.cos(behindAng) * 25;
-      const ty = enemy.y + Math.sin(behindAng) * 25;
+      const aimHeading = Math.atan2(aimVY, aimVX);
+      const behindAng = aimHeading + Math.PI;
+      const tx = aim.x + Math.cos(behindAng) * 25;
+      const ty = aim.y + Math.sin(behindAng) * 25;
       // Clamp to arena
       f.x = Math.max(FIGHTER_SIZE, Math.min(game.w - FIGHTER_SIZE, tx));
       f.y = Math.max(FIGHTER_SIZE, Math.min(game.h - FIGHTER_SIZE, ty));
       f.meleeImpact = 0.26; f.meleeImpactMax = 0.26; // mask gape-then-snap + pinch effect
-      // Stab — f.dmg if in range after blink
-      if (dist(f, enemy) < FIGHTER_SIZE + FIGHTER_SIZE + 4) {
+      // AOE burst at the landing point.
+      const R = f.blinkAoeRadius;
+      if (!enemy.dead && dist(f, enemy) < R + FIGHTER_SIZE) {
         damage(enemy, f.dmg, undefined, f);
       }
-      // After blink, face away from enemy so jester drifts off
-      const ang = Math.atan2(f.y - enemy.y, f.x - enemy.x);
+      // Decoys in radius are consumed (mark dead; the centralized decoy
+      // reap step in engine.js spawns the shatter visual on cull).
+      if (enemy.decoys && enemy.decoys.length) {
+        for (const d of enemy.decoys) {
+          if (d.dead) continue;
+          if (dist(f, d) < R + FIGHTER_SIZE) d.dead = true;
+        }
+      }
+      // Enemy-team skeletons in radius take f.dmg via the canonical
+      // damageSkeleton path (matches the MELEE_CLEAVE pattern in engine.js).
+      game.skeletons = game.skeletons.filter(sk => {
+        if (sk.team === f.team || sk.hitCd > 0) return true;
+        if (dist(f, sk) < R + sk.size) {
+          sk.hitCd = MELEE_SKEL_IFRAME;
+          if (damageSkeleton(sk, f.dmg)) return false;
+        }
+        return true;
+      });
+      // After PUNCHLINE, face away from the aim point so Jester drifts off.
+      const ang = Math.atan2(f.y - aim.y, f.x - aim.x);
       f.vx = Math.cos(ang) * f.speed;
       f.vy = Math.sin(ang) * f.speed;
       break;

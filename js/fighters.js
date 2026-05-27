@@ -96,13 +96,23 @@ const FIGHTERS = [
     // slightly — Jester is very cd-sensitive (~1 wr per ~1.5% cd change;
     // 2.0 → 2.2 over-corrected to 40%). 2.1 targets ~50%.
     ability:'blink', cd:2.1, dmg:120,
+    // PUNCHLINE: teleport behind the aim target, then burst f.dmg in a
+    // blinkAoeRadius radius around the landing point. Catches the real
+    // enemy + any surviving decoys + enemy-team skeletons in radius.
+    // Replaced the old single-target stab when it became clear stabbing
+    // ignored skeletons + decoys entirely (Jester whiffed against the
+    // Necromancer's army; phantoms in stab range were invisible to the
+    // hit). AOE keeps the teleport-and-strike rhythm but removes the
+    // positional-finesse requirement that the autonomous DVD-movement
+    // sim can't satisfy.
+    blinkAoeRadius: 36,
     // DOPPELGANGER replaces UNCANNY DODGE: every hit Jester takes spawns a
     // stationary phantom decoy at her current position. Decoys are valid
     // targets for every enemy ability (uniform "aim nearest" targeting); a
     // decoy absorbs one incoming hit then dies. Cap of decoyCap simultaneously
     // (oldest replaced on overflow). Decoy lifetime is decoyLife seconds.
     decoyCap: 2, decoyLife: 3.0,
-    active: 'PUNCHLINE — teleports behind enemy and stabs',
+    get active() { return `PUNCHLINE — teleports behind the enemy and bursts in a ${this.blinkAoeRadius}px radius around the landing point`; },
     get passive() { return `DECOY — every hit spawns a phantom decoy; enemies aim at the nearest target. Max ${this.decoyCap}, ${this.decoyLife}s each`; },
   },
   { id:'cannoneer',name:'CANNONEER',hp:2060, speed:85, color:'#4a4a4a', accent:'#ff8c1a', shape:'cannon',
