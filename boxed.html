@@ -43,12 +43,6 @@
     position: relative;
     flex-shrink: 0;
   }
-  header {
-    padding: 12px 16px 8px;
-    text-align: center;
-    border-bottom: 2px solid var(--fg);
-    flex-shrink: 0;
-  }
   footer#app-footer {
     padding: 10px 16px 12px;
     border-top: 2px solid var(--fg);
@@ -68,33 +62,6 @@
   .hunt-btn:hover { background: #1f1c0a; }
   .hunt-btn:active { transform: scale(0.98); }
   .hunt-btn:disabled { color: #666; border-color: #444; cursor: wait; }
-  h1 {
-    font-family: 'Bungee', sans-serif;
-    font-size: clamp(22px, 6vw, 32px);
-    letter-spacing: 2px;
-    line-height: 1;
-  }
-  h1 .red { color: var(--red); }
-  h1 .blue { color: var(--blue); }
-  /* The X is the seam between the two teams — red left, blue right. The split
-     point is nudged off 50% because the display font is slanted: a vertical
-     cut at the box midpoint reads right-of-centre on the slanted glyph. */
-  h1 .split {
-    background: linear-gradient(90deg, var(--red) 0%, var(--red) 43%, var(--blue) 43%, var(--blue) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .rules-note {
-    font-size: 9px;
-    letter-spacing: 2px;
-    opacity: 0.5;
-    text-align: center;
-    margin-bottom: 10px;
-    padding: 4px 0;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
   .screen { flex: 1; display: none; flex-direction: column; padding: 12px; overflow-y: auto; }
   .screen.active { display: flex; }
   .selectors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
@@ -169,9 +136,6 @@
        follow-camera (see drawArenaBackdrop in render/arena.js) */
   }
   
-  .controls { display: flex; gap: 8px; margin-top: 8px; flex-shrink: 0; }
-  .controls button { flex: 1; background: transparent; color: var(--fg); border: 2px solid var(--fg); font-family: 'Bungee', sans-serif; font-size: 10px; letter-spacing: 1px; padding: 8px; cursor: pointer; }
-  .controls button:active { background: var(--fg); color: var(--bg); }
   /* Outro overlay removed — the celebration in the arena (glow + team-colour
      mote burst + 'win' arpeggio) IS the closing beat; no winner-name card
      opens on top of it. showWinnerOverlay() in main.js just schedules the
@@ -269,7 +233,6 @@
   }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   /* All winner-* CSS removed — outro is arena-only now (see comment above). */
-  header { position: relative; }
   .mute-btn {
     display: block;
     margin: 4px auto 8px;
@@ -284,30 +247,22 @@
     opacity: 0.55;
   }
   .mute-btn.on { opacity: 0.9; border-color: var(--fg); }
-  /* Recording mode — clean Shorts-capture layout. Hides the restart/back
-     controls, vertically centres the fight screen, and lets tapping
-     anywhere outside the arena trigger the back action (see engine.js).
-     The arena-wrap is pinned to 360px so justify-content has leftover
-     space to distribute — otherwise flex:1 consumes all of it and the
-     centering becomes a no-op. */
-  body.recording .controls { display: none; }
-  body.recording #app > header { display: none; }
-  body.recording #fight-screen { justify-content: center; }
-  body.recording .arena-wrap { flex: 0 0 360px; height: 360px; }
+  /* Shorts-capture layout (permanent). The fight screen is vertically
+     centred and the arena-wrap is pinned to 360px so justify-content
+     has leftover space to distribute — otherwise flex:1 consumes all
+     of it and the centering becomes a no-op. Header + restart/back
+     controls are gone entirely; tapping outside the arena returns to
+     select (see engine.js). */
+  #fight-screen { justify-content: center; }
+  .arena-wrap { flex: 0 0 360px; height: 360px; }
 </style>
 </head>
 <body>
 
 <div id="app">
 
-<header>
-  <h1><span class="red">BO</span><span class="split">X</span><span class="blue">ED</span></h1>
-</header>
-
 <section class="screen active" id="select-screen">
-  <div class="rules-note">FOG RING CLOSES IN AT 0:20 — LAST ONE LEFT WINS</div>
   <button id="mute-btn" class="mute-btn on" aria-label="toggle sound">SOUND: ON</button>
-  <button id="rec-btn" class="mute-btn" aria-label="toggle recording mode">REC: OFF</button>
   <div class="selectors">
     <div class="pick-slot red">
       <div class="label">RED</div>
@@ -391,10 +346,6 @@
         <div class="vs-pas" id="vs-pas-blue"></div>
       </div>
     </div>
-  </div>
-  <div class="controls">
-    <button id="restart-btn">⟲ RESTART</button>
-    <button id="back-btn">← BACK</button>
   </div>
 </section>
 

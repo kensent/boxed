@@ -77,7 +77,6 @@ function applyCamera() {
 window.addEventListener('resize', resizeCanvas);
 
 document.getElementById('fight-btn').addEventListener('click', startFight);
-document.getElementById('restart-btn').addEventListener('click', startFight);
 
 // --- Auto matchup picker --------------------------------------------------
 // Picks a matchup of a chosen type from the embedded sim data and selects the
@@ -427,7 +426,8 @@ muteBtn.addEventListener('click', () => {
   if (!nowMuted) sfx('select'); // brief blip to confirm sound is live
 });
 // returnToSelect() — tear down the fight and show the character-select screen.
-// Used by the BACK button and by the auto-return timer after a victory.
+// Used by the tap-outside-arena handler below and by the auto-return
+// timer after a victory.
 function returnToSelect() {
   stopGame();
   document.getElementById('vs-intro').classList.remove('show');
@@ -435,25 +435,11 @@ function returnToSelect() {
   document.getElementById('select-screen').classList.add('active');
   document.getElementById('app-footer').classList.add('show');
 }
-document.getElementById('back-btn').addEventListener('click', returnToSelect);
 
-// Recording mode — clean Shorts-capture layout. Toggling adds/removes the
-// `recording` class on <body>, which (via boxed.html CSS) hides the
-// restart/back controls and vertically centres the fight screen. While
-// recording mode is on AND the fight screen is active, tapping anywhere
-// outside the arena triggers the back action — the only way out of the
-// fight, since the back button itself is hidden. Session-only flag (no
-// localStorage), mirroring the mute toggle.
-const recBtn = document.getElementById('rec-btn');
-let recordingMode = false;
-recBtn.addEventListener('click', () => {
-  recordingMode = !recordingMode;
-  document.body.classList.toggle('recording', recordingMode);
-  recBtn.textContent = recordingMode ? 'REC: ON' : 'REC: OFF';
-  recBtn.classList.toggle('on', recordingMode);
-});
+// Shorts-capture layout is permanent: no header, no restart/back buttons.
+// During a fight, tapping anywhere outside the arena returns to select
+// (the only way out, since the buttons are gone).
 document.getElementById('fight-screen').addEventListener('click', e => {
-  if (!recordingMode) return;
   if (e.target.closest('.arena-wrap')) return; // tap inside arena does nothing
   returnToSelect();
 });
