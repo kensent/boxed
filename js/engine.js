@@ -1298,7 +1298,10 @@ function step(dt) {
     }
 
     // Warlock: drain channel. Ticks f.dmg every 0.2s while the enemy stays in
-    // range, slowing them to f.slowRate (ENERVATE passive) and healing f.dmg * f.drainHealRate per tick.
+    // range, slowing them to f.slowRate (ENERVATE passive) and healing
+    // dealt * f.drainHealRate per tick — heal scales with what actually
+    // LANDED (so Wizard's Mana Shield reducing the tick reduces the leech
+    // proportionally; a fully-absorbed tick heals nothing).
     if (f.drainTimer > 0) {
       f.drainTimer -= dt;
       f.drainElapsed += dt;
@@ -1323,9 +1326,9 @@ function step(dt) {
           f.drainTickTimer -= dt;
           if (f.drainTickTimer <= 0) {
             f.drainTickTimer = 0.2;
-            damage(t, f.dmg, 'drain');
+            const dealt = damage(t, f.dmg, 'drain') || 0;
             const before = f.hp;
-            f.hp = Math.min(f.maxHp, f.hp + Math.round(f.dmg * f.drainHealRate));
+            f.hp = Math.min(f.maxHp, f.hp + Math.round(dealt * f.drainHealRate));
             const gained = f.hp - before;
             // Debounced, accumulating heal float on the Warlock — ticks up over the
             // channel and follows him, mirroring his drain DAMAGE float. Visual only.
