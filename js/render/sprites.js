@@ -7,6 +7,47 @@
 //   bloodrage glow, dodge shimmer), aim telegraphs, swing arcs, dash trails.
 // ============================================================================
 
+// Reaper scythe — shared by the carried sprite (drawShape `sickles` case)
+// and the in-flight crescent projectile (render/arena.js). Drawn at scale
+// `s` in the caller's local frame; the caller handles translate/rotate.
+// `accent` is the crimson back-edge stroke (uses f.accent on the carried
+// sprite, a literal red in flight). One source of truth for the silhouette
+// so the thrown projectile reads as the same weapon the Reaper carries.
+function drawScythe(c, s, accent) {
+  c.lineCap = 'round';
+  // Shaft — diagonal warm-wood snath from butt (back-bottom) to where the
+  // blade attaches (forward-top). Diagonal orientation is intrinsic to the
+  // scythe silhouette; the in-flight version rotates the whole tool via
+  // ctx.rotate(p.spin) at the call site.
+  c.strokeStyle = '#7a5a3a';
+  c.lineWidth = 2.2;
+  c.beginPath();
+  c.moveTo(-s * 0.45, s * 0.75);
+  c.lineTo(s * 0.18, -s * 0.7);
+  c.stroke();
+  // Blade — bone J-curve hooked at the top of the shaft, sweeping FORWARD.
+  // The tip extends past the joint so the "blade reaches out" read is
+  // unmistakable. Iconic Grim-Reaper sickle.
+  c.strokeStyle = '#e8e0c8';
+  c.lineWidth = 2.2;
+  c.beginPath();
+  c.moveTo(s * 0.18, -s * 0.7);
+  c.quadraticCurveTo(s * 0.95, -s * 1.05, s * 1.15, -s * 0.45);
+  c.stroke();
+  // Crimson back-edge — the dull (inner) side of the J-curve.
+  c.strokeStyle = accent;
+  c.lineWidth = 1.1;
+  c.beginPath();
+  c.moveTo(s * 0.22, -s * 0.6);
+  c.quadraticCurveTo(s * 0.78, -s * 0.85, s * 0.94, -s * 0.42);
+  c.stroke();
+  // Counterweight bead at the butt of the shaft.
+  c.fillStyle = '#3a2614';
+  c.beginPath();
+  c.arc(-s * 0.45, s * 0.75, 1.8, 0, Math.PI * 2);
+  c.fill();
+}
+
 function drawStar(c, cx, cy, spikes, outer, inner) {
   let rot = Math.PI / 2 * 3;
   let x = cx, y = cy;
@@ -598,38 +639,11 @@ function drawShape(c, f, hinge = 0) {
       c.beginPath();
       c.arc(0, -s * 0.38, s * 0.20, 0, Math.PI * 2);
       c.fill();
-      // Scythe shaft — diagonal from back-bottom (butt) to forward-top (where
-      // the blade attaches). Held diagonally across the body.
-      c.strokeStyle = '#3a2010';
-      c.lineWidth = 2.2;
-      c.lineCap = 'round';
-      c.beginPath();
-      c.moveTo(-s * 0.45, s * 0.75);
-      c.lineTo(s * 0.18, -s * 0.7);
-      c.stroke();
-      // Scythe blade — bone-cream curve hooked at the top of the shaft and
-      // sweeping FORWARD (toward the enemy / +x direction). The tip extends
-      // past the body silhouette so the "the blade reaches out at the enemy"
-      // read is unmistakable. Iconic Grim-Reaper J-curve.
-      c.strokeStyle = '#e8e0c8';
-      c.lineWidth = 2.2;
-      c.beginPath();
-      c.moveTo(s * 0.18, -s * 0.7);
-      c.quadraticCurveTo(s * 0.95, -s * 1.05, s * 1.15, -s * 0.45);
-      c.stroke();
-      // Crimson back-edge — the dull (inner) side of the J-curve. Reaper's
-      // accent color: "the blade is already bloodied."
-      c.strokeStyle = f.accent;
-      c.lineWidth = 1.1;
-      c.beginPath();
-      c.moveTo(s * 0.22, -s * 0.6);
-      c.quadraticCurveTo(s * 0.78, -s * 0.85, s * 0.94, -s * 0.42);
-      c.stroke();
-      // Counterweight bead at the butt of the shaft.
-      c.fillStyle = '#1a0e0e';
-      c.beginPath();
-      c.arc(-s * 0.45, s * 0.75, 1.6, 0, Math.PI * 2);
-      c.fill();
+      // Scythe — shaft + blade + back-edge + counterweight. Shared with the
+      // in-flight projectile (render/arena.js crescent draw) via drawScythe,
+      // so both forms render the same silhouette and the thrown weapon
+      // reads as the same scythe the Reaper carries.
+      drawScythe(c, s, f.accent);
       break;
     }
     case 'katana': {
@@ -1123,7 +1137,7 @@ function drawFighter(f) {
     // orb = 20% reduction, up to 80%). Lit segments = current orbs, faint = spent
     // capacity, so you can read the shield strength and watch it deplete per hit.
     const orbs = Math.min(4, game.projectiles.filter(p => p.kind === 'orb' && p.team === f.team).length);
-    if (orbs > 0) {
+    if (orbs > 0 || f.shieldConsumeFx > 0) {
       const pulse = 0.6 + Math.sin(performance.now() / 450) * 0.25;
       const r = FIGHTER_SIZE + 7, seg = Math.PI * 2 / 4, gap = 0.28;
       ctx.lineCap = 'round';
@@ -1135,6 +1149,19 @@ function drawFighter(f) {
                               : 'rgba(199,125,255,0.12)';
         ctx.lineWidth = lit ? 2.5 : 1.5;
         ctx.beginPath(); ctx.arc(0, 0, r, a0, a1); ctx.stroke();
+      }
+      // Consume flash — when an orb was just spent, the segment that was lost
+      // (index `orbs` — the first faint slot in the current state) flares
+      // bright and expands outward briefly before settling into the faint
+      // baseline. Sells the "an orb was just absorbed" moment that the audio
+      // (`shield` sfx) and the orb-pop at world position already pair with.
+      if (f.shieldConsumeFx > 0 && orbs < 4) {
+        const k = f.shieldConsumeFx / 0.2;            // 1 → 0 over 0.2s
+        const a0 = -Math.PI / 2 + orbs * seg + gap / 2;
+        const a1 = -Math.PI / 2 + (orbs + 1) * seg - gap / 2;
+        ctx.strokeStyle = `rgba(225,180,255,${k.toFixed(3)})`;
+        ctx.lineWidth = 3 + (1 - k) * 2;
+        ctx.beginPath(); ctx.arc(0, 0, r + (1 - k) * 6, a0, a1); ctx.stroke();
       }
     }
   }
@@ -1180,13 +1207,23 @@ function drawFighter(f) {
   // the bow + nocked arrow always read as "aimed skyward."
   const inRampage = f.ability === 'tackle' && f.dashTimer > 0;
   const isArcherSky = f.ability === 'arrow';
+  // Ronin IAI exception: the strike DIRECTION is locked at cast (f.iaiAngle),
+  // so the body should face that locked direction during BOTH the windup
+  // and the strike — not the live atan2-to-enemy. Otherwise the body tracks
+  // the enemy mid-windup (the telegraph contradicts the eventual cut) and
+  // mid-strike (the recovery animation faces the enemy's new position, not
+  // the cut direction). Covers the FOCUS chain too: the chain's windup is
+  // effectively 1 frame but the iaiStrike window (0.15s) is the visible cut.
+  const inIaiCut = f.ability === 'iai' && (f.iaiWindup > 0 || f.iaiStrike > 0);
   const facing = inRampage
     ? Math.atan2(f.vy, f.vx)
     : isArcherSky
       ? -Math.PI / 2
-      : (enemy && !enemy.dead)
-        ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
-        : (f.lastFacing || 0);
+      : inIaiCut
+        ? f.iaiAngle
+        : (enemy && !enemy.dead)
+          ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
+          : (f.lastFacing || 0);
   f.lastFacing = facing;
 
   // ----- Victim recoil (shared: any fighter that just took a melee hit) -----
@@ -1568,22 +1605,35 @@ function drawFighter(f) {
 
   // ===== Negative-status marks (debuffs) — afflict the fighter, drawn distinctly
   // from the beneficial edge-rings so a buff never reads like a debuff. =========
-  // MARKED (Witch's Mark) — a slow-rotating green sigil painted over the fighter.
+  // MARKED (Witch's Mark) — a slow-rotating inverted pentagram painted over
+  // the fighter. The point hangs DOWN (occult orientation), drawn as a single
+  // closed path connecting every-other vertex (0→2→4→1→3→0). Asymmetric,
+  // pointed, line-only — geometrically distinct from any beneficial ring so
+  // a debuff never reads as a buff. (Earlier circle + 4 cardinal ticks read
+  // as a crosshair/target, not a curse — replaced for that reason.)
   if (f.witchMarkTimer > 0 && !f.dead) {
     const pulse = 0.5 + Math.sin(performance.now() / 200) * 0.3;
     ctx.save();
     ctx.rotate(performance.now() / 700);
     ctx.strokeStyle = `rgba(125,255,61,${(0.45 + pulse * 0.4).toFixed(3)})`;
     ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'miter';
     const r = FIGHTER_SIZE * 0.78;
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
-    for (let i = 0; i < 4; i++) {
-      const ang = (i / 4) * Math.PI * 2;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(ang) * r, Math.sin(ang) * r);
-      ctx.lineTo(Math.cos(ang) * (r + 4), Math.sin(ang) * (r + 4));
-      ctx.stroke();
+    // Inverted: bottom point at +PI/2, vertices stepping every 2π/5 around.
+    const base = Math.PI / 2;
+    const step = (Math.PI * 2) / 5;
+    const pts = [];
+    for (let i = 0; i < 5; i++) {
+      const ang = base + i * step;
+      pts.push([Math.cos(ang) * r, Math.sin(ang) * r]);
     }
+    // Pentagram order: connect each vertex to the one 2 steps away → 0,2,4,1,3.
+    const order = [0, 2, 4, 1, 3];
+    ctx.beginPath();
+    ctx.moveTo(pts[order[0]][0], pts[order[0]][1]);
+    for (let i = 1; i < order.length; i++) ctx.lineTo(pts[order[i]][0], pts[order[i]][1]);
+    ctx.closePath();
+    ctx.stroke();
     ctx.restore();
   }
   // DOUBLES (Gambler) — a brief gold "lucky" pop the instant DOUBLES fires

@@ -1627,44 +1627,16 @@ function draw() {
       }
       ctx.restore();
     } else if (p.kind === 'crescent') {
-      // Reaper HARVEST — a thrown scythe in flight. Long dark-wood shaft along
-      // the rotation axis + a curved bone blade hooked at the FORWARD end of
-      // the shaft, pointing OUT past the front of the shaft (mirrors the sprite
-      // — the blade leads where the weapon is heading). Spin rotates the whole
-      // tool together; the elongated shape + forward-pointing blade makes the
-      // rotation read clearly as a scythe whirling, not a small spinning disc.
+      // Reaper HARVEST — a thrown scythe in flight. Draws via the shared
+      // drawScythe helper (sprites.js) so the projectile renders the exact
+      // same silhouette as the carried weapon, just spinning in space. The
+      // scale matches the carried sprite (FIGHTER_SIZE * 1.1) so the
+      // thrown form reads as the same size — viewer recognises it as
+      // "the Reaper's scythe came off in flight," not "a different blade."
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.spin || 0);
-      ctx.lineCap = 'round';
-      // Shaft — long dark snath along the rotation axis.
-      ctx.strokeStyle = '#3a2010';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(-p.size * 1.7, 0);
-      ctx.lineTo( p.size * 0.4, 0);
-      ctx.stroke();
-      // Counterweight bead at the butt of the shaft — grip end terminator.
-      ctx.fillStyle = '#1a0e0e';
-      ctx.beginPath();
-      ctx.arc(-p.size * 1.65, 0, 1.6, 0, Math.PI * 2);
-      ctx.fill();
-      // Blade — bone J-curve hooked at the FORWARD end of the shaft, sweeping
-      // up and continuing forward. Tip sits well past the shaft front so the
-      // "blade extends outward" read is unmistakable. Mirrors the sprite shape.
-      ctx.strokeStyle = '#e8e0c8';
-      ctx.lineWidth = 2.6;
-      ctx.beginPath();
-      ctx.moveTo(p.size * 0.4, 0);
-      ctx.quadraticCurveTo(p.size * 1.4, -p.size * 0.55, p.size * 1.45, -p.size * 1.05);
-      ctx.stroke();
-      // Crimson back-edge — the dull (inner) side of the J-curve.
-      ctx.strokeStyle = '#aa0000';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(p.size * 0.45, -p.size * 0.05);
-      ctx.quadraticCurveTo(p.size * 1.05, -p.size * 0.45, p.size * 1.18, -p.size * 0.9);
-      ctx.stroke();
+      drawScythe(ctx, FIGHTER_SIZE * 1.1, '#aa0000');
       ctx.restore();
     } else if (p.kind === 'charge') {
       // Sapper thrown charge — dark casing with a blinking red fuse-tip. p.angle is

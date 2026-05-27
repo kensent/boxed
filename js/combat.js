@@ -84,9 +84,21 @@ function damage(target, dmg, srcKind, src) {
       if (orbIdx !== -1) {
         const orbCount = game.projectiles.filter(p => p.kind === 'orb' && p.team === target.team && !p.spent).length;
         dmg = dmg * (1 - orbCount * target.shieldReduction);
-        game.projectiles[orbIdx].spent = true; // marked; filter removes it cleanly next pass
-        // Absorb shimmer — discrete hits only (a drain/hazard DoT would stutter it).
-        if (srcKind !== 'drain' && srcKind !== 'hazard') sfx('shield', null, target.x);
+        const orb = game.projectiles[orbIdx];
+        orb.spent = true; // marked; filter removes it cleanly next pass
+        // Absorb feedback — orb pops at its world position (rune-pop
+        // force-shape) and the gauge segment flashes via shieldConsumeFx.
+        // Every srcKind that reaches this branch is safely paced:
+        //   * projectile / melee / bone — discrete hits
+        //   * 'hazard' — Archer STAKES (one-shot) and Reaper WAKE (0.2s-gated)
+        //   * 'drain'  — Warlock channel (0.2s-gated via drainTickTimer)
+        //   * 'reel' bypasses the shield entirely (pure dmg), so it never lands here
+        // The pop/flash window (0.2s) matches the slowest tick rate, so a
+        // sustained DoT just keeps the flash bright while orbs are still
+        // being eaten — reads correctly as "the shield is melting under
+        // constant pressure" instead of a single one-off pop.
+        hitFx(orb.x, orb.y, 'orb', 0, 0.4, 0, 'shield');
+        target.shieldConsumeFx = 0.2;
       }
     }
     // Round to an honest integer before applying — what hits HP is exactly what

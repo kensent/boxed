@@ -211,6 +211,47 @@
   0.5s lead-the-enemy gap. The counterplay is still there in the form of the
   vulnerable 0.5s coil where Berserker drifts at 40% speed; enemies attack
   freely during it.
+- **Ronin's body must face `iaiAngle` during BOTH windup and strike.** The
+  strike direction is locked at cast (the enemy's drift during the windup
+  IS the counterplay — see the Berserker bullet above). So the body has to
+  face that locked direction during the windup (the telegraph) and the
+  strike (the cut animation), not the live `atan2(enemy.y - f.y, enemy.x - f.x)`.
+  The facing branch in `drawFighter` (`sprites.js`) is:
+  `inIaiCut = f.ability === 'iai' && (f.iaiWindup > 0 || f.iaiStrike > 0)`
+  → use `f.iaiAngle`; otherwise the standard atan2-to-enemy. The FOCUS chain
+  is covered for free — its windup is effectively a single frame
+  (`iaiWindup = 0.001`), but the visible 0.15s `iaiStrike` window keeps the
+  body pointed at the cut direction for the chain too. If you ever add a
+  new `iaiAngle`-driven phase (e.g. a recovery beat), extend the condition
+  to cover it or the body will visibly contradict the cut.
+- **Wizard's MANA SHIELD consume-feedback fires on EVERY srcKind that
+  reaches the orb-consume branch.** The visual+audio twin
+  (`hitFx(orb.x, orb.y, 'orb', 0, 0.4, 0, 'shield')` + `target.shieldConsumeFx
+  = 0.2`) is unconditional inside the branch — there's no per-srcKind gate.
+  This is safe because every path that lands here is naturally paced:
+  projectile / melee / bone hits are discrete; `'hazard'` covers Archer
+  STAKES (one-shot) and Reaper WAKE (0.2s-gated via `wakeHitCd`); `'drain'`
+  is 0.2s-gated via `f.drainTickTimer`; `'reel'` bypasses the shield
+  entirely (pure dmg). The 0.2s flash window matches the slowest tick rate,
+  so a sustained DoT keeps the gauge segment continuously bright — reads
+  as "the shield is melting under pressure," which IS the right story.
+  Older code gated against `'drain'` and `'hazard'` for stutter concerns;
+  the gate was over-conservative and is gone — don't add it back. If you
+  introduce a NEW srcKind that ticks faster than 0.2s, gate THAT one
+  explicitly (don't lump it into a generic exclusion list).
+- **Reaper's carried scythe and the in-flight crescent share `drawScythe(c,
+  s, accent)`** in `render/sprites.js`. The carried sprite (`drawShape`
+  `'sickles'` case) calls it with `(c, FIGHTER_SIZE * 1.1, f.accent)`. The
+  in-flight crescent (`render/arena.js`, `p.kind === 'crescent'`) calls it
+  with `(ctx, FIGHTER_SIZE * 1.1, '#aa0000')` inside a `translate(p.x, p.y)
+  + rotate(p.spin)` save block. Both forms render the IDENTICAL silhouette
+  by design — the thrown weapon must read as the same scythe the Reaper
+  carries, just spinning. Prior in-flight versions tried bespoke shapes
+  (straight shaft + small hook = boomerang L-silhouette; thicker blade +
+  deeper J = still unbalanced); the only thing that landed the "scythe"
+  read was sharing the carried-sprite shape. Don't diverge the two. If
+  the carried scythe is restyled, edit `drawScythe` and both forms update
+  in lockstep.
 - **The closing-ring fog mechanic is gone.** Don't add code that reads
   `game.ringRadius`/`game.ringWarned`/`RING_START`/`RING_FULL` — they no
   longer exist. Fights resolve naturally; the headless

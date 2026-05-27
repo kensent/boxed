@@ -594,6 +594,10 @@ function makeFighter(t, team, x, y) {
     // damage(), decay + consumed-cleanup in step() below.
     blinkFx: 0, blinkFromX: 0, blinkFromY: 0,
     decoys: [],
+    // Wizard MANA SHIELD gauge-flash timer — set on each orb consume so the
+    // gauge segment that was just lost can flash before going faint. Visual
+    // only; the orb count itself is read live from game.projectiles.
+    shieldConsumeFx: 0,
     // Duelist
     parryTimer: 0,
     // Reaper
@@ -1034,14 +1038,15 @@ function decayTimers(obj, dt, fields) {
 // "be > 0 then be over." Co-located with step()'s tail call so the
 // contract (no zero-trigger) is verifiable at a glance.
 const FIGHTER_DECAY = [
-  'flash',          // hit-flash white tint
-  'negateFlash',    // parry/dodge negate flash
-  'meleeImpact',    // melee body squash
-  'recoilTimer',    // non-melee victim knockback
-  'fireKick',       // ranged discharge gesture
-  'blastTimer',     // Sapper blast-knockback override window
-  'slowTimer',      // slow effect — checked elsewhere while > 0
-  'wakeHitCd',      // Reaper WAKE per-target i-frame
+  'flash',            // hit-flash white tint
+  'negateFlash',      // parry/dodge negate flash
+  'meleeImpact',      // melee body squash
+  'recoilTimer',      // non-melee victim knockback
+  'fireKick',         // ranged discharge gesture
+  'blastTimer',       // Sapper blast-knockback override window
+  'slowTimer',        // slow effect — checked elsewhere while > 0
+  'wakeHitCd',        // Reaper WAKE per-target i-frame
+  'shieldConsumeFx',  // Wizard mana-shield gauge segment flash on orb consume
 ];
 
 // Skeleton decay set — same contract, narrower set.

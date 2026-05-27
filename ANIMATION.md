@@ -116,7 +116,12 @@ we never float a separate weapon-effect around a static sprite.
     replaced the old drop-a-mine (it's now a thrown fused limpet).
   - *Boomerang* (1) — **reaper**: the crescent is a returning projectile,
     thrust on launch + the existing throw-gesture for the catch when it loops
-    back. Reaper moved out of melee when HARVEST replaced sweep.
+    back. Reaper moved out of melee when HARVEST replaced sweep. The
+    in-flight projectile renders via the shared `drawScythe(ctx, s, accent)`
+    helper in `sprites.js`, the same one the carried sprite uses — so the
+    thrown weapon is exactly the silhouette the Reaper carries, spinning
+    in space. If the carried scythe shape changes, the thrown form follows
+    automatically.
 - **Channel (1)** — warlock: a **lock-on reach** when the drain latches + a
   sustained **channel pulse** synced to the drain ticks. Generic grammar,
   reusable by any future channeler. (Set-down — Sapper's old mine-drop grammar —
@@ -167,11 +172,15 @@ ranged delayed-strike abilities.
 ### State indicators — on the fighter, never a HUD badge
 Every status reads on the fighter itself; the **form** tells buff from debuff:
 - **Buff / ready / active = rings** (at most one per fighter, by ability): the
-  Wizard's 4-segment mana-shield gauge, the Duelist parry window (cyan tight
-  ring, used as both projectile-parry and melee-parry-absorb in the same
-  COUNTER thrust window), the Berserker rampage-windup charge ring
-  (crimson, with body tremble + radial coil-lines), the bloodrage pulse, the
-  Ronin FOCUS gold aura, the negate-flash.
+  Wizard's 4-segment mana-shield gauge (the segment that was just lost
+  flashes bright + expands outward for ~0.2s on each absorb, and the
+  consumed orb pops at its world position via the rune-pop force-shape —
+  sells the "an orb just took the hit" moment audio already pairs with),
+  the Duelist parry window (cyan tight ring, used as both projectile-parry
+  and melee-parry-absorb in the same COUNTER thrust window), the Berserker
+  rampage-windup charge ring (crimson, with body tremble + radial
+  coil-lines), the bloodrage pulse, the Ronin FOCUS gold aura, the
+  negate-flash.
 - **Decoys (Jester DOPPELGANGER)** — phantom Jester sprites at 42% alpha with a
   faint outer halo, drawn in world space at the decoy positions. Not a ring on
   the real Jester: they're separate bodies enemies can target. (See the
@@ -186,9 +195,14 @@ Every status reads on the fighter itself; the **form** tells buff from debuff:
   0.4s of its 2.5s lifetime; bouncing enemy stepping onto one takes chip
   damage and consumes it.
 - **Debuff / affliction = distinct non-ring forms** (so they never collide with
-  the rings): Witch's-mark **sigil** (on the body), slow **drag-trail** (ghosts
-  lagging behind). (Stun stars were retired with the CRIPPLING HOOK mechanic —
-  Hunter's hook now wounds + reels via BARBED LINE instead of stunning.)
+  the rings): Witch's-mark **inverted pentagram** (on the body — point-down
+  5-vertex star drawn as a single closed star-order path 0→2→4→1→3, slow
+  rotation, toxic-green stroke with alpha pulse; asymmetric and pointed so
+  it never reads as a ring — replaces the earlier circle + 4 cardinal
+  tick marks that read as a crosshair/target rather than a curse), slow
+  **drag-trail** (ghosts lagging behind). (Stun stars were retired with the
+  CRIPPLING HOOK mechanic — Hunter's hook now wounds + reels via BARBED
+  LINE instead of stunning.)
   DOUBLES (Gambler — formerly
   LOADED DICE) is a momentary **"lucky" pop** above the head (a trigger
   marker, not a state), reused for the new passive: the pop fires the
