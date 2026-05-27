@@ -240,10 +240,11 @@ way no other does.
   along axis + cup guard arc tumbles off; no settling shard residue, the
   snap is the death), Jester (halves drawn independently, spin apart →
   crack flash + red/blue diamond motes → 3+3 shard diamonds), Hunter (whips backward →
-  fracture arc at bend + steel shards + copper barb flies → steel claw fragments
+  fracture arc at bend + steel shards + steel barb flies → steel claw fragments
   scattered around the bend + a thin steel sliver along the shank axis; all
-  steel-grey to match the sprite's single-material claw, no out-of-sprite
-  copper barb), Gambler (accelerating tumble → gold edge flash + 4 corner
+  steel-grey to match the sprite's single-material claw — the in-flight hook +
+  its barbs are also steel-toned now, so the whole kit is one material across
+  every visual surface), Gambler (accelerating tumble → gold edge flash + 4 corner
   shards → pip-dot residue)
 - **DISSOLVE** — Priest (rises UP → gold ring expands + 7 motes ascend → warm glow pool;
   only death that goes up), Wizard (flickers then implodes inward → 4 orbs wink out in

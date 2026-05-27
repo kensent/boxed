@@ -1,8 +1,11 @@
 // drawHunterHook(hx,hy, ex,ey) — the Hunter's steel cable + hook, always drawn from
 // the Hunter (hx,hy) outward to the far end (ex,ey): +x points Hunter→end, so a taut
-// trembling steel line, copper barbs pointing BACK toward the Hunter, and a copper
-// barbed hook biting forward at the far end. Shared by the in-flight hook and the
-// reel-in tether so they render identically — no mirroring between the two phases.
+// trembling steel line, bright-steel X-barbs along the line (sharp crossed catches —
+// the cable's biting hardware), and a steel barbed hook biting forward at the far end.
+// Everything is steel-toned because the carried sprite is explicitly single-material
+// steel ("Filled STEEL grey — a grappling hook is metal." in sprites.js); the earlier
+// copper accents on barbs + hook tip were off-identity. Shared by the in-flight hook
+// and the reel-in tether so they render identically — no mirroring between phases.
 function drawHunterHook(hx, hy, ex, ey) {
   const d = Math.hypot(ex - hx, ey - hy);
   const start = FIGHTER_SIZE;                          // begin at the Hunter's EDGE, not inside its circle
@@ -16,17 +19,22 @@ function drawHunterHook(hx, hy, ex, ey) {
   ctx.strokeStyle = `rgba(184,188,196,${tremor.toFixed(3)})`;   // taut steel, trembling
   ctx.lineWidth = 1 + tremor * 1.3;
   ctx.beginPath(); ctx.moveTo(start, 0); ctx.lineTo(d - 3, 0); ctx.stroke();
-  ctx.strokeStyle = `rgba(200,144,96,${(0.5 + tremor * 0.4).toFixed(3)})`; // copper barbs
+  // X-barbs along the cable — two crossed diagonals per barb, bright-steel
+  // highlight so they read against the slightly darker cable line. Symmetric
+  // (no directionality), more obviously a "spike/hazard" silhouette than
+  // the earlier chevrons that read as decorative tick marks.
+  ctx.strokeStyle = `rgba(220,224,232,${(0.5 + tremor * 0.4).toFixed(3)})`;
   ctx.lineWidth = 1.5;
   const span = (d - 3) - start;                        // barbs only across the visible gap
   const barbs = Math.max(1, Math.floor(span / 18));
   for (let i = 1; i <= barbs; i++) {
     const px = start + (i / (barbs + 1)) * span;
     ctx.beginPath();
-    ctx.moveTo(px + 4, -4); ctx.lineTo(px - 1, 0); ctx.lineTo(px + 4, 4); // chevron back toward Hunter
+    ctx.moveTo(px - 3, -3); ctx.lineTo(px + 3,  3);
+    ctx.moveTo(px - 3,  3); ctx.lineTo(px + 3, -3);
     ctx.stroke();
   }
-  ctx.strokeStyle = '#c89060';                        // barbed hook biting forward at the far end
+  ctx.strokeStyle = '#b8bcc4';                        // steel barbed hook biting forward at the far end
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.moveTo(d - 6, 0); ctx.lineTo(d, 0); ctx.quadraticCurveTo(d + 4, 0, d + 2, -5);
@@ -971,10 +979,13 @@ function drawDeath(f, prog) {
         ctx.beginPath(); ctx.moveTo(bendX + Math.cos(g)*r0, bendY + Math.sin(g)*r0);
         ctx.lineTo(bendX + Math.cos(g)*r1, bendY + Math.sin(g)*r1); ctx.stroke();
       }
-      // 2c) copper barb tip snaps off forward — flies past the fracture point
+      // 2c) steel barb tip snaps off forward — flies past the fracture point.
+      // Matches the single-material steel identity (see the sprite + the in-flight
+      // hook); the earlier copper-tone was the same off-identity inconsistency
+      // the residue block below already calls out.
       const bp = Math.min(1, prog / 0.55), ba = 1 - bp;
       const tipX = Math.cos(fc) * (14 + bp * 22), tipY = Math.sin(fc) * (14 + bp * 22);
-      ctx.strokeStyle = `rgba(200,144,96,${(ba * 0.85).toFixed(3)})`;
+      ctx.strokeStyle = `rgba(184,188,196,${(ba * 0.85).toFixed(3)})`;
       ctx.lineWidth = 2.5 * ba + 0.3;
       ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(tipX + Math.cos(fc)*8, tipY + Math.sin(fc)*8); ctx.stroke();
       // 3) residue — steel claw fragments scattered around the bend (the
