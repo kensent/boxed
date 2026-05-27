@@ -605,6 +605,11 @@ function makeFighter(t, team, x, y) {
     // Ronin
     iaiWindup: 0, iaiStrike: 0, iaiHit: false, iaiTrail: null, focused: false,
     iaiAngle: 0,
+    // FOCUS-chain cap counter: incremented on each clean cut, reset at the
+    // cap (forces a full-windup opener next cast) or on whiff. Prevents the
+    // teleport-overshoot + enemy-bounces-back loop from producing 6+ identical
+    // chained cuts. Cap value lives on the template as f.chainCap.
+    iaiChainCount: 0,
     // Witch mark target timer (any fighter can carry the mark)
     witchMarkTimer: 0,
     // (Archer's SHATTER cushion-on-enemy was retired; VOLLEY redesigned to
@@ -1446,17 +1451,36 @@ function step(dt) {
           if (!enemy.dead && segDist(enemy.x, enemy.y) < f.slashReach + FIGHTER_SIZE) {
             damage(enemy, f.dmg, undefined, f);
             f.iaiHit = true;
-            f.cdTimer = f.cd * f.focusRefund;   // FOCUS — clean cut refunds cooldown (chain)
-            f.focused = true;
+            f.iaiChainCount++;
+            if (f.iaiChainCount >= f.chainCap) {
+              // CHAIN CAP — the teleport-overshoot puts Ronin adjacent to the
+              // enemy, and the body-vs-body collision response bounces them
+              // back into slashReach, so the chain self-perpetuates on
+              // physics alone. The cap forces the next cast to play the
+              // full windup (no cd refund) so the enemy can drift away
+              // before the next strike resolves. Breaks the loop without
+              // changing the per-cut damage or the "single clean cut"
+              // identity — just bounds the reward.
+              f.focused = false;
+              f.iaiChainCount = 0;
+            } else {
+              f.cdTimer = f.cd * f.focusRefund;   // FOCUS — clean cut refunds cooldown (chain)
+              f.focused = true;
+            }
           }
         }
       } else if (f.iaiStrike > 0) {
         f.iaiStrike -= dt;
         // Strike window over: trail fades. A whiff breaks FOCUS so the next cast is
         // on the full cd (which IS the visible "recovery" beat — no hidden slow).
+        // The chain-cap counter resets too so a future re-engagement starts
+        // fresh from the opener (no carryover of a mid-chain count).
         if (f.iaiStrike <= 0) {
           f.iaiTrail = null;
-          if (!f.iaiHit) f.focused = false;
+          if (!f.iaiHit) {
+            f.focused = false;
+            f.iaiChainCount = 0;
+          }
           f.iaiHit = false;
         }
       } else if (f.focused) {

@@ -45,7 +45,7 @@ const FIGHTERS = [
     get active() { return `MANA ORBS — ${this.orbsPerCast} homing orbs per cast, max ${this.orbCap}`; },
     get passive() { return `MANA SHIELD — ${Math.round(this.shieldReduction * 100)}% dmg reduction per orb (up to ${Math.round(this.orbCap * this.shieldReduction * 100)}%), spends one orb per hit`; },
   },
-  { id:'geomancer',name:'GEOMANCER', hp:2200, speed:120, color:'#7a6852', accent:'#e8a020', shape:'menhir',
+  { id:'geomancer',name:'GEOMANCER', hp:2100, speed:120, color:'#7a6852', accent:'#e8a020', shape:'menhir',
     // STANDING STONES (passive) — every wall-bounce drives a runestone into
     // the wall at the contact point. Stones are inert markers, glowing
     // amber; they persist at full alpha (no time decay) and are evicted at
@@ -168,18 +168,18 @@ const FIGHTERS = [
     // to 106 (overshot to 48.1%); then bumped back to 110. cd is sharply
     // sensitive at Ronin (~1 wr per 1% cd change — earlier 2.5→2.7
     // experiments over-corrected by ~10 wr), so kept at 2.5.
-    ability:'iai', cd:2.5, dmg:95,
+    ability:'iai', cd:2.5, dmg:140,
     windupTime: 0.5,
     // strikeDist tuned for the arena shrink to 300 — 200 (pre-shrink) gave 67%
     // coverage and pushed Ronin to 76%; 150 over-corrected to 29%; 175 (~58%
     // coverage) lands him back in the band. Slightly above the old ratio is OK
     // because the smaller arena also means the windup-locked direction is more
     // likely to predict where the enemy actually ends up.
-    strikeDist: 175, slashReach: 26, focusRefund: 0.4,
+    strikeDist: 175, slashReach: 26, focusRefund: 0.4, chainCap: 4,
     get active() { return `DRAW BLADE — ${this.windupTime}s windup, then a heavy line-cut through the enemy and beyond`; },
     passive: 'CLEAN CUT — landing a cut skips the next windup AND refunds the cooldown — chained cuts strike instantly',
   },
-  { id:'witch',   name:'WITCH',     hp:1560, speed:100, color:'#2d4a2a', accent:'#7dff3d', shape:'hat',
+  { id:'witch',   name:'WITCH',     hp:1600, speed:100, color:'#2d4a2a', accent:'#7dff3d', shape:'hat',
     ability:'hex', cd:1.5, dmg:110,
     maxBounces: 5, markBonus: 0.5, markDuration: 3.0,
     get active() { return `HEX — bouncing projectile, up to ${this.maxBounces} wall bounces`; },

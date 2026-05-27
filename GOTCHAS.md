@@ -224,6 +224,23 @@
   body pointed at the cut direction for the chain too. If you ever add a
   new `iaiAngle`-driven phase (e.g. a recovery beat), extend the condition
   to cover it or the body will visibly contradict the cut.
+- **Ronin's FOCUS chain is capped at `chainCap` consecutive cuts.** The
+  teleport-overshoot puts Ronin adjacent to the enemy, and body-vs-body
+  collision bounces the enemy back into `slashReach` on the same frame,
+  so the chain self-perpetuates on physics alone — without the cap, 6–8
+  identical cuts would routinely chain off a single opener. The cap
+  (`chainCap: 4`, named template prop on Ronin) interrupts the loop by
+  forcing the next cast to play the full windup. Mechanically: the IAI
+  strike's hit branch increments `f.iaiChainCount`; at the cap it sets
+  `f.focused = false` AND resets the counter AND skips the cd refund, so
+  the next cast hits the standard `cdTimer` decrement path and runs the
+  full `windupTime` plant. The whiff path (`f.iaiStrike <= 0` + `!iaiHit`)
+  also resets the counter — a re-engagement starts fresh from the opener.
+  The cap roughly halves Ronin's max-chain damage burst (was 6–8 × dmg,
+  now ≤4 × dmg), so it's compensated via the named damage lever: `f.dmg`
+  bumped from 95 → 140 to recover the missing burst capacity. If you
+  raise/lower the cap, expect to re-tune `f.dmg` in lockstep (recursive
+  multi-hit damage rule applies — see the Tuning lever notes section).
 - **Wizard's MANA SHIELD consume-feedback fires on EVERY srcKind that
   reaches the orb-consume branch.** The visual+audio twin
   (`hitFx(orb.x, orb.y, 'orb', 0, 0.4, 0, 'shield')` + `target.shieldConsumeFx
