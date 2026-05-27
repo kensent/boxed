@@ -418,17 +418,43 @@ huntLowHpBtn.addEventListener('click', async () => {
   }
 });
 
-// Fullscreen toggle — Browser Fullscreen API, gated on a user gesture
-// (the click itself). Esc exits via the browser's default handler;
-// the fullscreenchange event would let us update the button icon if
-// we wanted a separate "exit" glyph, but the single ⛶ reads cleanly
-// in both states. Catches are silent — some browsers reject on
-// already-in/out-of fullscreen or when the user denies the prompt.
+// Fullscreen toggle — Browser Fullscreen API where available, with a
+// CSS-fake-fullscreen fallback for iPhone Safari (which doesn't expose
+// an element-level fullscreen API at all — the request method is
+// `undefined` on the document element). The fake path adds a class to
+// body that scales #app to fill the dynamic viewport (see the
+// .fake-fullscreen rule in boxed.html). Catches are silent — some
+// browsers reject on already-in/out-of fullscreen or when the user
+// denies the prompt; in those cases the fake path engages.
+function inRealFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function inFakeFullscreen() {
+  return document.body.classList.contains('fake-fullscreen');
+}
+function enterFakeFullscreen() {
+  document.body.classList.add('fake-fullscreen');
+  // Repaint at the new scaled size so the canvas backing buffer matches
+  // the visual size (sharper render at higher resolutions).
+  resizeCanvas();
+}
+function exitFakeFullscreen() {
+  document.body.classList.remove('fake-fullscreen');
+  resizeCanvas();
+}
 document.getElementById('fullscreen-btn').addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
+  const root = document.documentElement;
+  if (inRealFullscreen()) {
+    (document.exitFullscreen?.() || Promise.resolve()).catch(() => {});
+    return;
+  }
+  if (inFakeFullscreen()) { exitFakeFullscreen(); return; }
+  if (root.requestFullscreen) {
+    root.requestFullscreen().catch(enterFakeFullscreen);
+  } else if (root.webkitRequestFullscreen) {
+    try { root.webkitRequestFullscreen(); } catch { enterFakeFullscreen(); }
   } else {
-    document.exitFullscreen().catch(() => {});
+    enterFakeFullscreen();   // iPhone Safari path
   }
 });
 
