@@ -150,6 +150,18 @@
     stays separate on purpose — it's kind-aware (`!srcKind` gate).
   These are all visual-only / headless-guarded; `./balance.sh` must
   remain bit-identical after touching any of them.
+- **Universal-state timer decay goes through `decayTimers(obj, dt,
+  fields)` — only timers WITHOUT a zero-trigger belong in the lists.**
+  Two named arrays in `engine.js` drive this: `FIGHTER_DECAY` (flash,
+  negateFlash, meleeImpact, recoilTimer, fireKick, blastTimer,
+  slowTimer, wakeHitCd) and `SKELETON_DECAY` (hitCd, wakeHitCd,
+  flash). Every entry's contract is "be > 0 → effect active; hit zero
+  → effect over." Timers that need to FIRE LOGIC at zero (dashTimer's
+  velocity reset, parryTimer's window close, aim/drain cadences,
+  iaiStrike's chain check) still tick inline at the site that owns
+  the trigger — DO NOT add them to the FIGHTER_DECAY list or the
+  zero-trigger silently never runs. Same warning if a current list
+  member gains a zero-trigger later: move it out of the batch.
 - **Multi-hit damage floats on skeletons merge via BATCH_GAP, same as
   fighters.** Every `damageSkeleton` call goes through the burst-merge
   in `engine.js` — if a previous float is still "open" (within
@@ -205,7 +217,23 @@
   `simulateFightDetailed` 6000-tick guard (~100s) is the only stalemate
   backstop. The balance harness tracks `long%` (fights past 60s) as a
   stalemate-prone-matchup detector — see `boxedshard.js`'s
-  `LONG_FIGHT_THRESHOLD`.
+  `LONG_FIGHT_THRESHOLD`. The HUD fight-clock was the last visual
+  artifact of this mechanic and is also gone (no `#fight-clock` element,
+  no `.fight-clock` CSS, no `@keyframes clockpulse`). `game.elapsed`
+  itself stays — read by the balance harness (per-matchup avg time) and
+  the upset-hunt result text on the select screen.
+- **Vestigial fighter fields culled — don't reintroduce.** The following
+  were initialized in `makeFighter` but never set > 0 or never read,
+  and have been removed: `stunTimer` (CRIPPLING HOOK retired),
+  `counterAnim` / `counterDir` (Duelist reactive-jab visual retired —
+  the parry window IS the response), `sweepHit` (set-to-false twice
+  but never set true or read), `lastX` / `lastY` (initialized to x,y
+  then never touched), `shotCount` (always 0), `sigilWhiff` (no
+  read-side anywhere — the cdTimer-frozen-until-first-stone gate at
+  `engine.js`'s ability-fire branch prevents the cases it was guarding),
+  `linksPerStone` (set as a stat but `computeSigilLinks` takes it as
+  `_linksPerStone` — explicitly unused). If a future kit needs any of
+  these names back, prefer a fresh name so old grep hits don't mislead.
 - **Knight was retired and replaced by Geomancer.** Knight's melee-tank niche
   was a hard design corner under autonomous DVD movement — every prototype
   hit one of: un-tunable reactive timing, off-brand ranged, off-brand
