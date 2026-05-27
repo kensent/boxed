@@ -811,16 +811,11 @@ function updateHp() {
   document.getElementById('hp-blue').style.width = Math.max(0, (game.blue.hp/game.blue.maxHp)*100) + '%';
   document.getElementById('hp-text-red').textContent = `${Math.max(0,Math.round(game.red.hp))} / ${game.red.maxHp}`;
   document.getElementById('hp-text-blue').textContent = `${Math.max(0,Math.round(game.blue.hp))} / ${game.blue.maxHp}`;
-  // Fight clock — counts UP from 0:00 since the fog mechanic was removed. Pure
-  // informational display (how long the fight has been going), no urgent state.
-  const clock = document.getElementById('fight-clock');
-  if (clock) {
-    const elapsed = game.elapsed || 0;
-    const total = Math.floor(elapsed);
-    const mins = Math.floor(total / 60), secs = total % 60;
-    clock.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
-    clock.classList.remove('urgent');
-  }
+  // (No live fight-clock HUD — the closing-ring / fog mechanic that needed
+  // an urgent countdown is gone, and the fight ends naturally in 25-32s
+  // anyway. `game.elapsed` itself is still tracked: the balance harness
+  // reports per-matchup avg time, and the upset-hunt result text on the
+  // select screen surfaces individual-fight durations there.)
 }
 
 // (The DOM status-badge system was removed: every status now reads on the fighter

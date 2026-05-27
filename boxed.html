@@ -148,23 +148,10 @@
   button.cta:active { transform: scale(0.97); }
   button.cta:disabled { background: #333; color: #666; cursor: not-allowed; }
   #fight-screen { padding: 8px; }
-  .hp-bars { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; margin-bottom: 8px; flex-shrink: 0; align-items: start; }
+  .hp-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; flex-shrink: 0; align-items: start; }
   /* Every child row is fixed-height (incl. the status row), so the block is a
      constant height regardless of badge count — neither side can shift. */
   .hp-block { min-height: 60px; }
-  .fight-clock {
-    font-family: 'Bungee', sans-serif;
-    font-size: 15px;
-    letter-spacing: 1px;
-    opacity: 0.85;
-    padding: 0 4px;
-    align-self: start;
-    margin-top: 14px;
-  }
-  /* .urgent is only ever the FOG clock — coloured the team-neutral fog purple
-     (matching the fog fill, ring, and status badge), not red. */
-  .fight-clock.urgent { color: #d25aff; animation: clockpulse 0.5s infinite; }
-  @keyframes clockpulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
   .hp-block .name { font-family: 'Bungee', sans-serif; font-size: 11px; margin-bottom: 3px; }
   .name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; min-height: 14px; }
   .name-row .name { margin-bottom: 0; }
@@ -381,7 +368,6 @@
       <div class="hp-bar"><div class="hp-fill red" id="hp-red" style="width:100%"></div></div>
       <div class="hp-text" id="hp-text-red">100 / 100</div>
     </div>
-    <div class="fight-clock" id="fight-clock">0:20</div>
     <div class="hp-block">
       <div class="name-row" style="justify-content:flex-end">
         <div class="name" id="fight-name-blue" style="color: var(--blue)">—</div>
