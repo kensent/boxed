@@ -735,11 +735,6 @@ function startFight() {
   Audio.setArenaWidth(w); // so positional sounds pan correctly
   document.getElementById('fight-name-red').textContent = redT.name;
   document.getElementById('fight-name-blue').textContent = blueT.name;
-  // Clear any status badges left over from a previous fight
-  ['status-red', 'status-blue'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.innerHTML = ''; el.dataset.key = ''; }
-  });
   updateHp();
   draw(); // paint the opening arena state under the intro overlay
   playVsIntro(redT, blueT);

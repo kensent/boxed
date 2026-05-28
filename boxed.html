@@ -133,9 +133,10 @@
   button.cta:disabled { background: #333; color: #666; cursor: not-allowed; }
   #fight-screen { padding: 8px; }
   .hp-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; flex-shrink: 0; align-items: start; }
-  /* Every child row is fixed-height (incl. the status row), so the block is a
-     constant height regardless of badge count — neither side can shift. */
-  .hp-block { min-height: 60px; }
+  /* Both blocks share identical structure (name row + bar + hp-text), so they
+     size to the same height with no min-height needed. (The old min-height
+     reserved room for a HUD status-badge row that was removed — every status
+     now reads on the fighter sprite instead.) */
   .hp-block .name { font-family: 'Bungee', sans-serif; font-size: 11px; margin-bottom: 3px; }
   .name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; min-height: 14px; }
   .name-row .name { margin-bottom: 0; }
