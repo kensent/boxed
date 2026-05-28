@@ -68,11 +68,16 @@ was deleted first); everything below is line/shape-drawn, no particle pool.
 ### Intro reveal
 Arena-as-reveal Shorts cut, 1.7 s total. Lifecycle ceremony, not fighter-
 specific. The arena keeps its static play framing (zoom 1.0, full 300×300
-visible) under a soft dark vignette; two floating labels per side (name +
-ability summary "ACT · PASSIVE") fade in from 0.10s at CSS-screen positions
-`left:20%/80%, top:22%`, and the VS badge clashes in at 0.85s. The labels
-live in CSS-screen space (independent of the camera transform), so they
-don't track arena-internal coords.
+visible); two floating labels per side (name + ability summary "ACT · PASSIVE")
+fade-and-rise in from 0.10–0.50s, and the VS badge clashes in at 0.85s, then the
+whole overlay fades 1.50–1.70s. **Canvas-drawn, not CSS** — `drawVsIntro` in
+`render/arena.js` renders the labels + badge into the fight canvas (so the
+intro is captured by the in-app recorder, same as everything else; see
+GOTCHAS "the canvas is the sole renderer"). Positions are device-px relative
+to the arena sub-rect (`layout.arenaX/Y/Px`): labels at 20%/80% across, 22%
+down; badge at centre. Timing is derived from `game.introT0` (the old CSS
+`vsLabelIn`/`vsClash`/`vsIntroFade` keyframes were replaced by per-frame canvas
+easing), drawn only while `game.introPlaying`, clipped to the arena rect.
 
 **Idle bob** — both fighters bob in place during the reveal. Sine-wave
 motion on (x,y) derived from `performance.now()`, ±1.5px × ±3px, anchored

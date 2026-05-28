@@ -94,6 +94,7 @@ const Audio = (() => {
   }
 
   let _master = null;
+  let _limiter = null;
   function masterGain() {
     const c = ac(); if (!c) return null;
     if (!_master) {
@@ -101,16 +102,33 @@ const Audio = (() => {
       _master.gain.value = 0.55;
       // Limiter on the master bus — catches the peaks when several voices
       // stack in a chaotic frame so the mix never hard-clips into distortion.
-      const limiter = c.createDynamicsCompressor();
-      limiter.threshold.setValueAtTime(-3, c.currentTime);
-      limiter.knee.setValueAtTime(0, c.currentTime);
-      limiter.ratio.setValueAtTime(20, c.currentTime);
-      limiter.attack.setValueAtTime(0.001, c.currentTime);
-      limiter.release.setValueAtTime(0.08, c.currentTime);
-      _master.connect(limiter);
-      limiter.connect(c.destination);
+      _limiter = c.createDynamicsCompressor();
+      _limiter.threshold.setValueAtTime(-3, c.currentTime);
+      _limiter.knee.setValueAtTime(0, c.currentTime);
+      _limiter.ratio.setValueAtTime(20, c.currentTime);
+      _limiter.attack.setValueAtTime(0.001, c.currentTime);
+      _limiter.release.setValueAtTime(0.08, c.currentTime);
+      _master.connect(_limiter);
+      _limiter.connect(c.destination);
     }
     return _master;
+  }
+
+  // Recording tap — a parallel MediaStreamDestination hung off the master
+  // limiter so the in-app fight recorder (record.js) can mux game audio into
+  // its webm. Created lazily, reused across fights; it's a side-branch off the
+  // limiter (never the speaker path) so there's no feedback and no effect on
+  // the mix or on rng/vrng. Returns null where Web Audio is unavailable
+  // (e.g. the headless balance harness) or MediaStream capture isn't supported.
+  let _recDest = null;
+  function recStream() {
+    const c = ac(); if (!c) return null;
+    masterGain();   // ensure _limiter is built
+    if (!_recDest && _limiter && c.createMediaStreamDestination) {
+      _recDest = c.createMediaStreamDestination();
+      _limiter.connect(_recDest);
+    }
+    return _recDest ? _recDest.stream : null;
   }
 
   // --- sound definitions ----------------------------------------------------
@@ -666,6 +684,9 @@ const Audio = (() => {
       _curPan = null;
     },
     setArenaWidth(w) { _arenaW = w; },
+    // Audio track for the in-app recorder (see recStream above). null if Web
+    // Audio / MediaStream capture is unavailable.
+    recStream() { return recStream(); },
   };
 })();
 function sfx(name, arg, x) { if (headless) return; Audio.play(name, arg, x); }

@@ -16,11 +16,21 @@ other on its own merits. Mobile-targeted.
     (`engine.js` owns the camera in the fixed **300×300 reference space**;
     it holds STATIC at arena centre, zoom 1.0 — always. Render-only, never
     feeds the sim. The old dynamic follow-cam and the kill-cam push-in
-    were both retired — see GOTCHAS.md.)
+    were both retired — see GOTCHAS.md. It also computes the fight-screen
+    `layout` — the canvas now fills the whole 9:16 area and the arena is a
+    centred square sub-region with the HP band above it.)
   - `render/sprites.js` · `render/arena.js`
     (`arena.js` `drawArenaBackdrop` draws the grid + border in-world so
-    they stay aligned with sprites — deliberately not CSS)
+    they stay aligned with sprites — deliberately not CSS. **The canvas is
+    the sole renderer of the fight screen**: `drawHpBars` + `drawVsIntro`
+    draw the HP band and the VS-intro reveal into the canvas — they used to
+    be DOM/CSS. See GOTCHAS.md.)
   - `ui.js` (selection screen) · `main.js` (end-game lifecycle)
+  - `record.js` — in-app fight **recorder**. Arm the REC button (footer) and
+    each fight is captured (canvas video + game audio) and downloaded as a
+    `.webm`. Because the canvas is the sole renderer, the recording is
+    pixel-for-pixel what's on screen (preview == export). Render-only,
+    browser-only (not in `boxedshard.js`'s `SIM_FILES`), balance-safe.
 - `boxedshard.js` — runs a slice of the balance simulation (currently 120
   matchups; `EXCLUDE_IDS` is empty — all 16 active fighters participate after
   Knight was replaced by Geomancer). `node boxedshard.js <startIdx> <endIdx> <outfile>`

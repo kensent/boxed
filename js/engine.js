@@ -39,12 +39,39 @@ const camera = { x: ARENA / 2, y: ARENA / 2, zoom: 1, ready: false };
 let pxPerRef = 1;          // device px per reference unit at zoom 1 (set in resizeCanvas)
 let _camLastT = 0;
 
+// Fight-screen layout in DEVICE pixels. The canvas fills the whole 9:16 fight
+// area; the arena is a centred square sub-region with the HP band above it and
+// the VS-intro drawn over it (drawHpBars / drawVsIntro in render/arena.js).
+// Recomputed in resizeCanvas. `k` is the design-unit → device-px scale (design
+// space is the 390-wide #app frame); `dpr` is the effective backing ratio
+// (boosted when the recorder is armed, so the captured webm is crisp).
+const REF_W = 390, REF_H = 693;          // #app design frame (9:16)
+const HP_BAND = 42;                      // design-px height of the HP bar block
+const layout = { k: 1, dpr: 1, arenaX: 0, arenaY: 0, arenaPx: 0, hpY: 0, hpH: 0 };
+
 function resizeCanvas() {
   const r = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio;
-  canvas.width = r.width * dpr;
-  canvas.height = r.height * dpr;
-  pxPerRef = (r.width / ARENA) * dpr;
+  let dpr = window.devicePixelRatio || 1;
+  // Armed recorder → render at a high backing resolution so the captured webm
+  // is crisp regardless of the display's pixel ratio (the canvas IS the export).
+  if (typeof Recorder !== 'undefined' && Recorder.armed && Recorder.armed()) {
+    dpr = Math.max(dpr, Recorder.REC_W / r.width);
+  }
+  canvas.width = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
+  // Lay the fight screen out in design space (390-wide), scaled to device px.
+  const k = (r.width / REF_W) * dpr;
+  const arenaPx = (REF_W - 30) * k;             // 360-wide arena square (15px margin each side)
+  const blockH = HP_BAND * k + 8 * k + arenaPx; // HP band + 8px gap + arena
+  const topY = (REF_H * k - blockH) / 2;        // vertical centring within the frame
+  layout.k = k;
+  layout.dpr = dpr;
+  layout.arenaX = 15 * k;
+  layout.hpY = topY;
+  layout.hpH = HP_BAND * k;
+  layout.arenaY = topY + HP_BAND * k + 8 * k;
+  layout.arenaPx = arenaPx;
+  pxPerRef = arenaPx / ARENA;   // device px per reference unit at zoom 1
   // draw() sets the live (camera) transform every frame; this is a sane default.
   ctx.setTransform(pxPerRef, 0, 0, pxPerRef, 0, 0);
 }
@@ -68,11 +95,13 @@ function updateCamera() {
 }
 
 // Set ctx to camera space: ref units, zoomed, centred on (camera.x, camera.y).
+// The arena occupies a sub-region of the canvas (the HP band sits above it), so
+// we centre on the arena sub-rect rather than the whole canvas.
 function applyCamera() {
   const s = pxPerRef * camera.zoom;
-  ctx.setTransform(s, 0, 0, s,
-    canvas.width / 2 - s * camera.x,
-    canvas.height / 2 - s * camera.y);
+  const cx = layout.arenaX + layout.arenaPx / 2;
+  const cy = layout.arenaY + layout.arenaPx / 2;
+  ctx.setTransform(s, 0, 0, s, cx - s * camera.x, cy - s * camera.y);
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -463,17 +492,22 @@ document.getElementById('fullscreen-btn').addEventListener('click', () => {
 // timer after a victory.
 function returnToSelect() {
   stopGame();
-  document.getElementById('vs-intro').classList.remove('show');
+  if (typeof Recorder !== 'undefined') Recorder.abort(); // discard any in-progress recording
   document.getElementById('fight-screen').classList.remove('active');
   document.getElementById('select-screen').classList.add('active');
   document.getElementById('app-footer').classList.add('show');
 }
 
 // Shorts-capture layout is permanent: no header, no restart/back buttons.
-// During a fight, tapping anywhere outside the arena returns to select
-// (the only way out, since the buttons are gone).
+// During a fight, tapping anywhere outside the arena sub-region returns to
+// select (the only way out, since the buttons are gone). The canvas now fills
+// the whole screen, so we hit-test the tap against the arena rect (device px).
 document.getElementById('fight-screen').addEventListener('click', e => {
-  if (e.target.closest('.arena-wrap')) return; // tap inside arena does nothing
+  const r = canvas.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width * canvas.width;
+  const py = (e.clientY - r.top) / r.height * canvas.height;
+  if (px >= layout.arenaX && px <= layout.arenaX + layout.arenaPx &&
+      py >= layout.arenaY && py <= layout.arenaY + layout.arenaPx) return; // inside arena: nothing
   returnToSelect();
 });
 
@@ -696,8 +730,6 @@ function previewDeath(fighterId) {
   game = buildGame(target, opp);
   game.introPlaying = false;
   Audio.setArenaWidth(game.w);
-  document.getElementById('fight-name-red').textContent = target.name;
-  document.getElementById('fight-name-blue').textContent = opp.name;
   // Position fighters apart, stationary, facing each other
   game.red.x = game.w * 0.40; game.red.y = game.h * 0.50;
   game.blue.x = game.w * 0.60; game.blue.y = game.h * 0.50;
@@ -708,7 +740,6 @@ function previewDeath(fighterId) {
   // Kill the target (red); trigger finish
   game.red.hp = 0;
   game.red.dead = true;
-  updateHp();
   endGame();
   game.lastT = performance.now();
   game.acc = 0;
@@ -733,17 +764,17 @@ function startFight() {
   game = buildGame(redT, blueT);
   const w = game.w, h = game.h;
   Audio.setArenaWidth(w); // so positional sounds pan correctly
-  document.getElementById('fight-name-red').textContent = redT.name;
-  document.getElementById('fight-name-blue').textContent = blueT.name;
-  updateHp();
-  draw(); // paint the opening arena state under the intro overlay
-  playVsIntro(redT, blueT);
+  draw(); // paint the opening arena state (HP band + arena), pre-intro
+  // Arm-gated: set up the recorder before the intro so the reveal is captured.
+  if (typeof Recorder !== 'undefined') Recorder.begin(redT, blueT);
+  playVsIntro();
 }
 
 // VS intro — Shorts-tuned: 1.7s total, sequential name slams with arena
-// bouncing visibly beneath the overlay vignette. CSS owns the panel animation
-// timing (slide-in red at 0.0-0.30s, blue at 0.35-0.65s, VS clash at 0.85s,
-// fade 1.50-1.70s). This function fires the matching audio beats and runs the
+// bouncing visibly beneath the reveal. The labels + VS badge are now drawn
+// INTO the canvas (drawVsIntro in render/arena.js), timed off game.introT0:
+// labels fade+rise in 0.10-0.50s, VS clash at 0.85s, the overlay fades
+// 1.50-1.70s. This function fires the matching audio beats and runs the
 // cosmeticIntroLoop so fighters DVD around the arena during the hold.
 //
 // Determinism: the cosmetic loop integrates positions and reflects off walls
@@ -752,25 +783,8 @@ function startFight() {
 // values captured at intro start, so the real fight begins from the exact
 // seed-determined opening state. Anything else on the fighter (cdTimer,
 // dashTimer, etc.) was never modified, so it's already correct.
-function playVsIntro(redT, blueT) {
-  const intro = document.getElementById('vs-intro');
+function playVsIntro() {
   const myGame = game; // capture — if a new fight starts, this won't match
-  // Fill each label: name + ACT row + PASSIVE row (stacked). Each is the
-  // part of the description string before the "—". Stacking on two rows
-  // keeps long ability names from overflowing the narrow CSS column at
-  // left:20%/80%.
-  const fillLabel = (side, t) => {
-    document.getElementById('vs-name-' + side).textContent = t.name;
-    document.getElementById('vs-act-' + side).textContent = t.active.split('—')[0].trim();
-    document.getElementById('vs-pas-' + side).textContent = t.passive.split('—')[0].trim();
-  };
-  fillLabel('red', redT);
-  fillLabel('blue', blueT);
-  // Restart the slide/clash animations by re-adding the class
-  intro.classList.remove('show');
-  void intro.offsetWidth; // force reflow so the animation replays
-  intro.classList.add('show');
-
   // Audio beats — riser climbs across the label-fade-in, vsClash lands at
   // the VS slam. Each setTimeout guards on (game === myGame) so a quick
   // restart doesn't fire a stale beat into the new fight.
@@ -798,8 +812,7 @@ function playVsIntro(redT, blueT) {
     const s = game.introSnap;
     game.red.x = s.rx; game.red.y = s.ry;
     game.blue.x = s.bx; game.blue.y = s.by;
-    intro.classList.remove('show');
-    game.introPlaying = false;
+    game.introPlaying = false;   // drawVsIntro stops rendering once this clears
     game.lastT = performance.now(); // reset so elapsed doesn't jump
     loop();
   }, 1700);
@@ -829,17 +842,12 @@ function cosmeticIntroLoop() {
 
 function stopGame() { if (game) game.over = true; }
 
-function updateHp() {
-  document.getElementById('hp-red').style.width = Math.max(0, (game.red.hp/game.red.maxHp)*100) + '%';
-  document.getElementById('hp-blue').style.width = Math.max(0, (game.blue.hp/game.blue.maxHp)*100) + '%';
-  document.getElementById('hp-text-red').textContent = `${Math.max(0,Math.round(game.red.hp))} / ${game.red.maxHp}`;
-  document.getElementById('hp-text-blue').textContent = `${Math.max(0,Math.round(game.blue.hp))} / ${game.blue.maxHp}`;
-  // (No live fight-clock HUD — the closing-ring / fog mechanic that needed
-  // an urgent countdown is gone, and the fight ends naturally in 25-32s
-  // anyway. `game.elapsed` itself is still tracked: the balance harness
-  // reports per-matchup avg time, and the upset-hunt result text on the
-  // select screen surfaces individual-fight durations there.)
-}
+// HP is no longer mirrored to the DOM — the HP band is drawn into the canvas
+// each frame by drawHpBars() (render/arena.js), reading game.red/blue.hp live.
+// (No live fight-clock HUD either — the closing-ring / fog mechanic that needed
+// an urgent countdown is gone, and the fight ends naturally in 25-32s anyway.
+// `game.elapsed` itself is still tracked: the balance harness reports per-
+// matchup avg time, and the upset-hunt result text surfaces fight durations.)
 
 // (The DOM status-badge system was removed: every status now reads on the fighter
 // itself — armed/rage/focus rings, mark sigil, slow drag-trail, the loaded pop —
@@ -915,7 +923,14 @@ function loop() {
     game.acc -= FIXED_DT;
   }
   draw();
-  if (finished) { returnToSelect(); return; }
+  if (finished) {
+    // Fight resolved (finish window elapsed) — close out any recording with the
+    // final frame already drawn, then return to select. (returnToSelect's
+    // Recorder.abort is a no-op here since finish() already stopped it.)
+    if (typeof Recorder !== 'undefined') Recorder.finish();
+    returnToSelect();
+    return;
+  }
   requestAnimationFrame(loop);
 }
 
@@ -2178,6 +2193,4 @@ function step(dt) {
     if (ft.age != null) ft.age += dt;
     return true;
   });
-
-  updateHp();
 }

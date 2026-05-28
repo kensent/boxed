@@ -1043,7 +1043,7 @@ function drawDeath(f, prog) {
 function drawArenaBackdrop() {
   ctx.fillStyle = '#060606';
   ctx.fillRect(0, 0, game.w, game.h);
-  const lw = window.devicePixelRatio / (pxPerRef * camera.zoom);  // ~1 css px at any zoom
+  const lw = layout.dpr / (pxPerRef * camera.zoom);  // ~1 css px at any zoom (uses the effective backing dpr, boosted while recording)
   ctx.strokeStyle = 'rgba(245,245,240,0.05)';
   ctx.lineWidth = lw;
   ctx.beginPath();
@@ -1067,13 +1067,139 @@ function drawArenaBackdrop() {
   ctx.restore();
 }
 
+// --- Canvas HUD + intro -----------------------------------------------------
+// The HP band and the VS-intro reveal are drawn INTO the fight canvas (they
+// used to be DOM/CSS overlaid on a small arena canvas). Drawing them here makes
+// the canvas the sole source of the fight image, so the in-app recorder
+// (record.js) captures pixel-for-pixel what's on screen. All sizes derive from
+// `layout` (device px, set in resizeCanvas); all motion is time-derived, never
+// rng (GOTCHAS: never rng/vrng in draw()).
+
+function _clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+function _easeOutBack(x) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+
+// HP band — two bordered bars that drain toward the arena centre, team-coloured
+// name + numeric HP per side. The displayed fill eases toward the live value
+// (the old CSS had a 0.2s width transition); the ease is real-time-derived and
+// stored on the fighter (render-only — the sim never reads `_hpShown`).
+let _hpLastT = 0;
+function drawHpBars() {
+  if (!game) return;
+  const now = performance.now();
+  const dt = _hpLastT ? Math.min(0.05, (now - _hpLastT) / 1000) : 0;
+  _hpLastT = now;
+  const ease = dt > 0 ? 1 - Math.exp(-dt / 0.06) : 1;   // ~0.2s settle
+  drawHpSide(game.red, 'red', '#ff2e2e', ease);
+  drawHpSide(game.blue, 'blue', '#2e9eff', ease);
+}
+function drawHpSide(f, side, color, ease) {
+  const k = layout.k;
+  const colW = ((REF_W - 16 - 8) / 2) * k;             // (374 inner - 8 gap) / 2, design → device
+  const x = side === 'red' ? 8 * k : (REF_W - 8) * k - colW;
+  const y = layout.hpY;
+  const target = Math.max(0, Math.min(1, f.hp / f.maxHp));
+  if (f._hpShown == null) f._hpShown = target;
+  f._hpShown += (target - f._hpShown) * ease;
+  const frac = f._hpShown;
+  // Name (Bungee, team colour)
+  ctx.fillStyle = color;
+  ctx.font = `${Math.round(11 * k)}px Bungee, sans-serif`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = side === 'red' ? 'left' : 'right';
+  ctx.fillText(f.name, side === 'red' ? x : x + colW, y + 12 * k);
+  // Bar — bordered box; fill depletes from the centre-facing edge.
+  const barY = y + 17 * k, barH = 12 * k, bw = 2 * k;
+  ctx.fillStyle = '#222';
+  ctx.fillRect(x, barY, colW, barH);
+  ctx.strokeStyle = '#f5f5f0';
+  ctx.lineWidth = bw;
+  ctx.strokeRect(x + bw / 2, barY + bw / 2, colW - bw, barH - bw);
+  const innerW = colW - 2 * bw, innerH = barH - 2 * bw, fillW = innerW * frac;
+  ctx.fillStyle = color;
+  const fx = side === 'red' ? x + bw : x + colW - bw - fillW;   // red drains rightward, blue leftward
+  ctx.fillRect(fx, barY + bw, fillW, innerH);
+  // Numeric HP
+  ctx.fillStyle = 'rgba(245,245,240,0.7)';
+  ctx.font = `${Math.round(9 * k)}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = side === 'red' ? 'left' : 'right';
+  ctx.fillText(`${Math.max(0, Math.round(f.hp))} / ${f.maxHp}`, side === 'red' ? x : x + colW, barY + barH + 11 * k);
+}
+
+// VS-intro reveal — labels fade+rise in over the arena (0.10-0.50s), the VS
+// badge clashes in at 0.85s, the whole overlay fades 1.50-1.70s. Timed off
+// game.introT0 (real time). Clipped to the arena rect (mirrors the old CSS
+// overflow:hidden). Drawn only while game.introPlaying.
+function drawVsIntro() {
+  const t = (performance.now() - (game.introT0 || performance.now())) / 1000;
+  const overlay = t >= 1.5 ? Math.max(0, 1 - (t - 1.5) / 0.2) : 1;
+  if (overlay <= 0) return;
+  const k = layout.k, ax = layout.arenaX, ay = layout.arenaY, ap = layout.arenaPx;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(ax, ay, ap, ap); ctx.clip();
+  const lp = _clamp01((t - 0.10) / 0.40);
+  const rise = (1 - _easeOutBack(lp)) * 14 * k;
+  const labelY = ay + 0.22 * ap;
+  drawVsLabel(game.red, '#ff2e2e', ax + 0.20 * ap, labelY + rise, lp * overlay, k);
+  drawVsLabel(game.blue, '#2e9eff', ax + 0.80 * ap, labelY + rise, lp * overlay, k);
+  if (t >= 0.85) {
+    const bp = _clamp01((t - 0.85) / 0.45);
+    // CSS vsClash keyframes: scale 3.8 → 0.82 (at 55%) → 1.0; rotate -14° → 5° → 0°.
+    const sc = bp < 0.55 ? 3.8 + (0.82 - 3.8) * (bp / 0.55) : 0.82 + (1 - 0.82) * ((bp - 0.55) / 0.45);
+    const deg = bp < 0.55 ? -14 + 19 * (bp / 0.55) : 5 + (0 - 5) * ((bp - 0.55) / 0.45);
+    ctx.save();
+    ctx.globalAlpha = _clamp01(bp / 0.55) * overlay;
+    ctx.translate(ax + 0.5 * ap, ay + 0.5 * ap);
+    ctx.rotate(deg * Math.PI / 180);
+    ctx.scale(sc, sc);
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(255,255,255,0.6)';
+    ctx.shadowBlur = 14 * k;
+    ctx.font = `${Math.round(56 * k)}px Bungee, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('VS', 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function drawVsLabel(f, color, cx, y, alpha, k) {
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)';
+  ctx.shadowBlur = 6 * k;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.font = `${Math.round(16 * k)}px Bungee, sans-serif`;
+  ctx.fillText(f.name, cx, y);
+  ctx.fillStyle = '#f5f5f0';
+  ctx.font = `${Math.round(8 * k)}px Bungee, sans-serif`;
+  ctx.globalAlpha = alpha * 0.95;
+  ctx.fillText((f.active || '').split('—')[0].trim(), cx, y + 13 * k);
+  ctx.globalAlpha = alpha * 0.75;
+  ctx.fillText((f.passive || '').split('—')[0].trim(), cx, y + 23 * k);
+  ctx.restore();
+}
+
 function draw() {
   // Camera: ease toward framing both fighters, then enter camera space. Clear
   // in device space first so a zoomed-in view never leaves stale pixels.
   updateCamera();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Page background fills the HP band + letterbox margins around the arena.
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // HP band — drawn in device/screen space above the arena (was DOM .hp-bars).
+  drawHpBars();
+  // Arena content — clipped to its sub-region so wall-edge spillover (recoil,
+  // particles, the death burst) can't bleed into the HP band or letterbox.
   applyCamera();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, game.w, game.h);   // arena ref rect, evaluated in camera space
+  ctx.clip();
   drawArenaBackdrop();
 
   // Screen-shake — offset the whole frame by a decaying random jitter.
@@ -1896,12 +2022,22 @@ function draw() {
     drawDeath(loser, prog);
   }
 
-  // White camera-snap frame at the kill instant — fills the whole viewport in
-  // screen space, independent of the camera transform.
+  ctx.restore();   // end arena clip (matches the save before drawArenaBackdrop)
+
+  // Overlays from here on are positioned in DEVICE pixels (layout.*), so leave
+  // camera space — the clip restore left the camera transform active.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  // VS-intro reveal — canvas-drawn, over the arena region (was DOM/CSS).
+  if (game.introPlaying) drawVsIntro();
+
+  // White camera-snap frame at the kill instant — fills the ARENA rect in
+  // device space (the arena "snaps", not the surrounding HUD), independent of
+  // the camera transform.
   if (game.flashFrame > 0) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.8, game.flashFrame * 6).toFixed(2)})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(layout.arenaX, layout.arenaY, layout.arenaPx, layout.arenaPx);
   }
 }
 

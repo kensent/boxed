@@ -74,13 +74,47 @@
   to CSS. (2) Under the camera transform, world coords ≠ screen coords
   (matters for screen-space overlays — see next bullet).
 - **Screen-space overlays must reset the transform under the camera.** The
-  white camera-snap flash sits at a fixed *screen* position and must
-  `ctx.setTransform(...)` to device space first, or it renders at *world*
-  coords (e.g. the arena centre) and scales with whatever camera zoom
-  applied. The death ceremony is the opposite: it's world-anchored at
-  the loser's position, so it stays in camera space. We shipped a
+  HP band (`drawHpBars`, drawn *before* `applyCamera`), the VS-intro
+  (`drawVsIntro`) and the white camera-snap flash all live in *device*
+  space and must run with an identity transform — `draw()` does
+  `ctx.setTransform(1,0,0,1,0,0)` before each. The flash fills the **arena
+  rect** (`layout.arenaX/arenaY/arenaPx`), not the whole canvas, so the
+  arena "snaps" while the HUD doesn't. The death ceremony is the opposite:
+  it's world-anchored at the loser's position, so it stays in camera space
+  (inside the arena clip). After the clip is released the transform is back
+  in camera space, so the overlays that follow MUST reset to device space
+  first — `drawVsIntro` positioned in device px while a camera transform was
+  active would scale by `pxPerRef` and land in the wrong place. We shipped a
   finish-window graphic at world centre once and it floated off — hence
   this note.
+- **The canvas is the sole renderer of the fight screen — don't reintroduce
+  DOM HUD.** The HP bars and the VS-intro reveal used to be DOM/CSS overlaid
+  on a small (360×360) arena canvas. They are now drawn INTO the canvas
+  (`drawHpBars` / `drawVsIntro` in `render/arena.js`), which fills the whole
+  9:16 fight area. This was done so the in-app recorder (`record.js`) captures
+  the canvas and gets **pixel-for-pixel what's on screen** (preview ==
+  export). Consequences:
+  - The arena is a centred square **sub-region**, not the whole canvas.
+    `resizeCanvas` (engine.js) computes `layout` (arenaX/arenaY/arenaPx + the
+    HP band) in device px; `applyCamera` centres the 300×300 ref space on the
+    arena sub-rect (not `canvas.width/2`). Arena content is wrapped in a
+    `ctx.clip()` to the arena rect so wall-edge spillover can't bleed into the
+    HP band or letterbox.
+  - **Anything new on the fight screen must be canvas-drawn to show up in
+    recordings.** Adding a DOM element over the canvas would be invisible in
+    the webm AND would double-render / diverge from the capture. There is no
+    DOM `#hp-bars` / `#vs-intro` anymore — don't add them back. (HP is read
+    live in `drawHpBars`; `updateHp()` is gone. `f._hpShown` is a render-only
+    eased bar value — the sim never reads it.)
+  - The recorder is **render-only, browser-only, balance-safe**: `record.js`
+    isn't in `boxedshard.js`'s `SIM_FILES`, `draw()` never runs headless, and
+    audio is muxed via `Audio.recStream()` — a parallel `MediaStreamDestination`
+    tap off the master limiter (`audio.js`) that never touches the speaker
+    path or rng/vrng. When the REC button is armed, `resizeCanvas` boosts the
+    canvas backing to ≥1080px wide so the capture is crisp; this also sharpens
+    the live view and is balance-neutral. After touching any of this, confirm
+    `./balance.sh` is still bit-identical to the `MATCHUPS` block (it is —
+    nothing here is in the sim path).
 - **The finish is a sequence, and the death voice + koHit boom fire from
   `draw()`, not the sim path.** On the kill, the death ceremony begins
   immediately (`game.koArriveAt` is set on the first frame of the finish

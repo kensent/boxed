@@ -70,6 +70,13 @@ Infrastructure that stays: `tone()` + `noise()` primitives, `panNode()`,
 `masterGain()` + limiter, `sfx()` interface. What gets rebuilt: the `SOUNDS`
 object, designed from scratch around material identity and the three-beat grammar.
 
+**Recording tap.** `Audio.recStream()` hangs a `MediaStreamDestination` off the
+master limiter so the in-app fight recorder (`record.js`) can mux game audio
+into its `.webm`. It's a side-branch — never the speaker path — so there's no
+feedback, no effect on the mix, and (like everything in `audio.js`) no effect on
+`rng()`/`vrng()`. Created lazily, reused across fights, returns null where Web
+Audio / MediaStream capture is unavailable (e.g. the headless balance harness).
+
 ### Intro reveal
 Two-beat audio twin of the arena-as-reveal visuals (ANIMATION.md "Intro
 reveal"). Lifecycle sounds, not fighter-specific. Both use `opts.exact` so

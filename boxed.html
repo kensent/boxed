@@ -75,6 +75,11 @@
   #fullscreen-btn:hover { border-color: var(--fg); }
   #seed-clear:active,
   #fullscreen-btn:active { transform: scale(0.92); }
+  /* REC toggle — arms the in-app fight recorder (record.js). Red when armed. */
+  #rec-btn { flex-shrink: 0; background: #161616; border: 2px solid #333; color: var(--fg); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; height: 30px; padding: 0 9px; cursor: pointer; transition: transform 0.08s, border-color 0.12s, background 0.12s, color 0.12s; }
+  #rec-btn:hover { border-color: var(--fg); }
+  #rec-btn:active { transform: scale(0.92); }
+  #rec-btn.armed { background: var(--red); border-color: var(--red); color: #fff; }
   .hunt-btn { width: 100%; background: #161616; color: var(--yellow); border: 2px dashed var(--yellow); font-family: 'Bungee', sans-serif; font-size: 11px; letter-spacing: 1px; padding: 9px; cursor: pointer; margin-bottom: 8px; transition: transform 0.08s, background 0.12s; }
   .hunt-btn:hover { background: #1f1c0a; }
   .hunt-btn:active { transform: scale(0.98); }
@@ -131,29 +136,18 @@
   button.cta { width: 100%; background: var(--yellow); color: var(--bg); border: 3px solid var(--fg); font-family: 'Bungee', sans-serif; font-size: 16px; letter-spacing: 2px; padding: 12px; cursor: pointer; transition: transform 0.08s; }
   button.cta:active { transform: scale(0.97); }
   button.cta:disabled { background: #333; color: #666; cursor: not-allowed; }
-  #fight-screen { padding: 8px; }
-  .hp-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; flex-shrink: 0; align-items: start; }
-  /* Both blocks share identical structure (name row + bar + hp-text), so they
-     size to the same height with no min-height needed. (The old min-height
-     reserved room for a HUD status-badge row that was removed — every status
-     now reads on the fighter sprite instead.) */
-  .hp-block .name { font-family: 'Bungee', sans-serif; font-size: 11px; margin-bottom: 3px; }
-  .name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; min-height: 14px; }
-  .name-row .name { margin-bottom: 0; }
-  .hp-bar { height: 12px; background: #222; border: 2px solid var(--fg); overflow: hidden; }
-  .hp-fill { height: 100%; transition: width 0.2s; }
-  .hp-fill.red { background: var(--red); }
-  .hp-fill.blue { background: var(--blue); }
-  .hp-text { font-size: 9px; margin-top: 2px; opacity: 0.7; }
-  .arena-wrap { flex: 1; position: relative; min-height: 0; display: flex; max-width: 360px; max-height: 360px; width: 100%; margin: 0 auto; }
-  canvas {
+  /* Single-canvas fight screen — the canvas fills the whole 9:16 area and the
+     renderer draws the HP band, arena sub-region, and VS-intro into it (see
+     drawHpBars / drawVsIntro / resizeCanvas). The HP bars and intro used to be
+     DOM/CSS overlaid on a small arena canvas; they were absorbed into the
+     canvas so preview == export for the in-app recorder. */
+  #fight-screen { padding: 0; }
+  #fight-screen canvas {
     width: 100%; height: 100%;
-    background: #060606;
+    background: var(--bg);
     display: block;
-    /* grid + border are drawn in-world by the renderer so they move with the
-       follow-camera (see drawArenaBackdrop in render/arena.js) */
   }
-  
+
   /* Outro overlay removed — the celebration in the arena (glow + team-colour
      mote burst + 'win' arpeggio) IS the closing beat; no winner-name card
      opens on top of it. showWinnerOverlay() in main.js just schedules the
@@ -188,77 +182,11 @@
   .sprite-cell canvas { width: 64px; height: 64px; }
   .sprite-cell span { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #aaa; }
   .sprite-cell.spinning { background: #1c2230; }
-  /* ---- VS intro overlay ----
-     Arena-as-reveal: the live arena (with fighters idle-bobbing in place)
-     is the centerpiece. Only floating labels above each fighter and a VS
-     badge in the middle sit over the canvas. The intro is a soft tint plus
-     these elements — no big side panels covering the arena. Total intro is
-     1.7s: labels fade in 0.10–0.50s, VS clash at 0.85s, fade 1.50–1.70s. */
-  .vs-intro {
-    position: absolute; inset: 0; z-index: 11;
-    display: none;
-    align-items: center; justify-content: center;
-    /* No background — arena fully visible during the intro reveal. Labels
-       carry their own text-shadow for readability against any content. */
-    overflow: hidden;
-    animation: vsIntroFade 0.20s ease-in 1.50s both;
-  }
-  @keyframes vsIntroFade { from { opacity: 1; } to { opacity: 0; } }
-  .vs-intro.show { display: flex; }
-  /* Floating fighter labels — anchored above each fighter's start position
-     (red at x=0.2, blue at x=0.8 in arena coords → CSS left:20%/80%). The
-     vertical anchor (top:22%) sits comfortably above the sprite's top edge
-     (sprite center is at top:50%, sprite is ~28% of arena height). */
-  .vs-label {
-    position: absolute;
-    top: 22%;
-    display: flex; flex-direction: column; align-items: center;
-    text-align: center; white-space: nowrap;
-    animation: vsLabelIn 0.40s cubic-bezier(0.2,0.9,0.3,1.2) 0.10s both;
-  }
-  .vs-red  { left: 20%; transform: translateX(-50%); }
-  .vs-blue { left: 80%; transform: translateX(-50%); }
-  @keyframes vsLabelIn {
-    from { opacity: 0; transform: translate(-50%, 14px); }
-    to   { opacity: 1; transform: translate(-50%, 0);     }
-  }
-  .vs-name {
-    font-family: 'Bungee', sans-serif; font-size: 16px; letter-spacing: 1px;
-    /* Double shadow — tight halo for legibility against any arena content
-       (no overlay backdrop anymore), wider soft drop for depth. */
-    text-shadow: 0 0 3px rgba(0,0,0,1), 0 1px 8px rgba(0,0,0,0.9);
-  }
-  .vs-red  .vs-name { color: var(--red); }
-  .vs-blue .vs-name { color: var(--blue); }
-  .vs-act, .vs-pas {
-    font-family: 'Bungee', sans-serif; font-size: 8px; letter-spacing: 0.4px;
-    text-shadow: 0 0 2px rgba(0,0,0,1), 0 1px 6px rgba(0,0,0,0.95);
-  }
-  .vs-act { opacity: 0.95; margin-top: 3px; }
-  .vs-pas { opacity: 0.75; margin-top: 1px; }
-  .vs-badge {
-    position: absolute;
-    z-index: 2;
-    font-family: 'Bungee', sans-serif; font-size: 56px;
-    color: #fff;
-    text-shadow: 0 0 14px rgba(255,255,255,0.6), 0 0 32px rgba(255,255,255,0.3);
-    animation: vsClash 0.45s cubic-bezier(0.3,1.6,0.5,1) 0.85s both;
-  }
-  @keyframes vsClash {
-    0%   { transform: scale(3.8) rotate(-14deg); opacity: 0; }
-    55%  { transform: scale(0.82) rotate(5deg);  opacity: 1; }
-    100% { transform: scale(1) rotate(0deg);     opacity: 1; }
-  }
+  /* The VS-intro overlay and HP bars are no longer DOM — they're drawn into
+     the fight canvas (drawVsIntro / drawHpBars in render/arena.js), so the
+     intro reveal, label fade-in, and VS-badge clash are now canvas animations
+     timed off game.introT0 rather than CSS keyframes. */
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  /* All winner-* CSS removed — outro is arena-only now (see comment above). */
-  /* Shorts-capture layout (permanent). The fight screen is vertically
-     centred and the arena-wrap is pinned to 360px so justify-content
-     has leftover space to distribute — otherwise flex:1 consumes all
-     of it and the centering becomes a no-op. Header + restart/back
-     controls are gone entirely; tapping outside the arena returns to
-     select (see engine.js). */
-  #fight-screen { justify-content: center; }
-  .arena-wrap { flex: 0 0 360px; height: 360px; }
 </style>
 </head>
 <body>
@@ -318,38 +246,14 @@
 </section>
 
 <section class="screen" id="fight-screen">
-  <div class="hp-bars">
-    <div class="hp-block">
-      <div class="name-row">
-        <div class="name" id="fight-name-red" style="color: var(--red)">—</div>
-      </div>
-      <div class="hp-bar"><div class="hp-fill red" id="hp-red" style="width:100%"></div></div>
-      <div class="hp-text" id="hp-text-red">100 / 100</div>
-    </div>
-    <div class="hp-block">
-      <div class="name-row" style="justify-content:flex-end">
-        <div class="name" id="fight-name-blue" style="color: var(--blue)">—</div>
-      </div>
-      <div class="hp-bar"><div class="hp-fill blue" id="hp-blue" style="width:100%; margin-left:auto"></div></div>
-      <div class="hp-text" id="hp-text-blue" style="text-align:right">100 / 100</div>
-    </div>
-  </div>
-  <div class="arena-wrap" id="arena-wrap">
-    <canvas id="canvas"></canvas>
-    <div class="vs-intro" id="vs-intro">
-      <div class="vs-label vs-red" id="vs-red">
-        <div class="vs-name" id="vs-name-red">—</div>
-        <div class="vs-act" id="vs-act-red"></div>
-        <div class="vs-pas" id="vs-pas-red"></div>
-      </div>
-      <div class="vs-badge" id="vs-badge">VS</div>
-      <div class="vs-label vs-blue" id="vs-blue">
-        <div class="vs-name" id="vs-name-blue">—</div>
-        <div class="vs-act" id="vs-act-blue"></div>
-        <div class="vs-pas" id="vs-pas-blue"></div>
-      </div>
-    </div>
-  </div>
+  <!-- Single-canvas fight screen: the HP bars and the VS-intro reveal used to
+       live in the DOM (overlaid on a small arena canvas). They are now drawn
+       INTO this canvas by the renderer (drawHpBars / drawVsIntro in
+       render/arena.js), so the canvas is the sole source of the fight image —
+       which means the in-app recorder captures pixel-for-pixel what you see.
+       The canvas fills the whole 9:16 fight area; the arena is a centred
+       sub-region with the HP band above it (layout computed in resizeCanvas). -->
+  <canvas id="canvas"></canvas>
 </section>
 
 <footer id="app-footer" class="show">
@@ -357,6 +261,7 @@
     <label class="seed-label" for="seed-input">SEED</label>
     <input id="seed-input" type="text" inputmode="numeric" placeholder="random each fight" autocomplete="off" />
     <button id="seed-clear" title="clear — random each fight">↻</button>
+    <button id="rec-btn" title="arm fight recorder — captures each fight to a .webm download">●REC</button>
     <button id="fullscreen-btn" title="toggle fullscreen (Esc to exit)">⛶</button>
   </div>
   <button id="hunt-btn" class="hunt-btn" style="display:none;">HUNT THE UPSET</button>
@@ -383,6 +288,8 @@
 
 <script src="js/render/sprites.js"></script>
 <script src="js/render/arena.js"></script>
+
+<script src="js/record.js"></script>
 
 <script src="js/main.js"></script>
 
