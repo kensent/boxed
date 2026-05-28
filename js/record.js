@@ -16,8 +16,20 @@
 // through `typeof Recorder !== 'undefined'` guards.
 // ============================================================================
 const Recorder = (() => {
-  const REC_W = 1080;          // target capture width; resizeCanvas boosts the
-                               // canvas backing store to at least this many px.
+  // Capture quality. Two things fight YouTube Shorts blur:
+  //  1. Upload resolution. YouTube re-encodes everything; a 1080p upload gets a
+  //     softer AVC transcode, while >= 1440p uploads get the better VP9 tier —
+  //     so even the 1080p playback stream comes out crisper. We capture at 2160
+  //     wide (4K vertical, 2160×3840), resizeCanvas boosts the canvas backing
+  //     to at least REC_W.
+  //  2. Source bitrate. The arena grid + faceted sprites are detail-heavy and
+  //     smear at low bitrate, so we hand the encoder plenty (40 Mbps for 4K).
+  // NOTE: 4K60 VP9 is encoded in-browser (mostly software) — a weaker machine
+  // may drop frames (stutter). If so, drop REC_FPS to 30 to free encode
+  // headroom, or step REC_W back to 1440.
+  const REC_W = 2160;          // capture width (px); canvas height follows 9:16
+  const REC_FPS = 60;
+  const REC_BITRATE = 40e6;    // video bits/sec
   let armed = false;
   let recording = false;
   let recorder = null;
@@ -58,14 +70,14 @@ const Recorder = (() => {
       return;
     }
     let stream;
-    try { stream = canvas.captureStream(60); } catch (e) { return; }
+    try { stream = canvas.captureStream(REC_FPS); } catch (e) { return; }
     // Mux in the game audio (a tap off the master limiter — see audio.js).
     const audio = (typeof Audio !== 'undefined' && Audio.recStream) ? Audio.recStream() : null;
     if (audio) { try { audio.getAudioTracks().forEach(t => stream.addTrack(t)); } catch (e) {} }
     mime = pickMime();
     chunks = [];
     try {
-      recorder = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 12e6 } : undefined);
+      recorder = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: REC_BITRATE } : undefined);
     } catch (e) { recorder = null; return; }
     recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
     recorder.onstop = () => { save(); };

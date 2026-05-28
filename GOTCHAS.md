@@ -111,8 +111,14 @@
     audio is muxed via `Audio.recStream()` — a parallel `MediaStreamDestination`
     tap off the master limiter (`audio.js`) that never touches the speaker
     path or rng/vrng. When the REC button is armed, `resizeCanvas` boosts the
-    canvas backing to ≥1080px wide so the capture is crisp; this also sharpens
-    the live view and is balance-neutral. After touching any of this, confirm
+    canvas backing to ≥`Recorder.REC_W` (2160px — 4K vertical) wide so the
+    capture is crisp; this also sharpens the live view and is balance-neutral.
+    Capturing above 1080p matters: YouTube re-encodes a 1080p upload with a
+    softer tier, while >=1440p uploads get the better VP9 transcode (crisper
+    even at 1080p playback) — so `REC_W`/`REC_BITRATE`/`REC_FPS` in `record.js`
+    are the quality knobs. 4K60 VP9 is encoded in-browser (mostly software), so
+    a weaker machine may drop frames — drop `REC_FPS` to 30 or step `REC_W` back
+    to 1440 if the capture stutters. After touching any of this, confirm
     `./balance.sh` is still bit-identical to the `MATCHUPS` block (it is —
     nothing here is in the sim path).
 - **The finish is a sequence, and the death voice + koHit boom fire from
