@@ -72,7 +72,7 @@ const FIGHTERS = [
     get active() { return `STICK CHARGE — hurl a fused bomb that sticks on contact; detonates after ${this.fuseTime}s`; },
     passive: 'SHOCKWAVE — the detonation knocks the enemy back and damages nearby skeletons',
   },
-  { id:'archer',  name:'ARCHER',    hp:1540, speed:120, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
+  { id:'archer',  name:'ARCHER',    hp:1560, speed:120, color:'#3dff8a', accent:'#f5f5f0', shape:'bow',
     // VOLLEY — arrows fire on a high arc out of frame, then rain down at
     // predicted landing points along the enemy's bounce trajectory after
     // `volleyDelay`. Landing markers telegraph the kill-zones on the floor

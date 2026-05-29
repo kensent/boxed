@@ -2016,7 +2016,20 @@ function step(dt) {
       if (!target.dead && Math.hypot(target.x - h.x, target.y - h.y) < h.radius + FIGHTER_SIZE) {
         damage(target, h.dmg, 'hazard');
         hitFx(h.x, h.y, 'arrow', Math.PI / 2, 0.35);
-        return false;     // consumed
+        return false;     // consumed by the enemy fighter
+      }
+      // A stake also chips an ENEMY skeleton (Necromancer's army) that steps on
+      // it — single-hit like the fighter case: the first overlapping enemy
+      // skeleton consumes the stake. Symmetric with WAKE / SIGIL / BOMBARD
+      // splash already damaging skeletons, and makes the STAKES field read
+      // literally ("anyone who steps on them"). Only matters in Archer-vs-
+      // Necromancer; every other matchup has no skeletons so `find` is a no-op.
+      const sk = game.skeletons.find(s => s.team !== h.team && s.hp > 0 &&
+        Math.hypot(s.x - h.x, s.y - h.y) < h.radius + s.size);
+      if (sk) {
+        if (damageSkeleton(sk, h.dmg)) game.skeletons = game.skeletons.filter(s => s.hp > 0);
+        hitFx(h.x, h.y, 'arrow', Math.PI / 2, 0.35);
+        return false;     // consumed by a skeleton
       }
       return true;        // still standing
     }
@@ -2149,12 +2162,18 @@ function step(dt) {
   // need the full MELEE_SKEL_IFRAME to avoid draining every frame; fast
   // pass-through projectiles (coins, arrows, etc.) use a minimal 1-frame
   // guard so rapid volleys (e.g. Fortune's Barrage) can each land.
-  // Sapper 'charge' is excluded: a thrown STICK CHARGE in flight doesn't
-  // damage skeletons — only its delayed detonation does (handled inside
-  // the charge-stuck branch above). The charge is a fused bomb, not a
-  // flying impact, so passing through a skeleton mid-air is harmless.
+  // Excluded kinds:
+  //   - 'charge' (Sapper): a thrown STICK CHARGE in flight doesn't damage
+  //     skeletons — only its delayed detonation does (the charge-stuck branch
+  //     above). It's a fused bomb, so passing through a skeleton is harmless.
+  //   - 'rain' (Archer VOLLEY): a rain arrow is a STATIONARY landing-marker
+  //     parked at its landing spot for the whole windup — it's "in the air,"
+  //     not landed. Including it here chipped a skeleton standing on the marker
+  //     every 0.05s for the entire delay, BEFORE the arrow arrived. The arrow's
+  //     skeleton interaction is the STAKE it embeds on landing (the stake-vs-
+  //     skeleton check in the hazard loop), not an in-flight hit.
   game.projectiles.forEach(p => {
-    if (p.kind === 'charge') return;
+    if (p.kind === 'charge' || p.kind === 'rain') return;
     game.skeletons = game.skeletons.filter(sk => {
       if (sk.team === p.team || sk.hitCd > 0) return true;
       if (dist(p, sk) < sk.size + p.size) {
