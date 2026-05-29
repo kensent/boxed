@@ -985,6 +985,14 @@ function drawFighter(f) {
   if (f.dead) return;
 
   const enemy = f.team === 'red' ? game.blue : game.red;
+  // Body facing + every aim telegraph tracks the NEAREST of {real enemy,
+  // ...decoys} — the same target the sim attacks via pickTarget (engine.js).
+  // Without this the body (and the cannon aim-line, dasher lean, slow-drag
+  // ghosts) would point at the real fighter even when a closer Jester decoy is
+  // what the next attack will actually hit (DOPPELGANGER substrate — GOTCHAS).
+  // pickTarget is a pure position read (no rng), safe in the render path, and
+  // collapses to `enemy` for every fighter except Jester (the only decoy kit).
+  const faceTarget = pickTarget(f, enemy);
 
   // Jester blink streak (world space, behind the sprite) — a fading two-tone wisp
   // connecting depart→arrive so the teleport is trackable. Red glow at the depart
@@ -1031,7 +1039,7 @@ function drawFighter(f) {
   if (f.slowTimer > 0 && !f.dead) {
     const sp = Math.hypot(f.vx, f.vy);
     if (sp > 25) {
-      const dragFacing = (enemy && !enemy.dead) ? Math.atan2(enemy.y - f.y, enemy.x - f.x) : (f.lastFacing || 0);
+      const dragFacing = (faceTarget && !faceTarget.dead) ? Math.atan2(faceTarget.y - f.y, faceTarget.x - f.x) : (f.lastFacing || 0);
       const nx = f.vx / sp, ny = f.vy / sp;
       for (let i = 1; i <= 2; i++) {
         ctx.save();
@@ -1066,9 +1074,9 @@ function drawFighter(f) {
   // the full 0.16s — otherwise the planted look stretches past where the body
   // actually starts moving.
   let windup = { active: false, ease: 1 };
-  if (f.ability === 'tackle')        windup = meleeWindupHold(f, enemy, f.rampageDur, 0.06);
-  else if (f.ability === 'riposte')  windup = meleeWindupHold(f, enemy, 0.3, 0.10);
-  else if (f.ability === 'sweep')    windup = meleeWindupHold(f, enemy, 0.25, 0.10);
+  if (f.ability === 'tackle')        windup = meleeWindupHold(f, faceTarget, f.rampageDur, 0.06);
+  else if (f.ability === 'riposte')  windup = meleeWindupHold(f, faceTarget, 0.3, 0.10);
+  else if (f.ability === 'sweep')    windup = meleeWindupHold(f, faceTarget, 0.25, 0.10);
 
   // (No team-colour border ring — removed for cinematic cleanliness. Team
   // identity reads from the top HUD names + HP bars + the "<NAME> WINS"
@@ -1080,8 +1088,8 @@ function drawFighter(f) {
   if (f.aimTimer > 0 && f.aimAbility === 'cannon') {
     const prog = 1 - f.aimTimer / f.windupTime;
     // Cannoneer voice: an aim-line to the target — its shot is a dodgeable straight.
-    if (enemy && !enemy.dead) {
-      const ang = Math.atan2(enemy.y - f.y, enemy.x - f.x);
+    if (faceTarget && !faceTarget.dead) {
+      const ang = Math.atan2(faceTarget.y - f.y, faceTarget.x - f.x);
       ctx.save();
       ctx.rotate(ang);
       ctx.setLineDash([3, 4]);
@@ -1221,8 +1229,8 @@ function drawFighter(f) {
       ? -Math.PI / 2
       : inIaiCut
         ? f.iaiAngle
-        : (enemy && !enemy.dead)
-          ? Math.atan2(enemy.y - f.y, enemy.x - f.x)
+        : (faceTarget && !faceTarget.dead)
+          ? Math.atan2(faceTarget.y - f.y, faceTarget.x - f.x)
           : (f.lastFacing || 0);
   f.lastFacing = facing;
 

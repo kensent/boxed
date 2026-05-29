@@ -235,6 +235,16 @@
   stationary, so `(target.vx || 0)` defaults to 0 and the pillar lands on the
   decoy's current position. That's the intended texture: predictive abilities
   get fooled hardest by decoys.
+  - **The render path mirrors this rule too.** `drawFighter` (`render/sprites.js`)
+    computes `faceTarget = pickTarget(f, enemy)` once and uses it for the body
+    facing AND every aim telegraph (cannon aim-line, dasher windup lean, slow-
+    drag ghosts) — otherwise the body would point at the real fighter while the
+    attack flies at a closer decoy (the bug that prompted this: cannoneer's
+    windup aim-line faced the faraway real Jester but fired at the near decoy).
+    `pickTarget` is a pure position read (no rng), safe in `draw()`. Ronin's cut
+    (`f.iaiAngle`) and Priest's reticle (`f.judgeX/Y`) were already decoy-aware
+    because they snapshot the `pickTarget` `aim` at cast. Any NEW render-side
+    "point at the enemy" must use `faceTarget`, not the raw `enemy`.
 - **Windup abilities that set their own launch velocity must early-return from
   `resolveAim`.** The tail of `resolveAim` (in `abilities.js`) does a generic
   velocity renormalization back to `f.speed` — useful for Priest/Cannoneer who
