@@ -47,26 +47,53 @@ let _camLastT = 0;
 // (boosted when the recorder is armed, so the captured webm is crisp).
 const REF_W = 390, REF_H = 693;          // #app design frame (9:16)
 const HP_BAND = 42;                      // design-px height of the HP bar block
+// Horizontal safe margin (design-px each side). Even an EXACT-9:16 Short is
+// SIDE-CROPPED on tall phones: a ~20:9 screen fills the video to its height and
+// trims ~10% off each side (YouTube Shorts does this; it's expected, not a
+// bug). The HP labels + arena edges sat at the frame edge and got cut. Insetting
+// all content by SAFE_X (~11%) keeps it inside the crop. The right-side
+// Like/Share button column also overlays roughly this strip, so the inset
+// double-duties as UI-overlap clearance. The cost is black side-bars on an
+// un-cropped (desktop / true-9:16) view — the right trade for "never cropped."
+const SAFE_X = 42;
 const layout = { k: 1, dpr: 1, arenaX: 0, arenaY: 0, arenaPx: 0, hpY: 0, hpH: 0 };
 
 function resizeCanvas() {
   const r = canvas.getBoundingClientRect();
   let dpr = window.devicePixelRatio || 1;
+  const armed = typeof Recorder !== 'undefined' && Recorder.armed && Recorder.armed();
   // Armed recorder → render at a high backing resolution so the captured webm
   // is crisp regardless of the display's pixel ratio (the canvas IS the export).
-  if (typeof Recorder !== 'undefined' && Recorder.armed && Recorder.armed()) {
-    dpr = Math.max(dpr, Recorder.REC_W / r.width);
+  if (armed) dpr = Math.max(dpr, Recorder.REC_W / r.width);
+  // Backing store = the exported video frame. While recording we force an EXACT
+  // 9:16 with EVEN width AND height. Why it matters: the #app box is 390×693
+  // (0.5628, a hair off true 9:16 = 0.5625) and `round()` could yield an ODD
+  // height (e.g. 1440×2559). YouTube Shorts re-encodes to 4:2:0 H.264 — which
+  // REQUIRES even dimensions — and letterboxes/crops any source that isn't
+  // exactly 9:16; different devices' players resolve that mismatch differently,
+  // which is what cropped the edges on some devices. Forcing exact-even 9:16
+  // removes the ambiguity. The on-screen CSS box stays 390×693; the ~0.05%
+  // backing-vs-box ratio difference is a sub-pixel display stretch, invisible.
+  let cw, ch;
+  if (armed) {
+    cw = 2 * Math.round(r.width * dpr / 2);    // even width
+    ch = 2 * Math.round(cw * 16 / 9 / 2);      // exact 9:16, even height
+  } else {
+    cw = Math.round(r.width * dpr);
+    ch = Math.round(r.height * dpr);
   }
-  canvas.width = Math.round(r.width * dpr);
-  canvas.height = Math.round(r.height * dpr);
+  canvas.width = cw;
+  canvas.height = ch;
   // Lay the fight screen out in design space (390-wide), scaled to device px.
-  const k = (r.width / REF_W) * dpr;
-  const arenaPx = (REF_W - 30) * k;             // 360-wide arena square (15px margin each side)
+  // The arena is a square inset by SAFE_X each side so it survives the tall-phone
+  // side-crop (see SAFE_X). HP band sits above it, the whole stack centred.
+  const k = cw / REF_W;
+  const arenaPx = (REF_W - 2 * SAFE_X) * k;     // safe-inset arena square
   const blockH = HP_BAND * k + 8 * k + arenaPx; // HP band + 8px gap + arena
-  const topY = (REF_H * k - blockH) / 2;        // vertical centring within the frame
+  const topY = (ch - blockH) / 2;               // vertical centring within the ACTUAL canvas height
   layout.k = k;
   layout.dpr = dpr;
-  layout.arenaX = 15 * k;
+  layout.arenaX = SAFE_X * k;
   layout.hpY = topY;
   layout.hpH = HP_BAND * k;
   layout.arenaY = topY + HP_BAND * k + 8 * k;

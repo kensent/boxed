@@ -100,6 +100,17 @@
     arena sub-rect (not `canvas.width/2`). Arena content is wrapped in a
     `ctx.clip()` to the arena rect so wall-edge spillover can't bleed into the
     HP band or letterbox.
+  - **Content is inset by `SAFE_X` (~11% each side) — a Shorts safe zone, not
+    decorative margin.** Even an exact-9:16 Short is SIDE-CROPPED on tall (~20:9)
+    phones: the player fills the video to screen height and trims ~10% off each
+    side (expected YouTube behaviour). With the old 15px (3.8%) margin the HP
+    labels ("PRIEST"→"RIEST") and arena edges got cut. The arena square and the
+    HP columns both inset by `SAFE_X` so they survive the crop, and the inset
+    doubles as clearance for the right-side Like/Share button overlay. The arena
+    is therefore 306-wide (was 360); `pxPerRef = arenaPx/ARENA` so the sim still
+    runs in the 300×300 ref space (render-only, balance bit-identical). Don't
+    shrink `SAFE_X` back toward the frame edge to "use more space" — the black
+    side-bars on an un-cropped view are the deliberate cost of never cropping.
   - **Anything new on the fight screen must be canvas-drawn to show up in
     recordings.** Adding a DOM element over the canvas would be invisible in
     the webm AND would double-render / diverge from the capture. There is no
@@ -119,7 +130,18 @@
     quality knobs. 1440p60 is the balance point: 4K (`REC_W` 2160) can't hold a
     smooth 60fps under in-browser software VP9 (the 4K canvas is rendered,
     captured, downscaled for preview AND encoded every frame) — going 4K needs
-    `REC_FPS` 30 or an MP4/H.264 hardware-encode path. After touching any of
+    `REC_FPS` 30 or an MP4/H.264 hardware-encode path.
+  - **The armed backing store MUST be an EXACT 9:16 with EVEN width AND
+    height** (1440×2560). The `#app` box is 390×693 = 0.5628, a hair off true
+    9:16 (0.5625), and a plain `round(rect × dpr)` gave an ODD height
+    (1440×2559). That cropped the video on some devices: YouTube Shorts
+    re-encodes to 4:2:0 H.264 (needs even dims) and letterboxes/crops anything
+    not exactly 9:16, and different players resolve the mismatch differently.
+    `resizeCanvas` forces `cw` even and `ch = even(cw*16/9)` while armed, and
+    centres content with `topY = (ch - blockH)/2` off the ACTUAL canvas height
+    (not `REF_H*k`). The on-screen CSS box stays 390×693 — the ~0.05% backing-
+    vs-box stretch is sub-pixel/invisible. Don't revert to `round(rect.height)`
+    for the armed path. After touching any of
     this, confirm
     `./balance.sh` is still bit-identical to the `MATCHUPS` block (it is —
     nothing here is in the sim path).

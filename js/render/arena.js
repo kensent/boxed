@@ -1094,8 +1094,10 @@ function drawHpBars() {
 }
 function drawHpSide(f, side, color, ease) {
   const k = layout.k;
-  const colW = ((REF_W - 16 - 8) / 2) * k;             // (374 inner - 8 gap) / 2, design → device
-  const x = side === 'red' ? 8 * k : (REF_W - 8) * k - colW;
+  // HP columns share the arena's SAFE_X inset so the names/numbers survive the
+  // tall-phone side-crop (they used to run to the frame edge and get cut).
+  const colW = ((REF_W - 2 * SAFE_X - 8) / 2) * k;     // (safe width - 8 gap) / 2, design → device
+  const x = side === 'red' ? SAFE_X * k : (REF_W - SAFE_X) * k - colW;
   const y = layout.hpY;
   const target = Math.max(0, Math.min(1, f.hp / f.maxHp));
   if (f._hpShown == null) f._hpShown = target;

@@ -117,10 +117,13 @@ const Recorder = (() => {
     if (!data.length) return;
     const blob = new Blob(data, { type: mime || 'video/webm' });
     const url = URL.createObjectURL(blob);
-    const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    // Capital-case the roster names (stored UPPERCASE) → "Priest", "Reaper".
+    const slug = s => String(s).toLowerCase()
+      .replace(/\b[a-z]/g, c => c.toUpperCase())
+      .replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
     const a = document.createElement('a');
     a.href = url;
-    a.download = `boxed_${slug(meta.red)}_vs_${slug(meta.blue)}_seed${meta.seed}.webm`;
+    a.download = `${slug(meta.red)}_VS_${slug(meta.blue)}_seed${meta.seed}.webm`;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
