@@ -281,6 +281,30 @@
   rampage would fail to ricochet. The fix is a `wasTackle` early-return before
   the renormalization. Any future windup ability with a custom launch velocity
   needs the same exclusion.
+- **Planted/slowed windup fighters must RE-ASSERT their velocity every frame,
+  or a knockback flings them across the arena.** Sibling trap to the bullet
+  above. Cannoneer (`f.vx=f.vy=0`) and Priest (`f.vx*=0.3`) set their windup
+  velocity ONCE in `resolveAim`, then stay put only because the speed-renorm
+  pass (`engine.js`, the `[red,blue].forEach` after the main loop) *skips*
+  `aimTimer` fighters. That skip is the bug surface: anything that injects
+  velocity mid-windup — Sapper STICK CHARGE detonation (`stuckTo.vx/vy = ±400`
+  + `blastTimer`) or the body-collision push-apart (full `f.speed`) — then
+  *persists for the rest of the windup*, because nothing ever renormalizes
+  them back to the planted/slow speed. The charging fighter sails away at
+  ramming speed (or full speed, if `aimTimer` isn't the skip — Ronin's
+  `iaiWindup` re-normalizes to `f.speed` instead). Ronin and Berserker were
+  immune precisely because they ALREADY re-assert per frame (Ronin re-plants
+  `f.vx=f.vy=0` in its `iai` block; Berserker re-normalizes its 0.4× windup
+  speed in the `tackle` passive). Fix: in the `aimTimer` handler, re-assert the
+  windup velocity each frame, but ONLY when actually shoved (speed above the
+  windup target) so the untouched case stays bit-identical — Cannoneer
+  re-plants to 0, Priest clamps back to 0.3×. **This is a sim-path change, NOT
+  bit-identical**: it shifts Cannoneer/Priest matchups (most against melee
+  bruisers who used to bump them out of position — e.g. `cannoneer_hunter`
+  52→67, `cannoneer_ronin` 50→61, `priest_sapper` 75→66). Re-run `./balance.sh`
+  and re-embed the `MATCHUPS` block after touching it. Any future windup ability
+  that plants/slows by a one-time velocity set has the same exposure — re-assert
+  per frame, gated on "only when shoved."
 - **Berserker's RAMPAGE picks aim at RELEASE, not at cast.** Most windup
   abilities (Priest, Ronin) lock their target/direction at cast — the enemy's
   drift during the windup IS the counterplay. Berserker is the exception: he
