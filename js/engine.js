@@ -1593,7 +1593,29 @@ function step(dt) {
     }
     if (f.aimTimer > 0) {
       f.aimTimer -= dt;
-      if (f.aimTimer <= 0) resolveAim(f);
+      if (f.aimTimer <= 0) {
+        resolveAim(f);
+      } else {
+        // Re-assert the windup velocity each frame. Cannoneer/Priest set their
+        // planted/slowed velocity ONCE at cast and then rely on the speed-renorm
+        // pass below skipping aimTimer fighters to stay put — but that means a
+        // knockback (Sapper SHOCKWAVE sets vx/vy to 400) persists for the REST of
+        // the windup, flinging the charging fighter across the arena. Re-planting
+        // here reclaims control next frame (a 1-frame ~6px nudge, same as Ronin's
+        // iai windup at line 1458). Cannoneer plants (0); Priest keeps its 0.3x
+        // slow drift. No-blast behaviour is unchanged (the velocity already equals
+        // these targets), so balance is bit-identical except where a stick charge
+        // actually detonates on a mid-windup Cannoneer/Priest. (Berserker RAMPAGE
+        // re-normalizes its own windup speed in the tackle passive block above.)
+        // Only act when actually shoved (a knockback set the speed above the
+        // windup target) — leaving the untouched case bit-identical to before.
+        if (f.aimAbility === 'cannon') {
+          if (f.vx !== 0 || f.vy !== 0) { f.vx = 0; f.vy = 0; }
+        } else if (f.aimAbility === 'lightning') {
+          const cap = f.speed * 0.3, sp = Math.hypot(f.vx, f.vy);
+          if (sp > cap + 0.01) { f.vx = f.vx / sp * cap; f.vy = f.vy / sp * cap; }
+        }
+      }
     }
     // Gambler timed coin shots — Twin Toss / Fortune's Barrage fire coins over
     // time. Each queued shot counts down its delay, then fires toward the enemy.
